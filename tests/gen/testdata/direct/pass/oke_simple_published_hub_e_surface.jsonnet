@@ -13,8 +13,6 @@ local identity = (import 'gen/workload-extensions/oke/simple/single-stack/oke_id
   .policies_configuration.supplied_policies;
 local single_security_cis1 = import 'gen/workload-extensions/oke/simple/single-stack/oke_security_cis1.jsonnet';
 local single_security_cis2 = import 'gen/workload-extensions/oke/simple/single-stack/oke_security_cis2.jsonnet';
-local multi_security_cis1 = import 'gen/workload-extensions/oke/simple/multi-stack/oke_security_cis1.jsonnet';
-local multi_security_cis2 = import 'gen/workload-extensions/oke/simple/multi-stack/oke_security_cis2.jsonnet';
 
 local hub = single['0-shared'].vcns['VCN-FRA-LZ-HUB-KEY'];
 local hub_gateways = single['0-shared'].non_vcn_specific_gateways;
@@ -95,10 +93,6 @@ local worker = workers['NDP-FRA-LZ-PROD-OKE-KEY'];
     drg_route_table_key:
       multi_oke.non_vcn_specific_gateways.inject_into_existing_drgs['DRG-FRA-LZ-HUB-KEY']
         .drg_attachments['DRGATT-FRA-LZ-PROD-PLATFORM-OKE-KEY'].drg_route_table_key,
-    security_cis1_vault_keys: std.objectFields(multi_security_cis1.vaults_configuration.vaults),
-    security_cis1_key_keys: std.objectFields(multi_security_cis1.vaults_configuration.keys),
-    security_cis2_vault_keys: std.objectFields(multi_security_cis2.vaults_configuration.vaults),
-    security_cis2_key_keys: std.objectFields(multi_security_cis2.vaults_configuration.keys),
   },
   oke_encryption: {
     cluster_key_reference: cluster.encryption.kube_secret_kms_key_id,

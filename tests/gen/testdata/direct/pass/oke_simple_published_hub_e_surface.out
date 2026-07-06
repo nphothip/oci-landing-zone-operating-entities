@@ -7,18 +7,6 @@
     "injected_drgs": [
       "DRG-FRA-LZ-HUB-KEY"
     ],
-    "security_cis1_key_keys": [
-      "KEY-FRA-LZ-PROD-OKE-KUBE-SECRETS-KEY"
-    ],
-    "security_cis1_vault_keys": [
-      "VLT-LZ-SHARED-SECURITY-KEY"
-    ],
-    "security_cis2_key_keys": [
-      "KEY-FRA-LZ-PROD-OKE-KUBE-SECRETS-KEY"
-    ],
-    "security_cis2_vault_keys": [
-      "VLT-LZ-SHARED-SECURITY-KEY"
-    ],
     "vcn_keys": [
       "VCN-FRA-LZ-PROD-PLATFORM-OKE-KEY"
     ]

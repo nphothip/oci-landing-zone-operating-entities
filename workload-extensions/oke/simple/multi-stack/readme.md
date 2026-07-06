@@ -39,7 +39,7 @@ The published quickstart creates one production OKE platform by default. Add pre
 **Key Features:**
 - **Automated Dependency Resolution**: Network resources (VCN, subnets, NSGs) are automatically linked to the OKE cluster using configuration keys using dependency exchange across stacks
 - **CIS-Compliant**: Uses the CIS-compliant OKE module from [terraform-oci-modules-workloads](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/tree/main/cis-oke)
-- **Customer-Managed Encryption**: Creates a generically named shared security Vault in the extension stack and an HSM key used by the cluster and worker boot volumes
+- **Customer-Managed Encryption**: Uses the Vault and cluster encryption key owned by the existing Landing Zone
 - **OKE Network Modes**: Published JSON is VCN-native by default; config-driven generation can also emit an overlay network shape for Flannel-compatible clusters
 - **No Hub L7 Load Balancer**: The published OKE stack does not provision a hub-level OCI L7 Load Balancer; Kubernetes `Service` resources of type `LoadBalancer` create OCI load balancers through OKE
 - **Multi-Step Deployment**: Deploy the Hub E landing zone first, then deploy the OKE stack separately
@@ -48,7 +48,7 @@ The published quickstart creates one production OKE platform by default. Add pre
 
 ## **3. Configuration Files**
 
-The deployment uses five JSON configuration files. Select the security file matching the CIS profile you are deploying.
+The deployment uses four JSON configuration files. The existing Landing Zone owns the Vault and encryption key referenced by the OKE configuration.
 
 | File | Purpose |
 | --- | --- |
@@ -56,11 +56,10 @@ The deployment uses five JSON configuration files. Select the security file matc
 | `oke_network.json` | Network infrastructure: VCN, subnets, NSGs, route tables, service gateway, DRG attachment |
 | `oke_clusters.json` | OKE cluster configuration: cluster settings, Kubernetes version, CNI type, networking |
 | `oke_workers.json` | Node pool configuration: worker nodes, shape, size, networking, cloud-init |
-| `oke_security_cis1.json` or `oke_security_cis2.json` | Extension security resources: shared security Vault and cluster encryption key |
 
 ### Additional Published Observability Outputs <!-- omit from toc -->
 
-The published surface includes companion JSONs with CIS-aligned observability settings. Multi-stack OKE is deployed on top of an existing landing zone, so it does not repeat the broader security baseline. Its security files contribute the shared security Vault and cluster encryption key required by this extension.
+The published surface includes companion JSONs with CIS-aligned observability settings. Multi-stack OKE is deployed on top of an existing Landing Zone, so it does not repeat the security baseline or security resources owned by that Landing Zone.
 
 | File | Purpose |
 | --- | --- |
@@ -68,8 +67,6 @@ The published surface includes companion JSONs with CIS-aligned observability se
 | `oke_observability_cis1_pre.json` | Pre-requisites for `oke_observability_cis1.json` |
 | `oke_observability_cis2.json` | Observability settings (CIS profile 2) |
 | `oke_observability_cis2_pre.json` | Pre-requisites for `oke_observability_cis2.json` |
-| `oke_security_cis1.json` | Shared security Vault and cluster key for CIS profile 1 deployments |
-| `oke_security_cis2.json` | Shared security Vault and cluster key for CIS profile 2 deployments |
 
 &nbsp;
 
@@ -90,13 +87,13 @@ Use ORM only when the customer specifically wants ORM. Prefer Terraform CLI loca
    - Use the same pinned orchestrator tag referenced by the published OKE docs.
 
 2. **Stage Configuration Files in a Private Source**
-   - Upload `oke_workers.json`, `oke_network.json`, `oke_identity.json`, `oke_clusters.json`, and the OKE security file matching your CIS profile to a customer-controlled private OCI Object Storage bucket, or make them available from an approved private GitHub source.
+   - Upload `oke_workers.json`, `oke_network.json`, `oke_identity.json`, and `oke_clusters.json` to a customer-controlled private OCI Object Storage bucket, or make them available from an approved private GitHub source.
    - If you depend on outputs from a previously deployed landing zone, stage those dependency files in the same controlled source.
    - The previous public repo-hosted one-click example is not the recommended customer deployment path.
 
 3. **Configure ORM Variables**
    - Set the configuration source to match the private location you chose.
-   - Point the stack at the five staged JSON files and any required dependency files.
+   - Point the stack at the four staged JSON files and any required dependency files.
 
 4. **Review Configuration Keys**
 
