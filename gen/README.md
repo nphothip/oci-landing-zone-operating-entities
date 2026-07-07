@@ -20,6 +20,7 @@ Config-mode security and observability artifacts follow `cis_level`: omit it for
 Config-mode extension outputs are emitted as additional files from `result.extra`; for example, OKE emits `oke_clusters.json` and `oke_workers.json`, and OCVS emits `ocvs.json`.
 If you set `hub.network.subnets` explicitly, provide the full canonical subnet set for that hub kind; partial hub subnet overrides are rejected during normalization.
 For networked extension-backed platforms, explicit `platform.network.subnets` overrides must match the extension metadata-defined subnet set exactly; otherwise omit subnets and let the extension auto-allocate. Extensions declare network behavior with `metadata.network_mode`: `required`, `forbidden`, or `optional`. Legacy `metadata.requires_network: true|false` is still supported and maps to `required` or `forbidden`. Optional-network extensions may omit `platform.network` for IAM/observability-only contributions, or include it to emit `network_pre`.
+Generated IAM is checked against a 400-statement safety budget per root-to-leaf compartment chain. OCI documents a hard limit of 500 statements per chain; this repo keeps headroom for customer extensions and manual policies.
 
 Change the Jsonnet sources under `gen/` first. Checked-in JSON under `blueprints/` and `workload-extensions/` are generated snapshots, not hand-maintained source files.
 

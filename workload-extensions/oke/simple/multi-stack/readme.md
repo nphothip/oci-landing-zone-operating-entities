@@ -30,13 +30,18 @@ For customized OKE landing zones generated from a configuration file, see [OKE C
 
 ## **2. Architecture Overview**
 
-This deployment uses the [OCI Landing Zone Orchestrator](https://github.com/oci-landing-zones/terraform-oci-modules-orchestrator) to provision both the network infrastructure and OKE cluster in a single deployment. The orchestrator automatically resolves dependencies between resources using configuration keys instead of OCIDs.
+This published simple multi-stack deployment uses the [OCI Landing Zone Orchestrator](https://github.com/oci-landing-zones/terraform-oci-modules-orchestrator) to add OKE to an existing **Hub E** landing zone. The orchestrator automatically resolves dependencies between resources using configuration keys instead of OCIDs.
+
+The simple multi-stack path is a Hub E quickstart. For Hub A, Hub B, Hub C, multiple OKE platforms, overlay networking, or custom landing zone shapes, use [OKE Config-Driven Generation](../config-driven.md).
+
+The published quickstart creates one production OKE platform by default. Add pre-production or additional OKE platforms through config-driven generation.
 
 **Key Features:**
 - **Automated Dependency Resolution**: Network resources (VCN, subnets, NSGs) are automatically linked to the OKE cluster using configuration keys using dependency exchange across stacks
 - **CIS-Compliant**: Uses the CIS-compliant OKE module from [terraform-oci-modules-workloads](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/tree/main/cis-oke)
 - **OKE Network Modes**: Published JSON is VCN-native by default; config-driven generation can also emit an overlay network shape for Flannel-compatible clusters
-- **Multi-Step Deployment**: Deploy OKE together in one ORM stack and Landing Zone separately
+- **No Hub L7 Load Balancer**: The published OKE stack does not provision a hub-level OCI L7 Load Balancer; Kubernetes `Service` resources of type `LoadBalancer` create OCI load balancers through OKE
+- **Multi-Step Deployment**: Deploy the Hub E landing zone first, then deploy the OKE stack separately
 
 &nbsp;
 
@@ -51,16 +56,12 @@ The deployment uses four JSON configuration files:
 | `oke_clusters.json` | OKE cluster configuration: cluster settings, Kubernetes version, CNI type, networking |
 | `oke_workers.json` | Node pool configuration: worker nodes, shape, size, networking, cloud-init |
 
-### Additional Published Security & Observability Outputs <!-- omit from toc -->
+### Additional Published Observability Outputs <!-- omit from toc -->
 
-The published surface includes companion JSONs with CIS-aligned security and observability settings. The secure ORM flow below consumes only the core deployment inputs; use these additional files as needed for your security and monitoring baselines.
+The published surface includes companion JSONs with CIS-aligned observability settings. Multi-stack OKE is deployed on top of an existing landing zone, so the security baseline artifacts come from that existing landing-zone stack and are not repeated in this extension package.
 
 | File | Purpose |
 | --- | --- |
-| `oke_security_cis1.json` | Baseline security controls (CIS profile 1) |
-| `oke_security_cis1_pre.json` | Pre-requisites for `oke_security_cis1.json` |
-| `oke_security_cis2.json` | Baseline security controls (CIS profile 2) |
-| `oke_security_cis2_pre.json` | Pre-requisites for `oke_security_cis2.json` |
 | `oke_observability_cis1.json` | Observability settings (CIS profile 1) |
 | `oke_observability_cis1_pre.json` | Pre-requisites for `oke_observability_cis1.json` |
 | `oke_observability_cis2.json` | Observability settings (CIS profile 2) |
@@ -72,9 +73,9 @@ The published surface includes companion JSONs with CIS-aligned security and obs
 
 ### Prerequisites <!-- omit from toc -->
 
-- An existing OCI Landing Zone deployment (ONE-OE or similar)
+- An existing One-OE Hub E landing zone deployment
 - Access to OCI Console with appropriate permissions
-- DRG (Dynamic Routing Gateway) already created in your Landing Zone
+- DRG (Dynamic Routing Gateway) already created in your Hub E landing zone
 
 ### Option A: Deploy via OCI Resource Manager
 
