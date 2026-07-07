@@ -1,5 +1,7 @@
 // config-mode prod OCVS emits IAM, network, and OCVS workload output with matching logical keys
 local multi = import 'gen/landing_zone_multi.jsonnet';
+local published_output = import 'gen/workload-extensions/ocvs/single-stack/output_builder.libsonnet';
+local published_profiles = import 'gen/workload-extensions/ocvs/single-stack/profiles.libsonnet';
 local outputs = multi({
   hub: { kind: 'hub_e', network: { vcn: '10.0.0.0/21' } },
   environments: {
@@ -8,7 +10,7 @@ local outputs = multi({
         ocvs: {
           network: { vcn: '10.0.80.0/21' },
           extension: {
-            type: 'ocvs_simple',
+            type: 'ocvs',
             params: {
               ssh_authorized_keys: 'ssh-rsa AAAAocvsfixture',
               cluster: {
@@ -31,6 +33,7 @@ local outputs = multi({
     },
   },
 });
+local published = published_output(published_profiles.prod_hub_e);
 
 local network_category =
   outputs['network.json'].network_configuration.network_configuration_categories['prod-platform-ocvs'];
@@ -58,4 +61,11 @@ local ocvs_cluster =
       iam.compartments_configuration.compartments['CMP-LANDINGZONE-KEY'].children['CMP-LZ-PROD-KEY'].children['CMP-LZ-PROD-PLATFORM-KEY'].children,
       'CMP-LZ-PROD-OCVS-KEY'
     ),
+  published_output_files: std.sort(std.objectFields(published)),
+  published_identity_has_one_oe:
+    std.objectHas(published.ocvs_identity.compartments_configuration.compartments, 'CMP-LANDINGZONE-KEY'),
+  published_network_categories:
+    std.sort(std.objectFields(published.ocvs_network.network_configuration.network_configuration_categories)),
+  published_ocvs_cluster_present:
+    std.objectHas(published.ocvs.ocvs_configuration.ocvs_clusters, 'SDDC-FRA-LZ-PROD-OCVS-KEY'),
 }

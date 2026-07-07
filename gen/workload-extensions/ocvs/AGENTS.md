@@ -13,23 +13,11 @@ This file covers `gen/workload-extensions/ocvs/**` and published OCVS snapshots/
 
 ## Contract
 
-- Extension type is `ocvs_simple`.
+- Extension type is `ocvs`.
 - OCVS is a networked platform extension: `platform.network.vcn` is required.
 - The first supported shape is one SDDC management cluster per platform. Use multiple OCVS platform entries for multiple SDDCs.
 - The OCVS platform VCN is the SDDC cluster network CIDR consumed by the downstream OCVS module as `networking.vcn_cidr_block`.
 - Supported OCVS platform VCN prefixes are `/24`, `/23`, `/22`, and `/21`.
 - The generated provisioning subnet uses the first segment of the OCVS platform VCN after four additional prefix bits: `/28`, `/27`, `/26`, or `/25` respectively.
 - The downstream OCVS module creates VLANs from the same cluster network CIDR. The generator emits the provisioning subnet, route tables, and network security groups referenced by the OCVS payload.
-- `is_hcx_enabled: true` is rejected until the NAT gateway and firewalled-hub semantics are explicitly designed and validated.
 - Direct OCVS deployment is contract-validated with `terraform-oci-modules-orchestrator` v2.1.3. Revalidate when changing the generated OCVS payload, dependency keys, or orchestrator ref.
-
-## Validation Levels
-
-Report the strongest validation level actually reached:
-
-- design coherence checked
-- JSON syntax checked
-- generator fixture tests passed
-- orchestrator contract checked with `terraform validate`
-- Terraform plan run or not run
-- OCVS apply not run

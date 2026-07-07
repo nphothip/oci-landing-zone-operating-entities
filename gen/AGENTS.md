@@ -170,7 +170,7 @@ Rules:
 Current output builders:
 
 - `gen/workload-extensions/oke/simple/{single-stack,multi-stack}/output_builder.libsonnet` — own the profile-to-committed-JSON output surfaces for published OKE simple artifacts. The multi-stack builder owns the publication-only OKE network and identity projections.
-- `gen/workload-extensions/ocvs/single-stack/output_builder.libsonnet` — owns the profile-to-committed-JSON output surface for published OCVS artifacts while the generic `ocvs_simple` extension remains config-mode owned.
+- `gen/workload-extensions/ocvs/single-stack/output_builder.libsonnet` — owns the profile-to-committed-JSON output surface for published OCVS artifacts.
 
 ### Published Adapter Pattern (`published.libsonnet`)
 
@@ -354,7 +354,7 @@ Current extension ownership:
 - `gen/workload-extensions/oke/simple/{single-stack,multi-stack}/output_builder.libsonnet` owns the profile-to-committed-JSON OKE output surfaces used by repo entrypoints.
 - `gen/workload-extensions/ocvs/AGENTS.md` owns OCVS extension-specific contracts and validation boundaries.
 - `gen/workload-extensions/ocvs/ocvs_builder.libsonnet` owns reusable OCVS rendering logic.
-- `gen/workload-extensions/ocvs/ocvs_simple.libsonnet` is the active generic extension wrapper for config mode and integrated landing-zone assembly.
+- `gen/workload-extensions/ocvs/ocvs.libsonnet` is the active generic extension wrapper for config mode and integrated landing-zone assembly.
 - `gen/workload-extensions/ocvs/single-stack/output_builder.libsonnet` owns the profile-to-committed-JSON OCVS output surfaces used by repo entrypoints.
 - The local ExaDB-C@C guide owns extension-specific contracts, notification email semantics, publication layout, and tests.
 - `gen/workload-extensions/exacs/AGENTS.md` owns ExaDB-D / ExaCS placement mapping, component inference, network rules, and discovery addenda.

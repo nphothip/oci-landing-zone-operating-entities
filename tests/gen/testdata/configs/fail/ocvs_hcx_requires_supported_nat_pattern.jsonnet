@@ -8,7 +8,7 @@
         ocvs: {
           network: { vcn: '10.0.80.0/21' },
           extension: {
-            type: 'ocvs_simple',
+            type: 'ocvs',
             params: {
               ssh_authorized_keys: 'ssh-rsa AAAAocvsfixture',
               cluster: {

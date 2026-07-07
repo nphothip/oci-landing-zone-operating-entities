@@ -109,7 +109,7 @@ For referring to a specific module version, append *ref=\<version\>* to the *sou
 
 E.g.:
 ```
-git clone --branch v2.1.3 --depth 1 git@github.com:oci-landing-zones/terraform-oci-modules-orchestrator.git
+git clone git@github.com:oci-landing-zones/terraform-oci-modules-orchestrator.git?ref=v2.1.3
 ```
 
 Initialize:

@@ -52,6 +52,26 @@
   "platform_compartment_present": true,
   "provisioning_subnet_cidr": "10.0.80.0/25",
   "provisioning_subnet_key": "SN-FRA-LZ-PROD-PLATFORM-OCVS-PROVISIONING-KEY",
+  "published_identity_has_one_oe": true,
+  "published_network_categories": [
+    "0-shared",
+    "prod-platform-ocvs"
+  ],
+  "published_ocvs_cluster_present": true,
+  "published_output_files": [
+    "ocvs",
+    "ocvs_governance",
+    "ocvs_identity",
+    "ocvs_network",
+    "ocvs_observability_cis1",
+    "ocvs_observability_cis1_pre",
+    "ocvs_observability_cis2",
+    "ocvs_observability_cis2_pre",
+    "ocvs_security_cis1",
+    "ocvs_security_cis1_pre",
+    "ocvs_security_cis2",
+    "ocvs_security_cis2_pre"
+  ],
   "route_table_keys_present": [
     "RT-FRA-LZ-PROD-PLATFORM-OCVS-HCX-KEY",
     "RT-FRA-LZ-PROD-PLATFORM-OCVS-NSX-EDGE-UPLINK-1-KEY",

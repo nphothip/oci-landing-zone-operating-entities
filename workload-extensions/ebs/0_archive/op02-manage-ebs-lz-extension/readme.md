@@ -621,7 +621,7 @@ git clone git@github.com:oci-landing-zones/terraform-oci-open-lz.git
 
 Cloning the latest version:
 ```
-git clone git@github.com:oci-landing-zones/terraform-oci-landing-zones-orchestrator.git
+git clone git@github.com:oci-landing-zones/terraform-oci-modules-orchestrator.git
 ```
 
 &nbsp; 
