@@ -10,7 +10,7 @@ The platform VCN CIDR is the OCVS cluster network CIDR. Supported prefixes are `
 
 HCX is currently not emitted by config mode. `is_hcx_enabled: true` is rejected until the NAT gateway and firewalled hub pattern is validated.
 
-Validation level: generated JSON and Terraform validation can prove the shape and Terraform contracts, but they do not prove OCI capacity, shape availability, VMware bundle availability, or an actual OCVS apply.
+Deployment requires [OCI Landing Zones Orchestrator v2.1.3](https://github.com/oci-landing-zones/terraform-oci-modules-orchestrator/releases/tag/v2.1.3), which resolves the generated OCVS route table and network security group keys. The generated JSON and the v2.1.3 Terraform contract have been validated, but this does not prove OCI capacity, shape availability, VMware bundle availability, a successful Terraform plan, or an actual OCVS apply.
 
 Generate the Blueprint Factory example from the repository root:
 

@@ -21,7 +21,7 @@ This file covers `gen/workload-extensions/ocvs/**` and published OCVS snapshots/
 - The generated provisioning subnet uses the first segment of the OCVS platform VCN after four additional prefix bits: `/28`, `/27`, `/26`, or `/25` respectively.
 - The downstream OCVS module creates VLANs from the same cluster network CIDR. The generator emits the provisioning subnet, route tables, and network security groups referenced by the OCVS payload.
 - `is_hcx_enabled: true` is rejected until the NAT gateway and firewalled-hub semantics are explicitly designed and validated.
-- Do not claim direct OCVS deployment support unless Terraform validation against the active orchestrator ref succeeds.
+- Direct OCVS deployment is contract-validated with `terraform-oci-modules-orchestrator` v2.1.3. Revalidate when changing the generated OCVS payload, dependency keys, or orchestrator ref.
 
 ## Validation Levels
 

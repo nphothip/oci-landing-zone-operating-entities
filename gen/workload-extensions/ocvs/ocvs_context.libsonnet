@@ -1,5 +1,22 @@
 local cidrs = import '../../lib/cidrs.libsonnet';
 
+local letters = std.stringChars('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+local name_characters = letters + std.stringChars('0123456789-');
+local checked_name(label, value, max_length) =
+  assert std.type(value) == 'string' : '%s must be a string' % label;
+  assert std.length(value) > 0 : '%s must not be empty' % label;
+  assert std.length(value) <= max_length :
+    '%s must be %d characters or less: %s' % [label, max_length, value];
+  assert std.member(letters, value[0]) : '%s must start with a letter' % label;
+  assert std.foldl(
+    function(valid, character) valid && std.member(name_characters, character),
+    std.stringChars(value),
+    true
+  ) : '%s may contain only letters, numbers, and hyphens' % label;
+  assert std.length(std.findSubstr('--', value)) == 0 :
+    '%s must not contain repeating hyphens' % label;
+  value;
+
 {
   build(params, metadata)::
     assert std.objectHas(params.config_params, 'ssh_authorized_keys') :
@@ -34,13 +51,26 @@ local cidrs = import '../../lib/cidrs.libsonnet';
     local display_segments = [env, plat];
     local cluster_cidr = cidrs.validate('ocvs platform network.vcn', params.network.vcn);
     local cluster_key = n.key('SDDC', display_segments);
-    local sddc_name =
+    local raw_sddc_name =
       if std.objectHas(cluster, 'sddc_display_name') && cluster.sddc_display_name != null then
         cluster.sddc_display_name
       else
-        n.display('sddc', display_segments);
-    assert std.length(sddc_name) <= 21 :
-      'OCVS SDDC display name must be 21 characters or less for downstream validation: %s' % sddc_name;
+        n.display_tenancy('sddc', display_segments);
+    local sddc_name = checked_name(
+      'config_params.cluster.sddc_display_name',
+      raw_sddc_name,
+      16
+    );
+    local raw_cluster_name =
+      if std.objectHas(cluster, 'cluster_display_name') && cluster.cluster_display_name != null then
+        cluster.cluster_display_name
+      else
+        n.display_tenancy('cluster', display_segments);
+    local cluster_name = checked_name(
+      'config_params.cluster.cluster_display_name',
+      raw_cluster_name,
+      22
+    );
 
     {
       params: params,
@@ -59,11 +89,7 @@ local cidrs = import '../../lib/cidrs.libsonnet';
       routing: if std.objectHas(params, 'routing') then params.routing else null,
       cluster_key: cluster_key,
       sddc_display_name: sddc_name,
-      cluster_display_name:
-        if std.objectHas(cluster, 'cluster_display_name') && cluster.cluster_display_name != null then
-          cluster.cluster_display_name
-        else
-          n.display('cluster', display_segments),
+      cluster_display_name: cluster_name,
       vcn_key: n.key('VCN', [env, 'PLATFORM', plat]),
       sgw_key: n.key('SGW', [env, 'PLATFORM', plat]),
       provisioning_subnet_key: n.key('SN', [env, 'PLATFORM', plat, 'PROVISIONING']),
