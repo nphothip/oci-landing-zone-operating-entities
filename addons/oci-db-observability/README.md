@@ -16,6 +16,9 @@ This guide provides the configuration steps required to enable OCI Observability
 * **Logging Analytics** is a machine learning-based cloud service that monitors, aggregates, indexes, and analyzes all log data from on-premises and multicloud environments. Enabling users to search, explore, and correlate this data to troubleshoot and resolve problems faster and derive insights to make better operational decisions.
 &nbsp; 
 
+The document is applicable for these scenario: Autonomous database, DBCS, ExaDB-D, OD@, EXACC and Oracle External Databases. The details are covered in the follow sections.
+
+
 ### 2. Benefits of this asset
 
 Following the guidelines explained here reduces the overall management complexity and will help you with:
@@ -27,7 +30,7 @@ Following the guidelines explained here reduces the overall management complexit
 * Add a dedicated vault to securely store secrets for the monitoring group.
 &nbsp; 
  
-## 3. Design Decisions
+### 3. Design Decisions
 
 To configure this add-on, select the operating model that best matches the customer's organizational structure and the way observability responsibilities are assigned.
 
@@ -44,7 +47,7 @@ Across the different database service scenarios presented in this asset, these a
 
 The slected approach impacts on OCI Group and Policies, OCI Private End Point deployment needed for Database Management and OpsInsights and OCI Management Agent needed for OCI Log Analytics. 
 
-## 3.1 OCI Group and Policies
+#### 3.1 OCI Group and Policies
 
 Independently from the selected approach, we recommend the creation of the following OCI groups. This allows quicker onboarding of the Observability services across all three approaches (depending on the approach the groups can be created or extra policies will be added to existing groups, details will be covered in each scenario).
 
@@ -55,7 +58,7 @@ Independently from the selected approach, we recommend the creation of the follo
 
 
 
-## 3.2 Private Endpoints  
+#### 3.2 Private Endpoints  
 
 For enhanced security, Observability Services should be configured with private access. An OCI Private Endpoint (PE) is a private network access point, exposed through a private IP address in a selected subnet, that allows OCI services such as Database Management and Operations Insights to communicate with monitored databases without using the public internet.
 
@@ -74,9 +77,9 @@ For Database Management and Operations Insights, this add-on uses Private Endpoi
 &nbsp; 
 
 
-## 3.3 Management Agent
+#### 3.3 Management Agent
 
-The OCI Management Agent is required when observability services need an agent to collect logs or interact with monitored database targets from the customer network. In the ExaCS, Base Database, and Autonomous Database scenarios, the Management Agent is needed to enable Log Analytics. In the ExaCC scenario, the Management Agent is needed to enable Database Management, Ops Insights, and Log Analytics.
+The OCI Management Agent is required when observability services need an agent to collect logs or interact with monitored database targets from the customer network. In the ExaDB-D, Base Database, and Autonomous Database scenarios, the Management Agent is needed to enable Log Analytics. In the ExaCC scenario, the Management Agent is needed to enable Database Management, Ops Insights, and Log Analytics.
 
 It is important to distinguish the **agent installation location** from the **agent check-in compartment**. The installation location is where the Management Agent software runs, such as a database host or a dedicated monitoring compute instance, and determines what logs or database endpoints the agent can reach. The check-in compartment is the OCI compartment where the agent registers as a Management Agent resource and where IAM policies, dynamic groups, and lifecycle visibility are applied. In this section, we are talking about the check-in compartments
 
@@ -92,14 +95,14 @@ The detailed instruction steps are provided in the next section.
 
 
 
-## 4. Scenarios.
+### 4. Scenarios.
 
 | # |  Scenario  | Description | Status |
 |:--:|:--:|---|---|
 | 1 | <img src="./images/icon_auto.png" height="40" align="center">| Autonomous database| [Available](./scenario-autonomous-databases/readme.md) |
 | 2 | <img src="./images/dbcs.png" height="40" align="center">| DBCS | [Available](./scenario-dbcs-databases/readme.md) |
 | 3 | <img src="../../commons/images/exacs.png" height="40" align="center"> | ExaDB-D | [Available](./scenario-exacs-databases/readme.md) |
-| 4 |  | ODA@ | [TBC](./scenario-oda@-databases/readme.md) |
+| 4 |  | OD@ | [TBC](./scenario-oda@-databases/readme.md) |
 | 5 |<img src="../../commons/images/exacc.png" height="40" align="center" > | EXACC| [Available](./scenario-exacc-databases/readme.md) |
 | 6 |  | External Databases | In progress |
 
