@@ -8,7 +8,7 @@ This file covers `gen/workload-extensions/ocvs/**` and published OCVS snapshots/
 - `gen/workload-extensions/ocvs/ocvs_network.libsonnet` owns OCVS provisioning subnet, route table, NSG, and gateway rendering.
 - `gen/workload-extensions/ocvs/ocvs_configuration.libsonnet` owns the direct downstream `ocvs_configuration` payload.
 - `gen/workload-extensions/ocvs/published_profiles.libsonnet` owns repo-published OCVS defaults when published snapshots are generated.
-- `gen/workload-extensions/ocvs/single-stack/output_builder.libsonnet` owns the profile-to-committed-JSON OCVS output surface.
+- `gen/workload-extensions/ocvs/output_builder.libsonnet` owns the profile-to-committed-JSON OCVS output surface.
 - Checked-in JSON files under `workload-extensions/ocvs/**` are generated snapshots once Jsonnet source exists for that path. Do not hand-edit generated snapshots.
 
 ## Contract

@@ -1,4 +1,4 @@
-local lz = import '../../../landing_zone.libsonnet';
+local lz = import '../../landing_zone.libsonnet';
 
 function(profile) {
   local rendered = lz(profile.config),

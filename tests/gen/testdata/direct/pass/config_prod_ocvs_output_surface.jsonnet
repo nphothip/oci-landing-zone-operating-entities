@@ -1,7 +1,7 @@
 // config-mode prod OCVS emits IAM, network, and OCVS workload output with matching logical keys
 local multi = import 'gen/landing_zone_multi.jsonnet';
-local published_output = import 'gen/workload-extensions/ocvs/single-stack/output_builder.libsonnet';
-local published_profiles = import 'gen/workload-extensions/ocvs/single-stack/profiles.libsonnet';
+local published_output = import 'gen/workload-extensions/ocvs/output_builder.libsonnet';
+local published_profiles = import 'gen/workload-extensions/ocvs/profiles.libsonnet';
 local outputs = multi({
   hub: { kind: 'hub_e', network: { vcn: '10.0.0.0/21' } },
   environments: {
