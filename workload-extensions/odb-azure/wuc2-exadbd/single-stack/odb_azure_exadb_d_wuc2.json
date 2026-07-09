@@ -1,0 +1,112 @@
+{
+  "azure_oracle_database_configuration": {
+    "vmc_networks_configuration": {
+      "ODB-AZURE-EXADB-VNET-01": {
+        "location": "eastus",
+        "resource_group_name": "rg-odbaa-network",
+        "name": "vnet-odbaa-exadb",
+        "virtual_network_address_space": "10.30.0.0/16",
+        "delegated_subnet_name": "snet-odbaa-exadb-delegated",
+        "delegated_subnet_address_prefix": "10.30.1.0/24",
+        "tags": {
+          "workload": "oracle-database-at-azure",
+          "use_case": "wuc2-exadb-d-azure"
+        }
+      }
+    },
+    "exadata_infrastructures_configuration": {
+      "ODB-AZURE-EXAINFRA-01": {
+        "location": "eastus",
+        "resource_group_name": "rg-odbaa-database",
+        "name": "exa-infra-odbaa-wuc2",
+        "zone": "1",
+        "compute_count": 2,
+        "storage_count": 3,
+        "shape": "Exadata.X9M",
+        "customer_contacts": [
+          "dba@example.com"
+        ],
+        "maintenance_window": {
+          "patching_mode": "Rolling",
+          "preference": "NoPreference"
+        },
+        "tags": {
+          "workload": "oracle-database-at-azure",
+          "use_case": "wuc2-exadb-d-azure"
+        }
+      }
+    },
+    "vm_clusters_configuration": {
+      "ODB-AZURE-VMCLUSTER-01": {
+        "location": "eastus",
+        "resource_group_name": "rg-odbaa-database",
+        "exadata_infrastructure_key": "ODB-AZURE-EXAINFRA-01",
+        "vmc_network_key": "ODB-AZURE-EXADB-VNET-01",
+        "delegated_subnet_key": "delegated",
+        "cluster_name": "vmcwuc2",
+        "hostname": "vmcwuc2",
+        "gi_version": "19.0.0.0",
+        "cpu_core_count": "4",
+        "license_model": "LicenseIncluded",
+        "ssh_public_keys": [
+          "ssh-rsa <public-key>"
+        ],
+        "is_diagnostic_events_enabled": false,
+        "is_health_monitoring_enabled": false,
+        "is_incident_logs_enabled": false,
+        "tags": {
+          "workload": "oracle-database-at-azure",
+          "use_case": "wuc2-exadb-d-azure"
+        }
+      }
+    }
+  },
+  "cloud_exadata_database_configuration": {
+    "default_defined_tags": {},
+    "default_freeform_tags": {
+      "workload": "oracle-database-at-azure",
+      "use_case": "wuc2-exadb-d-azure"
+    },
+    "cloud_db_homes_configuration": {
+      "DBHOME-WUC2-01": {
+        "vm_cluster_id": "ODB-AZURE-VMCLUSTER-01",
+        "display_name": "DBHomeWUC201",
+        "db_version": "19.0.0.0",
+        "source": "VM_CLUSTER_NEW",
+        "enable_database_delete": false,
+        "freeform_tags": {
+          "workload": "oracle-database-at-azure",
+          "use_case": "wuc2-exadb-d-azure"
+        }
+      }
+    },
+    "databases_configuration": {
+      "CDB-WUC2-01": {
+        "source": "NONE",
+        "db_home_id": "DBHOME-WUC2-01",
+        "database": {
+          "admin_password": "ExAmpLe#_11",
+          "db_name": "CDBWUC2",
+          "character_set": "AL32UTF8",
+          "ncharacter_set": "AL16UTF16",
+          "sid_prefix": "cdbwuc2",
+          "tde_wallet_password": "ExAmpLe#_11"
+        }
+      }
+    },
+    "pluggable_databases_configuration": {
+      "PDB-WUC2-01": {
+        "container_database_id": "CDB-WUC2-01",
+        "pdb_name": "PDBWUC2",
+        "pdb_admin_password": "ExAmpLe#_11",
+        "should_create_pdb_backup": false,
+        "should_pdb_admin_account_be_locked": false,
+        "tde_wallet_password": "ExAmpLe#_11",
+        "freeform_tags": {
+          "workload": "oracle-database-at-azure",
+          "use_case": "wuc2-exadb-d-azure"
+        }
+      }
+    }
+  }
+}

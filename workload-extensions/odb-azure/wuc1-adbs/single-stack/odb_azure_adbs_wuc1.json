@@ -1,0 +1,50 @@
+{
+  "azure_oracle_database_configuration": {
+    "vmc_networks_configuration": {
+      "ODB-AZURE-ADBS-VNET-01": {
+        "location": "eastus",
+        "resource_group_name": "rg-odbaa-network",
+        "name": "vnet-odbaa-adbs",
+        "virtual_network_address_space": "10.20.0.0/16",
+        "delegated_subnet_name": "snet-odbaa-adbs-delegated",
+        "delegated_subnet_address_prefix": "10.20.1.0/24",
+        "tags": {
+          "workload": "oracle-database-at-azure",
+          "use_case": "wuc1-adbs-azure"
+        }
+      }
+    },
+    "autonomous_databases_configuration": {
+      "ODB-AZURE-ADBS-01": {
+        "location": "eastus",
+        "db_resource_group": "rg-odbaa-database",
+        "vmc_network_key": "ODB-AZURE-ADBS-VNET-01",
+        "delegated_subnet_key": "delegated",
+        "name": "adbs-odbaa-wuc1",
+        "display_name": "ADB-S OD@Azure WUC1",
+        "db_workload": "DW",
+        "mtls_connection_required": false,
+        "backup_retention_period_in_days": 60,
+        "compute_model": "ECPU",
+        "compute_count": 2,
+        "data_storage_size_in_tbs": 1,
+        "auto_scaling_enabled": true,
+        "auto_scaling_for_storage_enabled": false,
+        "admin_password": "ChangeMe#12345",
+        "character_set": "AL32UTF8",
+        "national_character_set": "AL16UTF16",
+        "license_model": "BringYourOwnLicense",
+        "db_version": "23ai",
+        "open_mode": "ReadWrite",
+        "permission_level": "Unrestricted",
+        "whitelisted_ips": [],
+        "local_dataguard_enabled": false,
+        "local_adg_auto_failover_max_data_loss_limit": 0,
+        "tags": {
+          "workload": "oracle-database-at-azure",
+          "use_case": "wuc1-adbs-azure"
+        }
+      }
+    }
+  }
+}

@@ -5,21 +5,13 @@
 - [**1. Summary**](#1-summary)
 - [**2. Workload Use Cases**](#2-workload-use-cases)
   - [**2.1 ADB-S@Azure Platform**](#21-adb-sazure-platform)
+  - [**ADB-S@Azure Groups**](#adb-sazure-groups)
+  - [**ADB-S@Azure Monitoring**](#adb-sazure-monitoring)
   - [**2.2 ExaDB-D@Azure Platform**](#22-exadb-dazure-platform)
     - [**ExaDB-D Resources**](#exadb-d-resources)
     - [**ExaDB-D Groups**](#exadb-d-groups)
     - [**ExaDB-D Observability**](#exadb-d-observability)
-  - [**2.2 Hybrid ExaDB-D Platform: Shared infrastructure with dedicated VMCs/AVMCs per environment**](#22-hybrid-exadb-d-platform-shared-infrastructure-with-dedicated-vmcsavmcs-per-environment)
-    - [**ExaDB-D Resources**](#exadb-d-resources-1)
-    - [**ExaDB-D Groups**](#exadb-d-groups-1)
-    - [**ExaDB-D Observability**](#exadb-d-observability-1)
-  - [**2.3 Dedicated ExaDB-D Platform: Fully dedicated infrastructure and VMCs/AVMCs per environment**](#23-dedicated-exadb-d-platform-fully-dedicated-infrastructure-and-vmcsavmcs-per-environment)
-    - [**ExaDB-D Resources**](#exadb-d-resources-2)
-    - [**ExaDB-D Groups**](#exadb-d-groups-2)
-    - [**ExaDB-D Observability**](#exadb-d-observability-2)
 - [**3. Common Use Cases**](#3-common-use-cases)
-- [**4. Design Decisions**](#4-design-decisions)
-- [**3. Common Use Cases**](#3-common-use-cases-1)
   - [**3.1. Autonomous Recovery Service.**](#31-autonomous-recovery-service)
   - [**3.2. Multi-subscription DB Teams.**](#32-multi-subscription-db-teams)
   - [**3.3. Manage Customer-managed database encryption keys with OCI Vault.**](#33-manage-customer-managed-database-encryption-keys-with-oci-vault)
@@ -27,19 +19,18 @@
   - [**3.5. High availability between regions.**](#35-high-availability-between-regions)
   - [**3.6 Basic OCI Exadata Monitoring (Audit Logs, Events, Alarms).**](#36-basic-oci-exadata-monitoring-audit-logs-events-alarms)
   - [**3.7 Advanced OCI Database Observability (DBM, OPSI, LA).**](#37-advanced-oci-database-observability-dbm-opsi-la)
-  - [**3.8 Database Audit Logs (OCI Datasafe).**](#38-database-audit-logs-oci-datasafe)
+  - [**3.8 Database Audit Logs (OCI Data Safe).**](#38-database-audit-logs-oci-data-safe)
   - [**3.9 OCI Workloads connecting to OD@ Databases.**](#39-oci-workloads-connecting-to-od-databases)
-- [**4. Management of other resources**](#4-management-of-other-resources)
-  - [**4.1 Disaster Recovery (DR)**](#41-disaster-recovery-dr)
-  - [**4.2 Operator Access Control**](#42-operator-access-control)
-  - [**4.3 Software Images**](#43-software-images)
-  - [**4.4 Backup Destinations**](#44-backup-destinations)
+- [**4. Design Decisions**](#4-design-decisions)
+- [**5. Management of other resources**](#5-management-of-other-resources)
+  - [**5.1 Disaster Recovery (DR)**](#51-disaster-recovery-dr)
+  - [**5.2 Software Images**](#52-software-images)
 
 ## **1. Summary**
 
 The OD@Azure is a cloud service that is physically located and runs from Azure datacenters. The service use a combination of Azure and OCI Control Planes to manage the different components of the service. You have the choice to use some services from Azure or OCI, depending on your preferences or best available solution.
 
-In this Workload Extension we'll cover some of the different Oracle Database deployment options that can be deployed as part of the service. We refer to these deployment options as Workload Use Cases (WUCs). You can select the service most suitable for your needs. Objective of the Workload Extension is that you have everything you need to setup a secure environment.
+In this Workload Extension we'll cover some of the different Oracle Database deployment options that can be deployed as part of the service. We refer to these deployment options as Workload Use Cases (WUCs). You can select the service most suitable for your needs. Objective of the Workload Extension is that you have everything you need to setup a secure environment, scalable and based on best-practices environment.
 
 The Workload Extension also explains some scenarios where typically you need to use additional OCI resources based on your requirements. These additional resources can be related to security, networking, monitoring, backup or use OD@Azure with another OCI workloads. These elements need to have an OCI Landing Zone to be able to govern in a secure and scalable way. They are common building blocks between Azure, Google Cloud and AWS, so they're considered addons in the OCI Landing Zone framework.
 
@@ -47,307 +38,335 @@ In this Landing Zone Workload Extension, we provide examples of common scenarios
 
 This section is intended to guide you through several of these scenarios.
 
-We have identified two Workload Use Cases (WUCs):
+At the time of writing this documentation, Oracle Database@Azure supports the following workloads:
 
-1) WUC1 | ADB-S@Azure Platform: Dedicated serverless Oracle AI Database.
-2) WUC2 | ExaDB-D@Azure Platform: Shared infrastructure with dedicated VM-Clusters.
+<p align="center">
+<img src="../content/odaazure-workloads.jpg" width="1000" height="auto">
+</p>
+
+This document is focused, for now, in the following **Workload Use Cases (WUCs)**:
+
+1) **WUC1 | ADB-S@Azure Platform: Dedicated serverless Oracle AI Database.**
+2) **WUC2 | ExaDB-D@Azure Platform: Shared infrastructure with dedicated VM-Clusters.**
 
 While not all possible configurations are covered, these represent the most common scenarios. If your use case involves a combination of these, you can leverage elements from each to design a custom solution.
 
-Autonomous AI Databases Serverless (ADB-S) database is Oracle’s fully managed cloud database service that runs on Oracle Exadata infrastructure. The “Serverless” model means Oracle automatically manages the database infrastructure, including provisioning, patching, backups, tuning, scaling, and maintenance, so users can focus on applications and data rather than database administration. It has a low operational cost.
+Autonomous AI Database Serverless (ADB-S) is Oracle’s fully managed cloud database service that runs on Oracle Exadata infrastructure. The “Serverless” model means Oracle automatically manages the database infrastructure, including provisioning, patching, backups, tuning, scaling, and maintenance, so users can focus on applications and data, rather than database administration. It has a low operational cost.
 
 The ExaDB-D infrastructure consists of database and storage servers connected through a RoCE switch fabric. It supports both "regular" *Virtual Machine Clusters (VMCs)* and *Autonomous Virtual Machine Clusters (AVMCs)*. Each VMC/AVMC is composed of one or more virtual machines distributed across database servers, ensuring high availability through Oracle Grid Infrastructure clusterware.
 
 On top of regular VMCs, you can deploy multiple *Oracle Homes (OHs)*, which are used to create and run *Oracle Container Databases (CDBs)*. Each CDB can host multiple *Pluggable Databases (PDBs)*.
 
-In OD@Azure you can't select the compartment where any component is going to be deployed (ADB-S, VMCs, CDBs or PDBs. They'd be organized depending on the subscription ID used in Azure, and in OCI will be present in a compartment with the subscription ID inside the top level MulticloudLink_ODBAA compartment. Default [RBAC](https://docs.oracle.com/en-us/iaas/Content/database-at-azure/onboard-access-control.htm) groups are created during the link process. This workload extension adds the possibility to create MultiSubscription limited groups to create finer separation of duties in your organization, limiting the access only to the database components withing the team subscription.
+In OD@Azure you can't select the compartment where any component is going to be deployed (ADB-S, VMCs, CDBs or PDBs). They are organized depending on the subscription ID used in Azure, and in OCI will be present in a compartment with the subscription ID inside the top level MulticloudLink_ODBAA compartment. Default [RBAC](https://docs.oracle.com/en-us/iaas/Content/database-at-azure/onboard-access-control.htm) groups are created during the link process. 
+
+This workload extension adds the possibility to create MultiSubscription limited groups to create finer separation of duties in your organization, limiting the access only to the database components withing the team subscription.
 
 Although it is possible to fine-tune IAM policies to grant access to specific OHs, CDBs, or PDBs using tags, this approach requires significant effort after deployment and can be difficult to maintain over time.
 
 Similarly, AVMCs can be created on top of an ExaDB-D infrastructure. Within each AVMC, you can create multiple *Autonomous Container Databases (ACDs)*, and within each ACD, multiple *Autonomous Databases Dedicated (ADB-D)*. 
 
-By default, IAM policies created during the OD@ link, grants permissions to all the groups to the different groups over the "MultiCloudLink_ODBAA_<link_date>" enclosing compartment, meaning that, even if you use multiple Azure subscriptions, the same DB administrators will get access to each OCI subscription-level compartment. As many organizations use the Azure subscriptions to isolate and separate different teams workload scope, we facilitate here the same as a Common Use Case (CUC) to manage these sub-compartments with Tag-Based Access Controls, by assigning some tags to the compartments and tag also the new groups, reusing a template policy that only grants to the DB team tagged with the compartment tags the needed permissions that allows to manage its resources, not others.
+By default, IAM policies created during the OD@ link, grants permissions to all the groups to the different groups over the *"MultiCloudLink_ODBAA_<link_date>"* enclosing compartment, meaning that, even if you use multiple Azure subscriptions, the same DB administrators will get access to each OCI subscription-level compartment. As many organizations use the Azure subscriptions to isolate and separate different teams workload scope, we facilitate here the same as a Common Use Case (CUC) to manage these sub-compartments with Tag-Based Access Controls (TBAC), by assigning some tags to the compartments and also the new groups, reusing a template policy that only grants to the DB team tagged with the compartment tags the needed permissions that allows to manage its resources, not others.
+
+&nbsp;
 
 ## **2. Workload Use Cases**
 
 In this section, we describe the identified workload use case scenarios, providing additional guidance on key aspects such as the **separation of duties** across operations teams and the **architectural design decisions** involved in placing resources and ExaDB-D components.
 
-1) WUC1 | ADB-S@Azure Platform: Dedicated serverless Oracle AI Database.
-2) WUC2 | ExaDB-D@Azure Platform: Shared infrastructure with dedicated VM-Clusters.
+1) **WUC1 | ADB-S@Azure Platform: Dedicated serverless Oracle AI Database.**
+2) **WUC2 | ExaDB-D@Azure Platform: Shared infrastructure with dedicated VM-Clusters.**
+
+&nbsp;
 
 ### **2.1 ADB-S@Azure Platform**
+
+Oracle Autonomous Database Serverless on Azure (ADB-S@Azure) is a fully managed, self-driving Oracle Database service running on Oracle Database@Azure, enabling organizations to deploy Oracle Autonomous Database directly within Microsoft Azure datacenters while integrating seamlessly with the Azure ecosystem. It automates provisioning, patching, tuning, scaling, backups, security, and high availability, allowing engineering teams to focus on application development instead of database administration. Customers can provision databases for transactional, analytics, JSON, or APEX workloads in minutes, with independent, elastic scaling of compute and storage and consumption-based pricing. 
+
+An overall architecture of the Workload Use Case can be seen below:
 
 <p align="center">
 <img src="../content/adb-s_azure_wuc1.jpg" width="1000" height="auto">
 </p>
 
+&nbsp;
+
+### **ADB-S@Azure Groups**
+
+Default Azure RBAC and OCI groups need to be setup manually. If you federate OCI with your Azure Entra ID (or alternative Identity Provider), OCI groups provisioning is not needed.
+
+The groups to provisioned are documented [here](https://docs.oracle.com/en-us/iaas/Content/database-at-azure/onboard-access-control.htm#autonomous-groups-roles).
+
+The Azure roles and OCI groups to be created are:
+
+| Azure Group Name | Azure Role Assignment | Purpose |
+| --- | --- | --- |
+| `odbaa-adbs-db-administrators` | Oracle.Database Autonomous Database Administrator | This group is for administrators who need to manage all Oracle Autonomous Database resources in Azure. |
+| `odbaa-db-family-administrators` | None | This group is replicated in OCI during the optional identity federation process. This group is for administrators who need to manage all Oracle Database Service resources in OCI. |
+| `odbaa-db-family-readers` | Oracle.Database Reader | This group is replicated in OCI during the optional identity federation process. This group is for readers who need to view all Oracle Database resources in OCI. |
+| `odbaa-network-administrators` | None | This group is replicated in OCI during the optional identity federation process. This group is for administrators who need to manage all network resources in OCI. |
+| `odbaa-costmgmt-administrators` | None | This group is replicated in OCI during the optional identity federation process. This group is for administrators who need to manage cost and billing resources in OCI. |
+
+Notice that, as part of the azure account linking, OCI policies are created automatically expecting those groups.
+
+&nbsp;
+
+### **ADB-S@Azure Monitoring**
+
+ADB-S@Azure provide out-of-the-box monitoring through Azure Monitor, allowing to use native Azure dashboards, metrics, alerts, action groups, and workbooks without deploying additional monitoring agents. Azure Monitor is integrated into the Oracle Database@Azure experience and exposes health and performance metrics directly in the Azure portal.
+
+This workload extension do not configure Azure Monitoring resources.
+
+While OCI Basic monitoring services can be used, they don't bring differences to Azure ones.
+
+You can find how to use them [here](https://docs.oracle.com/en-us/iaas/Content/database-at-azure/azumn-monitor-azure-monitor.html#).
+
+&nbsp;
+
 ### **2.2 ExaDB-D@Azure Platform**
+
+Oracle Exadata Database Service on Dedicated Infrastructure for Azure (ExaDB-D@Azure) is a customer-dedicated Oracle Database service running on Oracle Exadata infrastructure through Oracle Database@Azure, designed for organizations that require maximum performance, isolation, and administrative control for mission-critical Oracle workloads. It enables customers to provision dedicated Exadata infrastructure and VM clusters from the Azure experience while leveraging Oracle’s industry-leading Exadata platform for extreme OLTP, analytics, mixed workloads, and database consolidation. 
+
+Engineering teams retain full control over database versions, patching schedules, configuration, and resource allocation, while benefiting from automated infrastructure management, elastic scaling of compute and storage, built-in high availability, and advanced security. 
+
+An overall architecture of the Workload Use Case can be seen below:
 
 <p align="center">
 <img src="../content/exadb-d_azure_wuc2.jpg" width="1000" height="auto">
 </p>
 
+&nbsp;
 
 #### **ExaDB-D Resources**
 
-In this scenario, the ExaDB-D stack is treated as a **shared platform** from the infrastructure perspective. There are two infrastructures, <img src="../content/a.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;">: one primary and one disaster recovery (DR), both deployed in the shared ExaDB-D infra compartment.
+In ExaDB-D@Azure, Exadata Infrastructure will belong to an Azure subscription. The infrastructure can hold a mix of VM Clusters (VMC) and Autonomous VM Clusters (AVMC) that belongs to the same or different Azure subscriptions. This means that the Exadata Infrastructure is a shared platform resource, governed by the default created group or to dedicated subscription group in Multi-Subscription model.
 
-Regular Virtual Machine Clusters (VMCs), along with their associated Oracle Homes (OHs), Container Databases (CDBs), and Pluggable Databases (PDBs) are all deployed within the same ExaDB-D DB compartment <img src="../content/b.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;">, as these resources cannot be distributed across multiple compartments. This model simplifies management but implies that access control must be handled carefully, as all resources reside in a shared scope.
+Regular Virtual Machine Clusters (VMCs), along with their associated Oracle Homes (OHs), Container Databases (CDBs), and Pluggable Databases (PDBs) are all deployed within the same ExaDB-D OCI subscription compartment, as these resources cannot be distributed across multiple compartments.
 
-For Autonomous deployments AVMCs and Autonomous Container Databases (ACDs) are also created within the ExaDB-D DB compartment <img src="../content/c.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;">. However, Autonomous Databases Dedicated (ADB-D) can be deployed in separate project compartments <img src="../content/d.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;">. This provides greater flexibility, allowing better isolation between environments, more granular IAM policy control, and easier delegation of administrative responsibilities.
-
-The images used to provision the different Oracle Homes, both for Grid Infrastructure and for the databases, are stored in the ExaDB-D DB compartment <img src="../content/e.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;">.
+&nbsp;
 
 #### **ExaDB-D Groups**
 
-The administrative groups <img src="../content/f.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;"> are defined to align with the operational model of this shared platform and enforce a clear separation of responsibilities.
+Default Azure RBAC and OCI groups need to be setup manually. If you federate OCI with your Azure Entra ID (or alternative Identity Provider), OCI groups provisioning is not needed.
 
-The groups associated with the shared ExaDB-D environment are:
+The groups to provisioned are documented [here](https://docs.oracle.com/en-us/iaas/Content/database-at-azure/onboard-access-control.htm#exeadata-db-dedicated-inra-groups-roles).
 
-- **Global Infra Admin Team**, responsible for the management and maintenance of the ExaDB-D infrastructure, including VMCs and AVMCs, as well as related infrastructure-level operations.
-- **Global DBA Team**, responsible for database administration tasks within the shared compartment, including Oracle Homes (OHs), CDBs, PDBs, and ACDs.
+The Azure roles and OCI groups to be created are:
 
-In addition, environment-specific database administration is handled by dedicated groups:
+| Azure Group Name | Azure Role Assignment | Purpose |
+| --- | --- | --- |
+| `odbaa-exa-infra-administrators` | Oracle.Database Exadata Infrastructure Administrator | This group is for administrators who need to manage all Exadata Database Service resources in Azure. Users with this role have all the permissions granted by `odbaa-vm-cluster-administrators`. |
+| `odbaa-vm-cluster-administrators` | Oracle.Database VmCluster Administrator | This group is for administrators who need to manage VM cluster resources in Azure. |
+| `odbaa-db-family-administrators` | None | This group is replicated in OCI during the optional identity federation process. This group is for administrators who need to manage all Oracle Database Service resources in OCI. |
+| `odbaa-db-family-readers` | Oracle.Database Reader | This group is replicated in OCI during the optional identity federation process. This group is for readers who need to view all Oracle Database resources in OCI. |
+| `odbaa-exa-cdb-administrators` | None | This group is replicated in OCI during the optional identity federation process. This group is for administrators who need to manage all CDB resources in OCI. |
+| `odbaa-exa-pdb-administrators` | None | This group is replicated in OCI during the optional identity federation process. This group is for administrators who need to manage all PDB resources in OCI. |
+| `odbaa-network-administrators` | None | This group is replicated in OCI during the optional identity federation process. This group is for administrators who need to manage all network resources in OCI. |
+| `odbaa-costmgmt-administrators` | None | This group is replicated in OCI during the optional identity federation process. This group is for administrators who need to manage cost and billing resources in OCI. |
 
-- **Project DBA Team (per environment and project)**, responsible exclusively for managing the ADB-D databases deployed within their respective project compartments.
+Notice that, as part of the azure account linking, OCI policies are created automatically expecting those groups.
 
-This approach ensures that infrastructure and shared database layers are centrally managed, while granting each environment its own level of autonomy over its dedicated Autonomous Databases, reinforcing both governance and operational efficiency.
-
-#### **ExaDB-D Observability**
-
-The observability framework for this scenario is based on the combined use of **Events, Alarms, and Notifications**, enabling centralized monitoring and controlled dissemination of operational signals across both shared and environment-specific resources.
-
-**Events**
-
-Event rules <img src="../content/g.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;"> are configured to capture relevant lifecycle and operational events generated by ExaDB-D resources. These rules are defined across both shared and environment-specific compartments and are responsible for routing events to the corresponding notification topics.
-
-At the shared level, event rules cover the shared EXACC infrastructure compartment and the shared EXACC database compartment, routing those events to the corresponding shared infrastructure and database workload notification topics.
-
-At the project level, event rules cover the production and pre-production project database compartments, routing those events to the corresponding environment project notification topics.
-
-These event rules ensure that operational changes, failures, or state transitions are automatically propagated to the appropriate notification channels.
-
-**Alarms**
-
-Alarms <img src="../content/h.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;"> are defined within the shared ExaDB-D Database compartment to monitor key performance and utilization metrics of the database clusters.
-
-The following alarms are configured:
-
-- Database CPU utilization
-- Database storage utilization
-- VMC CPU utilization
-- VMC disk group utilization
-- VMC filesystem utilization
-- VMC memory utilization
-- VMC swap utilization
-
-These alarms continuously evaluate defined thresholds and, upon breach, generate alerts that are forwarded to the corresponding notification topics.
-
-**Notifications**
-
-Notification topics <img src="../content/i.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;"> are configured within the security compartments, both at a global scope and at the environment level, to serve as the primary mechanism for delivering alerts and event messages.
-
-At the global level, notification topics support shared ExaDB-D infrastructure and shared ExaDB-D database workloads.
-
-At the environment level, dedicated notification topics support production and pre-production project scopes.
-- **Production**: `nott-lz-prod-exacc`
-- **Pre-Production**: `nott-lz-preprod-exacc`
-
-These topics act as targets for both alarm actions and event rules, ensuring consistent and centralized message delivery.
-
-**Operational Flow**
-
-The observability components operate in an integrated manner:
-
-- *Alarms* evaluate metric thresholds and generate alerts.
-- *Events* capture resource state changes and operational signals. Event Rules route events to notification topics.
-- *Notifications* deliver messages to subscribed endpoints.
-
-This model provides a consistent and scalable observability approach, combining centralized monitoring of shared ExaDB-D resources with environment-specific visibility and control.
-
-### **2.2 Hybrid ExaDB-D Platform: Shared infrastructure with dedicated VMCs/AVMCs per environment**
-
-<p align="center">
-<img src="../content/exacc_use_case_2.png" width="1000" height="auto">
-</p>
-
-#### **ExaDB-D Resources**
-
-In this scenario, the ExaDB-D stack follows a **hybrid model**, where the infrastructure layer is shared while compute resources (VMCs/AVMCs) are dedicated per environment.
-
-There are two infrastructures, <img src="../content/a.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;">: one primary and one disaster recovery (DR), both deployed in the shared ExaDB-D infra compartment.
-
-Regular Virtual Machine Clusters (VMCs), along with their associated Oracle Homes (OHs), Container Databases (CDBs), and Pluggable Databases (PDBs), are deployed in environment-specific compartments <img src="../content/b.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;">. This allows each environment to have dedicated database stacks, improving isolation, governance, and operational control compared to the fully shared model.
-
-For Autonomous deployments, AVMCs and Autonomous Container Databases (ACDs) are also created within their respective environment-specific compartments <img src="../content/c.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;">.
-
-Autonomous Databases Dedicated (ADB-D) are deployed in project-level compartments <img src="../content/d.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;">, maintaining a clear separation between projects within the same environment and enabling fine-grained IAM control.
-
-The images used to provision the different Oracle Homes, both for Grid Infrastructure and for the databases, are stored in each environment-specific ExaDB-D DB compartment <img src="../content/e.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;">, ensuring that software artifacts are fully segregated per environment.
-
-#### **ExaDB-D Groups**
-
-The administrative groups <img src="../content/f.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;"> are defined following a hybrid model, combining global, environment-level, and project-level responsibilities to balance central governance with environment isolation.
-
-At the global level, shared administration groups are defined:
-
-- **Global Infra Admin Team**, responsible for managing infrastructure resources across the entire Landing Zone, including the ExaDB-D infrastructure and shared components.
-
-At the environment level, dedicated groups are defined per environment:
-
-- **Env Infra Admin Team (per environment)**, responsible for the management and maintenance of infrastructure resources within the environment, including VMCs and AVMCs.
-- **Environment DBA Team (per environment)**, responsible for database administration within the environment, including Oracle Homes (OHs), CDBs, PDBs, and ACDs.
-
-In addition, project-scoped groups are defined:
-
-- **Project DBA Team (per environment and project)**, responsible exclusively for managing the ADB-D databases deployed within their respective project compartments.
-
-These project-level DBA groups are scoped at the project level within each environment, enabling fine-grained ownership and access control.
-
-This model enforces a layered separation of duties, where infrastructure governance is partially centralized at the global level, environment-specific resources are managed at the environment level, and Autonomous Databases Dedicated (ADB-D) are managed at the project level providing a balanced approach between central control, environment isolation, and project-level autonomy.
+&nbsp;
 
 #### **ExaDB-D Observability**
 
-The observability framework for this scenario is based on the combined use of **Events, Alarms, and Notifications**, enabling centralized monitoring and controlled dissemination of operational signals across both shared and environment-specific resources.
+ExaDB-D@Azure provide out-of-the-box monitoring through Azure Monitor, allowing to use native Azure dashboards, metrics, alerts, action groups, and workbooks without deploying additional monitoring agents. Azure Monitor is integrated into the Oracle Database@Azure experience and exposes health and performance metrics directly in the Azure portal.
 
-**Events**
+This workload extension do not configure Azure Monitoring resources.
 
-Event rules <img src="../content/g.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;"> are configured to capture relevant lifecycle and operational events generated by ExaDB-D resources. These rules are defined across both shared and environment-specific compartments and are responsible for routing events to the corresponding notification topics.
+While OCI Basic monitoring services can be used, they don't bring differences to Azure ones.
 
-At the shared level, event rules cover the shared ExaDB-D infrastructure compartment.
+You can find how to use them [here](https://docs.oracle.com/en-us/iaas/Content/database-at-azure/azumn-monitor-azure-monitor.html#).
 
-At the environment level, event rules cover the production and pre-production ExaDB-D database compartments.
-
-At the project level, event rules cover the production and pre-production project database compartments.
-
-These event rules ensure that operational changes, failures, or state transitions are automatically propagated to the appropriate notification channels.
-
-**Alarms**
-
-Alarms <img src="../content/h.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;"> are defined within each environment-specific ExaDB-D Database compartment to monitor key performance and utilization metrics of the database clusters.
-
-The following alarms are configured:
-
-- Database CPU utilization
-- Database storage utilization
-- VMC CPU utilization
-- VMC disk group utilization
-- VMC filesystem utilization
-- VMC memory utilization
-- VMC swap utilization
-
-These alarms continuously evaluate defined thresholds and, upon breach, generate alerts that are forwarded to the corresponding notification topics.
-
-**Notifications**
-
-Notification topics <img src="../content/i.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;"> are configured within the security compartments, both at a global scope and at the environment level, to serve as the primary mechanism for delivering alerts and event messages.
-
-At the global level, notification topics support shared ExaDB-D infrastructure.
-
-At the environment level, dedicated notification topics support production and pre-production projects and ExaDB-D compartment scopes.
-- **Production**: nott-lz-prod-exacc-projects
-- **Pre-Production**: nott-lz-preprod-exacc-projects
-
-These topics act as targets for both alarm actions and event rules, ensuring consistent and centralized message delivery.
-
-**Operational Flow**
-
-The observability components operate in an integrated manner:
-
-- *Alarms* evaluate metric thresholds and generate alerts.
-- *Events* capture resource state changes and operational signals. Event Rules route events to notification topics.
-- *Notifications* deliver messages to subscribed endpoints.
-
-This model provides a consistent and scalable observability approach, combining centralized monitoring of shared ExaDB-D resources with environment-specific visibility and control.
-
-
-### **2.3 Dedicated ExaDB-D Platform: Fully dedicated infrastructure and VMCs/AVMCs per environment**
-
-<p align="center">
-<img src="../content/exacc_use_case_3.png" width="1000" height="auto">
-</p>
-
-#### **ExaDB-D Resources**
-
-In this scenario, the ExaDB-D stack follows a **fully dedicated model**, where both the infrastructure and compute layers are isolated per environment.
-
-Each environment is provisioned with its own ExaDB-D infrastructure <img src="../content/a.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;">, including both primary and disaster recovery (DR) deployments, ensuring complete isolation across environments.
-
-Regular Virtual Machine Clusters (VMCs), along with their associated Oracle Homes (OHs), Container Databases (CDBs), and Pluggable Databases (PDBs), are deployed within environment-specific compartments <img src="../content/b.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;">. This ensures that each environment operates its own fully isolated database stack, with no shared resources across environments.
-
-For Autonomous deployments, AVMCs and Autonomous Container Databases (ACDs) are also created within their respective environment-specific compartments <img src="../content/c.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;">, maintaining full separation between environments.
-
-Autonomous Databases Dedicated (ADB-D) are deployed in project-level compartments <img src="../content/d.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;">, providing isolation between projects within the same environment and enabling fine-grained IAM control.
-
-The images used to provision the different Oracle Homes, both for Grid Infrastructure and for the databases, are stored in each environment-specific ExaDB-D DB compartment <img src="../content/e.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;">, ensuring that software artifacts are fully segregated per environment.
-
-#### **ExaDB-D Groups**
-
-The administrative groups <img src="../content/f.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;"> are defined following a fully dedicated model, where responsibilities are primarily scoped at the environment level, with additional segregation at the project level for Autonomous databases.
-
-For each environment, dedicated groups are defined:
-
-- **Env Infra Admin Team (per environment)**, responsible for the management and maintenance of the ExaDB-D infrastructure within that environment, including VMCs and AVMCs, as well as all infrastructure-related operations.
-- **Environment DBA Team (per environment)**, responsible for database administration within the environment, including Oracle Homes (OHs), CDBs, PDBs, and ACDs.
-
-In addition, project-scoped groups are defined:
-
-- **Project DBA Team (per environment and project)**, responsible exclusively for the ADB-D databases deployed within their respective project compartments.
-
-These project-level DBA groups are not scoped at the environment level, but rather at the project level within each environment, ensuring fine-grained ownership and access control for Autonomous databases.
-
-This model enforces a clear multi-level separation of duties, where infrastructure and core database layers are managed at the environment level and Autonomous Databases Dedicated (ADB-D) are managed at the project level ensuring strong isolation, governance, and operational ownership across both environments and projects.
-
-#### **ExaDB-D Observability**
-
-The observability framework for this scenario is based on the combined use of **Events, Alarms, and Notifications**, enabling centralized monitoring and controlled dissemination of operational signals across both shared and environment-specific resources.
-
-**Events**
-
-Event rules <img src="../content/g.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;"> are configured per environment to capture lifecycle and operational events generated by ExaDB-D resources.
-
-At the environment level, event rules cover the ExaDB-D infrastructure compartments and ExaDB-D database compartments for each generated environment.
-
-At the project level, event rules cover the production and pre-production project database compartments.
-
-This ensures that all events are handled within the scope of their corresponding environment.
-
-**Alarms**
-
-Alarms <img src="../content/h.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;"> are defined within each environment-specific ExaDB-D Database compartment to monitor key performance and utilization metrics of the database clusters.
-
-The following alarms are configured:
-
-- Database CPU utilization
-- Database storage utilization
-- VMC CPU utilization
-- VMC disk group utilization
-- VMC filesystem utilization
-- VMC memory utilization
-- VMC swap utilization
-
-These alarms continuously evaluate defined thresholds and, upon breach, generate alerts that are forwarded to the corresponding notification topics.
-
-**Notifications**
-
-Notification topics <img src="../content/i.png" style="height: 1.5em; vertical-align: text-bottom; margin: 0 2px;"> are configured within the security compartments, both at a global scope and at the environment level, to serve as the primary mechanism for delivering alerts and event messages.
-
-At the environment level, dedicated notification topics support production and pre-production projects and ExaDB-D compartment scopes (infra and database).
-
-These topics act as targets for both alarm actions and event rules, ensuring consistent and centralized message delivery.
-
-**Operational Flow**
-
-The observability components operate in an integrated manner:
-
-- *Alarms* evaluate metric thresholds and generate alerts.
-- *Events* capture resource state changes and operational signals. Event Rules route events to notification topics.
-- *Notifications* deliver messages to subscribed endpoints.
-
-This model provides a consistent and scalable observability approach, combining centralized monitoring of shared ExaDB-D resources with environment-specific visibility and control.
+&nbsp;
 
 ## **3. Common Use Cases**
 
+1) **CUC1 | Autonomous Recovery Service.**
+2) **CUC2 | Multi-subscription DB Teams.**
+3) **CUC3 | Manage Customer-managed database encryption keys with OCI Vault.**
+4) **CUC4 | High availability between AZs/ADs.**
+5) **CUC5 | High availability between regions.**
+6) **CUC6 | Basic OCI Exadata Monitoring (Audit Logs, Events, Alarms).**
+7) **CUC7 | Advanced OCI Database Observability (DBM, OPSI, LA).**
+8) **CUC8 | Database Audit Logs (OCI Datasafe).**
+9) **CUC9 | OCI Workloads connecting to OD@ Databases.**
+
+&nbsp;
+
+### **3.1. Autonomous Recovery Service.**
+
+This Common Use Case applies when we want to perform Oracle Database backups to [**Autonomous Recovery Service (ARS)**](https://docs.oracle.com/en-us/iaas/recovery-service/index.html).
+
+Autonomous Recovery Service (ARS) is an Oracle-managed, cloud-native data protection service that automates database backup, validation, and recovery for Oracle databases. It continuously protects data with immutable, encrypted backups and recovery automation, helping organizations minimize data loss and downtime. ARS simplifies backup administration while strengthening cyber resilience and meeting enterprise recovery objectives.
+
+We can see an example of the use of ARS in the diagram below (ExaDB-D WUC):
+
+<p align="center">
+<img src="../content/cuc1.jpg" width="1000" height="auto">
+</p>
+
+In OD@Azure, ARS service is physically present in OCI. OD@Azure workloads can perform backup against it thanks to the existing interconnect, completely managed, between Azure and OCI. The service can be accessed through the Oracle Service Network (OSN) and, to be able to connect to Oracle Databases in Azure, it requires network connectivity. That's why, the creation of a Private Endpoint (PE) is needed. This PE is attached to the shadow VCN created during the OD@Azure on-boarding (VNet delegated subnet) present in OCI.
+
+For ADB-S@Azure, the PE is created in the client subnet (the only existing one), while in the ExaDB-D@Azure, it is created in the backup subnet to don't affect to client traffic during backups.
+
+To on-board ARS, it is needed to:
+
+1) IAM Policy to manage the service to the corresponding DBA group.
+2) Network connectivity is configured, private endpoint and Network Security Group (NSGs).
+
+After configuring the ARS service, the databases backup can be configured to use it.
+
+To access to the **Autonomous Recovery Service AddOn** click [here]().
+
+&nbsp;
+
+### **3.2. Multi-subscription DB Teams.**
+
+Oracle Database@Azure [**Multi-Subscription**](https://docs.oracle.com/en-us/iaas/Content/database-at-azure/oaa-multiple-subscriptions.htm) is deployment model that enables organizations to provision and manage Oracle Database@Azure resources across multiple Azure subscriptions while maintaining centralized governance, consistent security policies, and delegated administration. It allows different database teams or business units to operate independently within their own subscriptions while sharing a common Oracle Database@Azure environment and enterprise controls.
+
+You can also access to complementary Microsoft documentation on using OD@Azure to multiple Azure subscriptions [here](https://learn.microsoft.com/azure/oracle/oracle-db/link-oracle-database-multiple-subscription).
+
+We can see an example of the using Multi-subscription DB teams below (ExaDB-D WUC):
+
+<p align="center">
+<img src="../content/cuc2.jpg" width="1000" height="auto">
+</p>
+
+To use Multi-Subscription, a new database administration group is created, in the external Identity Provider or in the Azure Entra ID and OCI Identity Domain if federation is not used. An IAM policy is needed to grant that group the capability to use Oracle Database resources in OCI compartment for the specific subscription (instead of the whole MultiCloud Link compartment). In order to have a better efficient and scalable approach for these teams, we're using here a Tab-Based Access Control IAM policies as templates.
+
+You can access the **Multi-Subscription AddOn** by clicking [here]().
+
+&nbsp;
+
+### **3.3. Manage Customer-managed database encryption keys with OCI Vault.**
+
+OCI Vault **Customer-Managed Keys (CMK)** for Oracle Database@Azure enable organizations to retain ownership and control of the Transparent Data Encryption (TDE) master encryption keys used to protect database data at rest. By storing keys in OCI Vault, customers gain centralized key lifecycle management, including key rotation, auditing, access control through OCI IAM, and support for HSM-backed keys, helping meet security, compliance, and regulatory requirements while maintaining seamless integration with Oracle Database@Azure.  
+
+Additional information about how to protect ExaDB-D databases can be found [here](https://docs.oracle.com/en-us/iaas/Content/database-at-azure/azusr-security-protect-exadata-database.html?utm_source=chatgpt.com#cmk%20-%20oci%20vault).
+
+Additional information about how to protect ADB-S databases can be found [here](https://docs.oracle.com/en-us/iaas/Content/database-at-azure/azusr-security-protect-autonomous-ai-database.html#cmk%20-%20oci%20vault).
+
+We can see an example of using OCI Vault for Oracle Databases customer managed keys below (ExaDB-D WUC):
+
+<p align="center">
+<img src="../content/cuc3.jpg" width="1000" height="auto">
+</p>
+
+The use of OCI Vault requires that Landing Zone provides:
+
+1) An OCI compartment where to deploy the OCI Vault as a shared security service.
+2) An OCI security admin groups who manage the OCI Vault.
+3) OCI IAM policies and permissions to allow database administrators to access and use the vault and encryption key for TDE operations.
+
+You can access the **OCI Vault AddOn** by clicking [here]().
+
+&nbsp;
+
+### **3.4. High availability between AZs/ADs.**
+
+High Availability Across Availability Zones (AZs)/Availability Domains (ADs) in Oracle Database@Azure (also known as [MAA Gold DR Architecture](https://docs.oracle.com/en/database/oracle/oracle-database/21/haovw/oracle-maximum-availability-architecture-oracle-databaseazure.html#HAOVW-GUID-7A38AFBF-0184-46EA-ACB1-1188BBAA2B67)) provides resilience against datacenter or infrastructure failures by distributing Oracle Database resources across physically separate Availability Domains (OCI) or Availability Zones (Azure region dependent). Combined with Oracle technologies such as Oracle Real Application Clusters (RAC) and Data Guard, this architecture enables automatic failover, minimizes downtime, and helps maintain business continuity for mission-critical workloads during planned maintenance or unexpected outages.
+
+We can see an example of using high availability between AZs/ADs below (ExaDB-D WUC):
+
+<p align="center">
+<img src="../content/cuc4.jpg" width="1000" height="auto">
+</p>
+
+To be able to use the high availability between AZs/ADs it is required to create Local Peering Gateways in the OCI shadow VCNs used by the VM Clusters where the databases to protect run, and modify the VCNs routing to allow the traffic flow between them.
+
+Additional information about how to manually setup is available [here](https://docs.oracle.com/en/database/oracle/oracle-database/21/haovw/oracle-maximum-availability-architecture-oracle-databaseazure.html#HAOVW-GUID-A70E5061-056A-4107-A1DC-2D43A24B792B).
+
+The **High availability between availability domains AddOn**, which automates and shows you how to run this can be accessed from [here]().
+
+&nbsp;
+
+### **3.5. High availability between regions.**
+
+High Availability Across Regions in Oracle Database@Azure (also known as [MAA Gold DR Architecture Across Two Azure/OCI Regions](https://docs.oracle.com/en/database/oracle/oracle-database/21/haovw/oracle-maximum-availability-architecture-oracle-databaseazure.html#HAOVW-GUID-7A38AFBF-0184-46EA-ACB1-1188BBAA2B67)) provides disaster recovery and business continuity by maintaining synchronized standby databases in one or more geographically separate Azure/OCI region pairs using Oracle Data Guard or Oracle Active Data Guard. In the event of a regional outage, workloads can be quickly switched or failed over to a standby database in another region, minimizing downtime and data loss while supporting stringent Recovery Time Objectives (RTO) and Recovery Point Objectives (RPO) for mission-critical applications. 
+
+We can see an example of using high availability between regions below (ExaDB-D WUC):
+
+<p align="center">
+<img src="../content/cuc5.jpg" width="1000" height="auto">
+</p>
+
+Additional information about how to manually setup is available [here](https://docs.oracle.com/en/solutions/multi-region-standby-dr-db-at-azure/#GUID-5B650E47-B6D9-4DA4-9038-AB9F4F19631E).
+
+The **High availability between regions AddOn**, which automates and shows you how to run this can be accessed from [here]().
+
+&nbsp;
+
+### **3.6 Basic OCI Exadata Monitoring (Audit Logs, Events, Alarms).**
+
+>[!IMPORTANT]
+> Exadata events & alarms available OOTB in Azure. OCI Audit logs not present, check with integration patterns.
+
+<p align="center">
+<img src="../content/cuc6.jpg" width="1000" height="auto">
+</p>
+
+### **3.7 Advanced OCI Database Observability (DBM, OPSI, LA).**
+
+OCI Database Management (DBM), Operations Insights (OPSI), and Log Analytics (LA) extend the native Azure Monitor capabilities with deep Oracle-specific observability, diagnostics, and predictive analytics. While Azure Monitor provides infrastructure health, metrics, logs, dashboards, and alerting, OCI’s management services add advanced features such as SQL performance analysis, Performance Hub, AWR and ASH diagnostics, fleet administration, capacity planning, workload forecasting, anomaly detection, log correlation, and AI-assisted root cause analysis. Together, they enable database administrators to proactively optimize performance, troubleshoot complex issues, and improve the operational efficiency of Oracle database environments beyond basic monitoring.
+
+We can see an example of using Advanced OCI Database Observability services below (ExaDB-D WUC):
+
+<p align="center">
+<img src="../content/cuc7.jpg" width="1000" height="auto">
+</p>
+
+To be able to use these advanced services, Landing Zones needs to provide:
+
+1) OCI shared compartments where to deploy the required resources for monitoring platform.
+2) OCI shared compartment for required OCI network resources.
+3) OCI IAM groups for monitoring team and the services.
+4) OCI IAM policies for observability and networking teams.
+5) Hub VCN and subnet where to deploy the monitoring private endpoints that advanced services will use.
+6) LPG in OCI shadow VCN and hub VCN and needed routing to communicate each other.
+7) DBM, OPSI private endpoints.
+8) Network security group security rules needed in shadow and hub VCN to allow private endpoints communication with target databases.
+   
+The **Advanced OCI Database Observability AddOn**, which automates and shows you how to run this can be accessed from [here]().
+
+&nbsp;
+
+### **3.8 Database Audit Logs (OCI Data Safe).**
+
+OCI Data Safe enhances the security and compliance of Oracle Database@Azure deployments by providing a centralized security management platform for Oracle databases. Beyond basic monitoring, it enables Security Assessment, User Assessment, Sensitive Data Discovery, Data Masking, Activity Auditing, SQL Firewall, and real-time security alerts. These capabilities help organizations identify security risks, protect sensitive data, detect suspicious database activity, and meet regulatory compliance requirements across their Oracle database fleet.
+
+We can see an example of using OCI Data Safe below (ExaDB-D WUC):
+
+<p align="center">
+<img src="../content/cuc8.jpg" width="1000" height="auto">
+</p>
+
+To be able to use OCI Data Safe, Landing Zones needs to provide:
+
+1) OCI shared security compartment for security team, managing Data Safe.
+2) OCI security group for OCI security administrators.
+3) OCI IAM policy to allow security team to manage Data Safe components.
+4) OCI IAM policy to allow DB administrators to use Data Safe with Azure Oracle Databases.
+5) OCI Shared hub VCN with subnet where to deploy Data Safe private endpoint.
+6) Shadow and Hub VCN Local Peering Gateways and routing to allow Data Safe and target databases communication.
+7) Dedicated Data Safe Network Security Group and security rules to connect to target databases.
+
+With previous elements, Data Safe service can be enabled and configured.
+
+The **Data Safe AddOn**, which automates and shows you how to run this can be accessed from [here]().
+
+&nbsp;
+
+### **3.9 OCI Workloads connecting to OD@ Databases.**
+
+When it is needed to interconnect OCI workloads with OD@Azure databases, a complete OCI Landing Zone is needed (or it is pre-existing).
+
+This Common Use Case propose the use of an OCI Operating Entities Landing Zone and how to connect with OD@Azure.
+
+We can see an example architecture below (ExaDB-D WUC):
+
+<p align="center">
+<img src="../content/cuc9.jpg" width="1000" height="auto">
+</p>
 
 ## **4. Design Decisions**
 
@@ -406,81 +425,11 @@ Based on this capability, a deliberate design decision has been made to always d
 
 By combining these two approaches, the architecture acknowledges the structural constraints of VMC-based deployments—where the cluster defines the boundary—while leveraging the flexibility of Autonomous Databases to achieve project-level isolation and delegation.
 
-## **3. Common Use Cases**
+## **5. Management of other resources**
 
-1) CUC1 | Autonomous Recovery Service.
-2) CUC2 | Multi-subscription DB Teams.
-3) CUC3 | Manage Customer-managed database encryption keys with OCI Vault.
-4) CUC4 | High availability between AZs/ADs.
-5) CUC5 | High availability between regions.
-6) CUC6 | Basic OCI Exadata Monitoring (Audit Logs, Events, Alarms).
-7) CUC7 | Advanced OCI Database Observability (DBM, OPSI, LA).
-8) CUC8 | Database Audit Logs (OCI Datasafe).
-9) CUC9 | OCI Workloads connecting to OD@ Databases.
-
-### **3.1. Autonomous Recovery Service.**
-
-
-<p align="center">
-<img src="../content/cuc1.jpg" width="1000" height="auto">
-</p>
-
-### **3.2. Multi-subscription DB Teams.**
-
-<p align="center">
-<img src="../content/cuc2.jpg" width="1000" height="auto">
-</p>
-
-### **3.3. Manage Customer-managed database encryption keys with OCI Vault.**
-
-<p align="center">
-<img src="../content/cuc3.jpg" width="1000" height="auto">
-</p>
-
-### **3.4. High availability between AZs/ADs.**
-
-<p align="center">
-<img src="../content/cuc4.jpg" width="1000" height="auto">
-</p>
-
-### **3.5. High availability between regions.**
-
-<p align="center">
-<img src="../content/cuc5.jpg" width="1000" height="auto">
-</p>
-
-### **3.6 Basic OCI Exadata Monitoring (Audit Logs, Events, Alarms).**
-
-<p align="center">
-<img src="../content/cuc6.jpg" width="1000" height="auto">
-</p>
-
-### **3.7 Advanced OCI Database Observability (DBM, OPSI, LA).**
-
-<p align="center">
-<img src="../content/cuc7.jpg" width="1000" height="auto">
-</p>
-
-### **3.8 Database Audit Logs (OCI Datasafe).**
-
-<p align="center">
-<img src="../content/cuc8.jpg" width="1000" height="auto">
-</p>
-
-### **3.9 OCI Workloads connecting to OD@ Databases.**
-
-<p align="center">
-<img src="../content/cuc9.jpg" width="1000" height="auto">
-</p>
-
-## **4. Management of other resources**
-
-
-### **4.1 Disaster Recovery (DR)**
+### **5.1 Disaster Recovery (DR)**
 
 In this architecture, Disaster Recovery (DR) is implemented by defining two ExaDB-D infrastructures, one acting as primary and the other as standby.
-
-These infrastructures may be placed in the same or in different logical compartments, depending on governance, access control, or organizational requirements. The logical placement does not impact the DR mechanism itself, which is defined at the database layer.
 
 Database protection is implemented using Data Guard, with associations established between database clusters running on different infrastructures. This ensures that each workload is replicated across independent platforms, providing resilience and continuity in case of failure.
 
@@ -490,53 +439,28 @@ Cost allocation between primary and DR deployments can be managed through the us
 
 This approach provides a consistent and scalable DR model, where protection is based on databases located in different VM clusters, running on separate ExaDB-D infrastructures, replicating database information between CDBs, while maintaining flexibility in terms of logical organization, cost tracking, and operational ownership.
 
-To know more about how to use Data Guard on ExaDB-D environments you can check the public document [Use Oracle Data Guard with Oracle Exadata Database Service on Cloud@Customer](https://docs.oracle.com/en-us/iaas/exadata/doc/ecc-using-data-guard.html).
+To know more about how to use Data Guard on ExaDB-D environments you can check the public document [Oracle Maximum Availability Architecture for Oracle Database@Azure
+](https://docs.oracle.com/en/database/oracle/oracle-database/19/haovw/oracle-maximum-availability-architecture-oracle-databaseazure.html).
 
-### **4.2 Operator Access Control**
+&nbsp;
 
-Oracle Operator Access Control is an OCI compliance and auditing service that provides visibility into when Oracle operators require access to the underlying ExaDB-D infrastructure for maintenance or issue resolution. It offers near real-time audit trails of all actions performed by Oracle personnel.
-
-In this architecture, the service is typically managed by the Security Team and is therefore deployed in the Global Shared Security compartment. The Landing Zone extension includes IAM policies that grant the appropriate permissions for managing this service.
-
-Additionally, OCI Event Rules are configured to capture Operator Access Control activities and route them to the corresponding Notification Topics, ensuring that security teams are informed of all relevant events.
-
-An alternative design may place Operator Access Control resources within environment-specific security compartments, enabling dedicated security teams to manage infrastructure access independently per environment. This approach may be particularly relevant in multi-tenant or multi–Operating Entity (OE) scenarios, where each OE manages its own infrastructure.
-
-To know more about the Oracle Operator Access Control you can check the public document [Oracle Operator Access Control](https://docs.oracle.com/en-us/iaas/operator-access-control/index.html).
-
-### **4.3 Software Images**
+### **5.2 Software Images**
 
 Oracle provides the capability to define custom Database Software Images and Grid Infrastructure Software Images in OCI. These images represent curated versions of Oracle software, including specific Release Updates (RUs) and optional one-off patches, allowing organizations to standardize the software stack used across their database platforms.
 
 These software images can be leveraged both for provisioning new Oracle or Grid Infrastructure Homes and for performing in-place patching of existing homes, enabling a consistent and controlled approach to software lifecycle management.
 
-In this architecture, the placement of software images is not fixed and depends on the selected use case and operational model. Software images can be managed as shared resources or as environment-specific resources, depending on the required level of isolation and governance.
+In this architecture, the placement of software images is not fixed and depends on the selected use case and operational model. Software images can be managed as shared resources in the MultiCloud Link compartment or in subscription specific sub-compartment, depending on the required level of isolation and governance.
 
-When a shared model is adopted, software images are typically placed in shared DB Platform Layer compartments, allowing reuse across multiple environments and supporting a controlled lifecycle promotion model, where versions are validated in non-production environments before being promoted to production.
+When a shared model is adopted, software images are typically placed in MultiCloud Link compartment, allowing reuse across multiple environments and supporting a controlled lifecycle promotion model, where versions are validated in non-production environments before being promoted to production.
 
-In contrast, in more isolated models, software images may be placed in environment-specific compartments, enabling tighter control, independent lifecycle management, and alignment with dedicated operational teams per environment.
+In contrast, in more isolated models, software images may be placed in subscription-specific compartments, enabling tighter control, independent lifecycle management, and alignment with dedicated operational teams per environment.
 
 IAM policies are defined accordingly to grant the appropriate DBA teams permissions to manage and use these images, ensuring consistency with the overall administrative model.
 
 This flexible approach ensures consistency in software deployment while allowing the architecture to adapt to different organizational, operational, and governance requirements.
 
-For more information, refer to the official documentation [Manage Software Images](https://docs.oracle.com/en/engineered-systems/exadata-cloud-at-customer/ecccm/ecc-oracle-database-software-images.html#GUID-93D6419A-DD43-45E0-BF69-92E8907C6652).
-
-### **4.4 Backup Destinations**
-
-ExaDB-D supports multiple backup options, including integration with external systems such as on-premises Network File Systems (NFS) and Zero Data Loss Recovery Appliance (ZDLRA), allowing organizations to align database backups with their enterprise backup strategy.
-
-OCI provides the Backup Destination resource to register and use these external systems within ExaDB-D. Backup configuration is defined in relation to the database platforms rather than as an independent resource.
-
-In this architecture, it is a design decision to define Backup Destinations in the same compartment as their associated database platforms ensuring alignment between backup configuration and the administrative scope of the databases.
-
-In VMC-based deployments, backup configuration is managed at the CDB level, following the scope of the VMC. In Autonomous deployments, backup configuration is defined at the ACD level and inherited by all ADB-D databases, even when these are deployed in project-level compartments. This creates a clear separation between database placement and backup configuration.
-
-This approach is recommended as it simplifies IAM policy management, maintains clear ownership boundaries, and ensures consistency with the operational model of the database platforms. Alternative placements may be considered, but they typically introduce additional complexity without clear benefits.
-
-IAM policies are defined accordingly, allowing DBA teams to manage backup configuration within the scope of the database resources they administer.
-
-For more information, refer to the official documentation [Creating Database Backup Destinations for Oracle Exadata Database Service on Cloud@Customer](https://docs.oracle.com/en/engineered-systems/exadata-cloud-at-customer/ecccm/ecc-create-bkup-dest.html#GUID-24E43ABF-29D3-4660-BB2C-3FCAF8424293).
+For more information, refer to the official documentation [Manage Software Images](https://docs.oracle.com/en-us/iaas/exadatacloud/doc/ecc-manage-images.html?).
 
 &nbsp;
 

@@ -1,0 +1,40 @@
+{
+  "groups_configuration": {
+    "groups": {
+      "ODBAA-ARS-ADMINS-GROUP": {
+        "name": "odbaa-recovery-service-administrators",
+        "description": "Administrators for Oracle Database@Azure Autonomous Recovery Service resources."
+      }
+    }
+  },
+  "policies_configuration": {
+    "supplied_policies": {
+      "ODBAA-ARS-SERVICE-POLICY": {
+        "name": "odbaa-recovery-service-azure-policy",
+        "description": "Permissions required for Oracle Database@Azure databases to use Autonomous Recovery Service.",
+        "compartment_id": "TENANCY-ROOT",
+        "statements": [
+          "allow service database to manage recovery-service-family in tenancy",
+          "allow service database to manage tagnamespace in tenancy",
+          "allow service rcs to manage recovery-service-family in tenancy",
+          "allow service rcs to manage virtual-network-family in tenancy",
+          "allow service database to use organizations-assigned-subscription in tenancy where target.subscription.serviceName = 'ORACLEDBATAZURE'",
+          "allow group odbaa-recovery-service-administrators to manage recovery-service-family in tenancy"
+        ]
+      },
+      "ODBAA-ARS-NETWORK-POLICY": {
+        "name": "odbaa-recovery-service-network-policy",
+        "description": "Network permissions required to prepare OD@Azure shadow VCN resources for Autonomous Recovery Service.",
+        "compartment_id": "TENANCY-ROOT",
+        "statements": [
+          "allow group odbaa-recovery-service-administrators to use vcns in compartment CMP-ODBAA-NETWORK-KEY",
+          "allow group odbaa-recovery-service-administrators to use subnets in compartment CMP-ODBAA-NETWORK-KEY",
+          "allow group odbaa-recovery-service-administrators to manage private-ips in compartment CMP-ODBAA-NETWORK-KEY",
+          "allow group odbaa-recovery-service-administrators to manage vnics in compartment CMP-ODBAA-NETWORK-KEY",
+          "allow group odbaa-recovery-service-administrators to manage vnics in compartment CMP-ODBAA-DATABASE-KEY",
+          "allow group odbaa-network-administrators to manage virtual-network-family in compartment CMP-ODBAA-NETWORK-KEY"
+        ]
+      }
+    }
+  }
+}

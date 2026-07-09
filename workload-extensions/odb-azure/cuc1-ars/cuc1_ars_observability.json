@@ -1,0 +1,70 @@
+{
+  "alarms_configuration": {
+    "default_compartment_id": "CMP-ODBAA-DATABASE-KEY",
+    "default_freeform_tags": {
+      "workload": "oracle-database-at-azure",
+      "use_case": "cuc1-ars"
+    },
+    "topics": {
+      "TOPIC-ODBAA-ARS-OPERATIONS": {
+        "name": "topic-odbaa-ars-operations",
+        "description": "Notifications for Oracle Database@Azure Autonomous Recovery Service alarms.",
+        "subscriptions": [
+          {
+            "protocol": "EMAIL",
+            "values": [
+              "dba-operations@example.com"
+            ]
+          }
+        ]
+      }
+    },
+    "alarms": {
+      "ALARM-ODBAA-ARS-PROTECTED-DB-HEALTH": {
+        "display_name": "al-odbaa-ars-protected-db-health",
+        "compartment_id": "CMP-ODBAA-DATABASE-KEY",
+        "destination_topic_ids": [
+          "TOPIC-ODBAA-ARS-OPERATIONS"
+        ],
+        "is_enabled": false,
+        "supplied_alarm": {
+          "message_format": "PRETTY_JSON",
+          "namespace": "oci_recovery_service",
+          "pending_duration": "PT30M",
+          "query": "ProtectedDatabaseHealth[30m].max() >= 1",
+          "severity": "CRITICAL"
+        }
+      },
+      "ALARM-ODBAA-ARS-DATA-LOSS-EXPOSURE": {
+        "display_name": "al-odbaa-ars-data-loss-exposure",
+        "compartment_id": "CMP-ODBAA-DATABASE-KEY",
+        "destination_topic_ids": [
+          "TOPIC-ODBAA-ARS-OPERATIONS"
+        ],
+        "is_enabled": false,
+        "supplied_alarm": {
+          "message_format": "PRETTY_JSON",
+          "namespace": "oci_recovery_service",
+          "pending_duration": "PT30M",
+          "query": "DataLossExposure[30m].mean() > 3600",
+          "severity": "CRITICAL"
+        }
+      },
+      "ALARM-ODBAA-ARS-SPACE-USED": {
+        "display_name": "al-odbaa-ars-space-used",
+        "compartment_id": "CMP-ODBAA-DATABASE-KEY",
+        "destination_topic_ids": [
+          "TOPIC-ODBAA-ARS-OPERATIONS"
+        ],
+        "is_enabled": false,
+        "supplied_alarm": {
+          "message_format": "PRETTY_JSON",
+          "namespace": "oci_recovery_service",
+          "pending_duration": "PT24H",
+          "query": "SpaceUsedForRecoveryWindow[1d].max() > 1024",
+          "severity": "WARNING"
+        }
+      }
+    }
+  }
+}

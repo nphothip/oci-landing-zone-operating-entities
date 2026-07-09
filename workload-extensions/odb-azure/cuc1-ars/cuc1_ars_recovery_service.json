@@ -1,0 +1,36 @@
+{
+  "autonomous_recovery_service_configuration": {
+    "default_compartment_id": "CMP-ODBAA-DATABASE-KEY",
+    "default_freeform_tags": {
+      "workload": "oracle-database-at-azure",
+      "use_case": "cuc1-ars"
+    },
+    "recovery_service_subnets": {
+      "ODBAA-ARS-SUBNET": {
+        "display_name": "odbaa-ars-recovery-service-subnet",
+        "compartment_id": "CMP-ODBAA-DATABASE-KEY",
+        "vcn_id": "ODB-AZURE-SHADOW-VCN-KEY",
+        "subnet_ids": [
+          "ODB-AZURE-BACKUP-SUBNET-KEY"
+        ],
+        "nsg_ids": [
+          "NSG-ODBAA-ARS-RECOVERY"
+        ]
+      }
+    },
+    "protection_policies": {
+      "ODBAA-ARS-BRONZE": {
+        "display_name": "odbaa-ars-bronze-cloud-locality",
+        "compartment_id": "CMP-ODBAA-DATABASE-KEY",
+        "backup_retention_period_in_days": 14,
+        "must_enforce_cloud_locality": true
+      },
+      "ODBAA-ARS-SILVER": {
+        "display_name": "odbaa-ars-silver-cloud-locality",
+        "compartment_id": "CMP-ODBAA-DATABASE-KEY",
+        "backup_retention_period_in_days": 35,
+        "must_enforce_cloud_locality": true
+      }
+    }
+  }
+}

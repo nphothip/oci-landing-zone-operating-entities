@@ -1,0 +1,114 @@
+{
+  "network_configuration": {
+    "default_compartment_id": "CMP-ODBAA-NETWORK-KEY",
+    "default_freeform_tags": {
+      "workload": "oracle-database-at-azure",
+      "use_case": "cuc1-ars"
+    },
+    "network_configuration_categories": {
+      "odbaa-ars": {
+        "inject_into_existing_vcns": {
+          "ODB-AZURE-SHADOW-VCN-KEY": {
+            "vcn_id": "ODB-AZURE-SHADOW-VCN-KEY",
+            "network_security_groups": {
+              "NSG-ODBAA-ARS-WORKLOAD": {
+                "display_name": "nsg-odbaa-ars-workload",
+                "freeform_tags": {
+                  "workload": "oracle-database-at-azure",
+                  "use_case": "cuc1-ars",
+                  "role": "workload-ars-egress"
+                },
+                "egress_rules": {
+                  "EGRESS-ARS-BACKUP-8005": {
+                    "description": "Allow workload backup traffic to the ARS subnet on TCP 8005.",
+                    "protocol": "TCP",
+                    "stateless": false,
+                    "dst": "ODB-AZURE-ARS-SUBNET-CIDR",
+                    "dst_type": "CIDR_BLOCK",
+                    "dst_port_min": 8005,
+                    "dst_port_max": 8005
+                  },
+                  "EGRESS-ARS-RMAN-CATALOG-2484": {
+                    "description": "Allow workload RMAN catalog SQL*Net traffic to the ARS subnet on TCP 2484.",
+                    "protocol": "TCP",
+                    "stateless": false,
+                    "dst": "ODB-AZURE-ARS-SUBNET-CIDR",
+                    "dst_type": "CIDR_BLOCK",
+                    "dst_port_min": 2484,
+                    "dst_port_max": 2484
+                  }
+                }
+              },
+              "NSG-ODBAA-ARS-RECOVERY": {
+                "display_name": "nsg-odbaa-ars-recovery",
+                "freeform_tags": {
+                  "workload": "oracle-database-at-azure",
+                  "use_case": "cuc1-ars",
+                  "role": "recovery-service-private-endpoint"
+                },
+                "ingress_rules": {
+                  "INGRESS-CLIENT-TO-ARS-BACKUP-8005": {
+                    "description": "Allow database backup traffic from the client subnet to ARS on TCP 8005.",
+                    "protocol": "TCP",
+                    "stateless": false,
+                    "src": "ODB-AZURE-CLIENT-SUBNET-CIDR",
+                    "src_type": "CIDR_BLOCK",
+                    "dst_port_min": 8005,
+                    "dst_port_max": 8005
+                  },
+                  "INGRESS-CLIENT-TO-ARS-RMAN-2484": {
+                    "description": "Allow RMAN catalog SQL*Net traffic from the client subnet to ARS on TCP 2484.",
+                    "protocol": "TCP",
+                    "stateless": false,
+                    "src": "ODB-AZURE-CLIENT-SUBNET-CIDR",
+                    "src_type": "CIDR_BLOCK",
+                    "dst_port_min": 2484,
+                    "dst_port_max": 2484
+                  },
+                  "INGRESS-BACKUP-TO-ARS-BACKUP-8005": {
+                    "description": "Allow database backup traffic from the backup subnet to ARS on TCP 8005.",
+                    "protocol": "TCP",
+                    "stateless": false,
+                    "src": "ODB-AZURE-BACKUP-SUBNET-CIDR",
+                    "src_type": "CIDR_BLOCK",
+                    "dst_port_min": 8005,
+                    "dst_port_max": 8005
+                  },
+                  "INGRESS-BACKUP-TO-ARS-RMAN-2484": {
+                    "description": "Allow RMAN catalog SQL*Net traffic from the backup subnet to ARS on TCP 2484.",
+                    "protocol": "TCP",
+                    "stateless": false,
+                    "src": "ODB-AZURE-BACKUP-SUBNET-CIDR",
+                    "src_type": "CIDR_BLOCK",
+                    "dst_port_min": 2484,
+                    "dst_port_max": 2484
+                  }
+                },
+                "egress_rules": {
+                  "EGRESS-ARS-BACKUP-SUBNET-8005": {
+                    "description": "Allow ARS private endpoint traffic inside the selected ARS subnet on TCP 8005.",
+                    "protocol": "TCP",
+                    "stateless": false,
+                    "dst": "ODB-AZURE-ARS-SUBNET-CIDR",
+                    "dst_type": "CIDR_BLOCK",
+                    "dst_port_min": 8005,
+                    "dst_port_max": 8005
+                  },
+                  "EGRESS-ARS-BACKUP-SUBNET-2484": {
+                    "description": "Allow ARS private endpoint traffic inside the selected ARS subnet on TCP 2484.",
+                    "protocol": "TCP",
+                    "stateless": false,
+                    "dst": "ODB-AZURE-ARS-SUBNET-CIDR",
+                    "dst_type": "CIDR_BLOCK",
+                    "dst_port_min": 2484,
+                    "dst_port_max": 2484
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
