@@ -35,7 +35,7 @@ The extension covers two OD@Azure Workload Use Cases at this moment (WUCs):
 
 If you have not reviewed it yet, we recommend checking the [OD@Azure use cases section](./odb-azure_use_cases/readme.md) to better understand the available scenarios and identify the one that best fits your needs.
 
-You can access, use and adapt to your needs the **draw.io design artifact** from [<img src="../../commons/images/icon_drawio.jpg" width="20"> ](./design/OCI_Open_LZ_One-OE_ODAA_WL_Extension_Blueprint.drawio).
+You can access, use and adapt to your needs the [**draw.io design artifact**](./design/OCI_Open_LZ_One-OE_ODAA_WL_Extension_Blueprint.drawio) from [<img src="../../commons/images/icon_drawio.jpg" width="20"> ](./design/OCI_Open_LZ_One-OE_ODAA_WL_Extension_Blueprint.drawio).
 
 &nbsp;
 
