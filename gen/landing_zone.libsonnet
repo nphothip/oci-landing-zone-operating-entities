@@ -108,6 +108,7 @@ function(raw_config)
   local extension_state = extensions.resolve({
     extension_registry: extension_registry,
     extension_entries: extension_entries,
+    cis_level: config.cis_level,
     naming: n,
     hub_vcn_cidr: hub_vcn_cidr,
     hub_lb_cidr: config.hub.network.subnets.lb,

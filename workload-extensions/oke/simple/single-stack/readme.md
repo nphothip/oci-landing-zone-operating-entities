@@ -57,7 +57,7 @@ The published quickstart creates one production OKE platform. Use config-driven 
 - **Automated Routing**: Hub route tables pre-configured  with OKE CIDR (10.0.80.0/20)
 - **DRG Integration**: Dynamic Routing Gateway with route distributions configured for Hub-Spoke communication
 - **CIS-Compliant OKE**: Uses the CIS-compliant OKE module from [terraform-oci-modules-workloads](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/tree/main/cis-oke)
-- **Customer-Managed Encryption**: Uses the shared security Vault and creates an HSM key for the cluster, then uses that key for Kubernetes secrets and worker boot volumes
+- **Customer-Managed Encryption**: The published quickstart is CIS2. It uses the shared security Vault and creates an HSM key for the cluster, then uses that key for Kubernetes secrets and worker boot volumes.
 - **OKE Network Modes**: Published JSON is VCN-native by default; config-driven generation can also emit an overlay network shape for Flannel-compatible clusters
 
 &nbsp;

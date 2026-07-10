@@ -1,23 +1,16 @@
 {
   "cis1": {
-    "default_compartment_id": "CMP-LZ-SECURITY-KEY",
-    "key_keys": [
-      "KEY-FRA-LZ-PREPROD-OKE-KUBE-SECRETS-KEY",
-      "KEY-FRA-LZ-PROD-OKE-KUBE-SECRETS-KEY"
-    ],
-    "key_vault_references": {
-      "KEY-FRA-LZ-PREPROD-OKE-KUBE-SECRETS-KEY": "VLT-LZ-SHARED-SECURITY-KEY",
-      "KEY-FRA-LZ-PROD-OKE-KUBE-SECRETS-KEY": "VLT-LZ-SHARED-SECURITY-KEY"
-    },
-    "vault_keys": [
-      "VLT-LZ-SHARED-SECURITY-KEY"
-    ]
+    "vaults_configuration_present": false
   },
   "cis2": {
     "audit_key_preserved": true,
     "preprod_key_present": true,
     "prod_key_present": true,
     "shared_security_vault_present": true
+  },
+  "cluster_cis_levels": {
+    "CLR-FRA-LZ-PREPROD-OKE-KEY": "2",
+    "CLR-FRA-LZ-PROD-OKE-KEY": "2"
   },
   "cluster_key_references": {
     "CLR-FRA-LZ-PREPROD-OKE-KEY": "KEY-FRA-LZ-PREPROD-OKE-KUBE-SECRETS-KEY",

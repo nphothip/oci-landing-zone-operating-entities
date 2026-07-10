@@ -12,18 +12,18 @@
     ]
   },
   "oke_encryption": {
-    "cis1_key_has_service_grantees": false,
-    "cis1_key_present": true,
-    "cis1_vault_present": true,
+    "cis1_vaults_configuration_present": false,
     "cis2_audit_key_preserved": true,
     "cis2_audit_vault_preserved": true,
     "cis2_oke_key_present": true,
     "cis2_shared_vault_present": true,
+    "cluster_cis_level": "2",
     "cluster_key_reference": "KEY-FRA-LZ-PROD-OKE-KUBE-SECRETS-KEY",
     "worker_boot_volume_encryption": {
       "enable_encrypt_in_transit": true,
       "kms_key_id": "KEY-FRA-LZ-PROD-OKE-KUBE-SECRETS-KEY"
     },
+    "worker_cis_level": "2",
     "worker_image": "9\\.[0-9]+"
   },
   "oke_service_policies": {
@@ -73,8 +73,8 @@
         "allow any-user to use keys in compartment cmp-lz-security where all { request.principal.type = 'cluster' }",
         "allow any-user to use key-delegate in compartment cmp-lz-security where all { request.principal.type = 'nodepool' }",
         "allow any-user to use key-delegate in compartment cmp-lz-security where all { request.principal.type = 'cluster' }",
-        "allow any-user to manage certificate-authority-family in compartment cmp-lz-security where all { request.principal.type = 'cluster' }",
-        "allow service blockstorage to use keys in compartment cmp-lz-security"
+        "allow service blockstorage to use keys in compartment cmp-lz-security",
+        "allow any-user to manage certificate-authority-family in compartment cmp-lz-security where all { request.principal.type = 'cluster' }"
       ],
       "target_key_id_statements": []
     },

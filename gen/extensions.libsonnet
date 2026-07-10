@@ -231,6 +231,7 @@ local extension_components = import 'lib/extension_components.libsonnet';
   _render_params(inputs, pe, resolved_subnets, routing, ext_meta)::
     {
       config_params: pe.platform_config.extension.params,
+      cis_level: inputs.cis_level,
       network:
         if ext_meta.has_network then
           { vcn: pe.platform_config.network.vcn, subnets: resolved_subnets }

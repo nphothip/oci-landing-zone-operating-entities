@@ -4,6 +4,7 @@
             "CLR-FRA-LZ-PROD-OKE-KEY": {
                 "name"                                 : "clr-fra-lz-prod-oke",
                 "compartment_id"                       : "CMP-LZ-PROD-OKE-KEY",
+                "cis_level"                            : "2",
                 "cni_type"                             : "native",
                 "is_enhanced"                          : true,
                 "kubernetes_version"                   : "v1.35.2",

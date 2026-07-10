@@ -127,18 +127,25 @@ function(ctx) {
       [n.key_global('PCY', ['OKE', 'SERVICE', 'SECURITY'])]: {
         name: n.display_global('pcy', ['oke', 'service', 'security']),
         description: desc.policy.grants(
-          'OKE clusters, node pools, and the Block Storage service',
-          'key and certificate authority permissions for OKE-managed resources and persistent volumes',
+          if ctx.cis_level == 2 then 'OKE clusters, node pools, and the Block Storage service'
+          else 'OKE clusters',
+          if ctx.cis_level == 2 then
+            'key and certificate authority permissions for OKE-managed resources and persistent volumes'
+          else
+            'certificate authority permissions for OKE-managed resources',
           'the Landing Zone shared security compartment'
         ),
         compartment_id: n.key_global('CMP', ['SECURITY']),
 
-        statements: [
+        // KMS grants are needed only when CIS2 selects customer-managed keys.
+        // Certificate authority access is independent of the encryption model.
+        statements: (if ctx.cis_level == 2 then [
           "allow any-user to use keys in compartment %s where all { request.principal.type = 'cluster' }" % security_cmp_name,
           "allow any-user to use key-delegate in compartment %s where all { request.principal.type = 'nodepool' }" % security_cmp_name,
           "allow any-user to use key-delegate in compartment %s where all { request.principal.type = 'cluster' }" % security_cmp_name,
-          "allow any-user to manage certificate-authority-family in compartment %s where all { request.principal.type = 'cluster' }" % security_cmp_name,
           'allow service blockstorage to use keys in compartment %s' % security_cmp_name,
+        ] else []) + [
+          "allow any-user to manage certificate-authority-family in compartment %s where all { request.principal.type = 'cluster' }" % security_cmp_name,
         ],
       },
 

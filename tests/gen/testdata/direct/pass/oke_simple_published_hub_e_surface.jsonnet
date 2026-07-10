@@ -95,13 +95,13 @@ local worker = workers['NDP-FRA-LZ-PROD-OKE-KEY'];
         .drg_attachments['DRGATT-FRA-LZ-PROD-PLATFORM-OKE-KEY'].drg_route_table_key,
   },
   oke_encryption: {
+    cluster_cis_level: cluster.cis_level,
     cluster_key_reference: cluster.encryption.kube_secret_kms_key_id,
+    worker_cis_level: worker.cis_level,
     worker_image: worker.node_config_details.image,
     worker_boot_volume_encryption: worker.node_config_details.encryption,
-    cis1_vault_present: std.objectHas(single_security_cis1.vaults_configuration.vaults, oke_vault_key),
-    cis1_key_present: std.objectHas(single_security_cis1.vaults_configuration.keys, kube_secret_key),
-    cis1_key_has_service_grantees:
-      std.objectHas(single_security_cis1.vaults_configuration.keys[kube_secret_key], 'service_grantees'),
+    cis1_vaults_configuration_present:
+      std.objectHas(single_security_cis1, 'vaults_configuration'),
     cis2_shared_vault_present: std.objectHas(single_security_cis2.vaults_configuration.vaults, oke_vault_key),
     cis2_oke_key_present: std.objectHas(single_security_cis2.vaults_configuration.keys, kube_secret_key),
     cis2_audit_vault_preserved:

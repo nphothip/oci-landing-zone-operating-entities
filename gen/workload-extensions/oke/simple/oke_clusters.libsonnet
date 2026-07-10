@@ -5,11 +5,14 @@ function(ctx) {
     clusters+: {
       [ctx.cluster_key]: {
         name: ctx.cluster_name,
+        cis_level: '%d' % ctx.cis_level,
         compartment_id: ctx.cmp_key,
         cni_type: ctx.cluster_cni_type,
+      } + (if ctx.cis_level == 2 then {
         encryption: {
           kube_secret_kms_key_id: ctx.kube_secret_key,
         },
+      } else {}) + {
         is_enhanced: true,
         kubernetes_version: ctx.params.config_params.kubernetes_version,
         networking: {

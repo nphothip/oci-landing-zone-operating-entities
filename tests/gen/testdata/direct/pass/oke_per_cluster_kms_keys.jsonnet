@@ -42,7 +42,6 @@ local result = lz({
 });
 local clusters = result.extra.oke_clusters.oke_clusters_configuration.clusters;
 local workers = result.extra.oke_workers.oke_workers_configuration.node_pools;
-local cis1_vaults = result.security_cis1.vaults_configuration;
 local cis2_vaults = result.security_cis2.vaults_configuration;
 local identity = result.iam.policies_configuration.supplied_policies;
 local security_policy_keys = [
@@ -71,18 +70,16 @@ local security_statements = [
     [key]: clusters[key].encryption.kube_secret_kms_key_id
     for key in std.objectFields(clusters)
   },
+  cluster_cis_levels: {
+    [key]: clusters[key].cis_level
+    for key in std.objectFields(clusters)
+  },
   worker_encryption: {
     [key]: workers[key].node_config_details.encryption
     for key in std.objectFields(workers)
   },
   cis1: {
-    default_compartment_id: cis1_vaults.default_compartment_id,
-    vault_keys: std.objectFields(cis1_vaults.vaults),
-    key_keys: std.objectFields(cis1_vaults.keys),
-    key_vault_references: {
-      [key]: cis1_vaults.keys[key].vault_key
-      for key in std.objectFields(cis1_vaults.keys)
-    },
+    vaults_configuration_present: std.objectHas(result.security_cis1, 'vaults_configuration'),
   },
   cis2: {
     shared_security_vault_present: std.objectHas(cis2_vaults.vaults, 'VLT-LZ-SHARED-SECURITY-KEY'),

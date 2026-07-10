@@ -1,0 +1,24 @@
+{
+  "cis1_vaults_configuration_present": false,
+  "cluster_cis_levels": {
+    "CLR-FRA-LZ-PREPROD-OKE-KEY": "1",
+    "CLR-FRA-LZ-PROD-OKE-KEY": "1"
+  },
+  "cluster_encryption_present": {
+    "CLR-FRA-LZ-PREPROD-OKE-KEY": false,
+    "CLR-FRA-LZ-PROD-OKE-KEY": false
+  },
+  "key_permission_statements": [],
+  "worker_cis_levels": {
+    "NDP-FRA-LZ-PREPROD-OKE-KEY": "1",
+    "NDP-FRA-LZ-PROD-OKE-KEY": "1"
+  },
+  "worker_encrypt_in_transit": {
+    "NDP-FRA-LZ-PREPROD-OKE-KEY": true,
+    "NDP-FRA-LZ-PROD-OKE-KEY": true
+  },
+  "worker_kms_key_present": {
+    "NDP-FRA-LZ-PREPROD-OKE-KEY": false,
+    "NDP-FRA-LZ-PROD-OKE-KEY": false
+  }
+}

@@ -172,6 +172,7 @@ local cidrs = import '../../../lib/cidrs.libsonnet';
     is_overlay_network: is_overlay_network,
     optional_cluster_kubernetes_network_config: optional_cluster_kubernetes_network_config,
     worker_image: worker_image,
+    cis_level: params.cis_level,
     cluster_key: cluster_key,
     cluster_name: cluster_name,
     node_pool_key: node_pool_key,

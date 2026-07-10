@@ -306,8 +306,8 @@
                     "allow any-user to use keys in compartment cmp-lz-security where all { request.principal.type = 'cluster' }",
                     "allow any-user to use key-delegate in compartment cmp-lz-security where all { request.principal.type = 'nodepool' }",
                     "allow any-user to use key-delegate in compartment cmp-lz-security where all { request.principal.type = 'cluster' }",
-                    "allow any-user to manage certificate-authority-family in compartment cmp-lz-security where all { request.principal.type = 'cluster' }",
-                    "allow service blockstorage to use keys in compartment cmp-lz-security"
+                    "allow service blockstorage to use keys in compartment cmp-lz-security",
+                    "allow any-user to manage certificate-authority-family in compartment cmp-lz-security where all { request.principal.type = 'cluster' }"
                 ]
             },
 

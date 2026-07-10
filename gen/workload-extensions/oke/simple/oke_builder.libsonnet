@@ -125,7 +125,6 @@ local oke_context = import './oke_context.libsonnet';
         oke_clusters: oke_clusters(ctx),
         network_pre: oke_network(ctx),
         iam: oke_iam(ctx),
-        security_cis1: oke_security(ctx),
         security_cis2: oke_security(ctx),
       },
     },
