@@ -35,7 +35,7 @@ This workload extension uses the [One-OE](/blueprints/one-oe) Blueprint as the r
 
 ## **3. Setup IAM Configuration**
 
-The [OCVS identity configuration](./ocvs_identity.json) is a generated snapshot that contains the complete OneOE identity configuration and the OCVS-specific IAM additions described below.
+The [OCVS identity configuration](./ocvs_identity.json) is a generated snapshot that contains the complete One-OE identity configuration and the OCVS-specific IAM additions described below.
 
 &nbsp; 
 
@@ -49,9 +49,9 @@ The diagram below identifies the compartments in the scope of this operation.
 
 The OCVS extension adds the `cmp-lz-prod-ocvs` platform compartment beneath the production platform compartment.
 
-OneOE Landing Zones defines multiple instances of platform compartment. Platform comparment is created **for each environement**, and **one shared** platform for resources spanning multiple environments. 
+One-OE Landing Zones defines multiple instances of platform compartments. A platform compartment is created **for each environment**, and **one shared** platform is created for resources spanning multiple environments.
 
-Using this extension requires choosing the right platform for the use cases. Extension can be modified to provision multiple instances of the delpoyment. For customizations see the full [compartment resource documentation](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-iam/tree/main/compartments).
+Using this extension requires choosing the right platform for the use cases. The extension can be modified to provision multiple instances of the deployment. For customizations see the full [compartment resource documentation](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-iam/tree/main/compartments).
 
 &nbsp; 
 
@@ -61,12 +61,12 @@ As part of the deployment the following groups are created in the [Default Ident
 | -------------------------- | ------------------------------------------------------------------------- |
 | grp-lz-prod-ocvs-admins | Members of the group can administer the OCVS platform and SDDC resources. |
 
-For customizations see the full [group resoruce documentation](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-iam/tree/main/groups)
+For customizations see the full [group resource documentation](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-iam/tree/main/groups)
 
 &nbsp; 
 
 ### **3.3 Policies**
-As part of the deploymnet the following policies are created:
+As part of the deployment the following policies are created:
 | Policy                     | Description                                             | Manage resources             | Use resources                   | Inspect resources |
 | -------------------------- | ------------------------------------------------------- | ---------------------------- | ------------------------------- | ----------------- |
 | pcy-lz-prod-ocvs-admins | Grants `grp-lz-prod-ocvs-admins` OCVS platform administration permissions. | SDDCs, Compute instances | NSGs, Subnets, VNICs, Private IPs, VLANs | Virtual network family |
@@ -79,9 +79,9 @@ For customizations see the full [policy resource documentation](https://github.c
 
 ## **4. Setup Network Configuration**
 
-The [OCVS network configuration](./ocvs_network.json) is a generated snapshot that contains the complete OneOE network configuration and the OCVS-specific network additions described below.
+The [OCVS network configuration](./ocvs_network.json) is a generated snapshot that contains the complete One-OE network configuration and the OCVS-specific network additions described below.
 
-This configuration covers the following networking diagram. 
+This configuration covers the following networking diagram.
 
 &nbsp; 
 
@@ -104,7 +104,7 @@ The OCVS-specific network additions are:
 
 ## **5. Deployment**
 
-The OCVS workload extension provides One-click deployment that combines together OneOE, Hub E and OCVS.
+The OCVS workload extension provides one-click deployment that combines One-OE, Hub E, and OCVS.
 
 
 [<img src="../../commons/images/DeployToOCI.svg" alt="Deploy_To_OCI" height="30">](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/oci-landing-zones/terraform-oci-modules-orchestrator/archive/refs/tags/v2.1.3.zip&zipUrlVariables={"input_config_files_urls":"https://raw.githubusercontent.com/oci-landing-zones/oci-landing-zone-operating-entities/master/workload-extensions/ocvs/ocvs.json,https://raw.githubusercontent.com/oci-landing-zones/oci-landing-zone-operating-entities/master/workload-extensions/ocvs/ocvs_governance.json,https://raw.githubusercontent.com/oci-landing-zones/oci-landing-zone-operating-entities/master/workload-extensions/ocvs/ocvs_identity.json,https://raw.githubusercontent.com/oci-landing-zones/oci-landing-zone-operating-entities/master/workload-extensions/ocvs/ocvs_network.json,https://raw.githubusercontent.com/oci-landing-zones/oci-landing-zone-operating-entities/master/workload-extensions/ocvs/ocvs_observability_cis1_pre.json,https://raw.githubusercontent.com/oci-landing-zones/oci-landing-zone-operating-entities/master/workload-extensions/ocvs/ocvs_security_cis1_pre.json"})
