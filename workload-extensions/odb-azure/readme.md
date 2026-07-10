@@ -31,8 +31,8 @@ This Workload Extension is compound of:
 
 The extension covers two OD@Azure Workload Use Cases at this moment (WUCs):
 
-1. **Use Case 1 (UC1): ADB-S@Azure:** Dedicated Autonomous AI Serverless database.
-2. **Use Case 2 (UC2): ExaDB-D@Azure:**: Exadata Cloud Service infrastructure, including VM Clusters, CDBs and PDBs.
+1. **Workload Use Case 1 (UC1): ADB-S@Azure:** Dedicated Autonomous AI Serverless database.
+2. **Workload Use Case 2 (UC2): ExaDB-D@Azure:**: Exadata Cloud Service infrastructure, including VM Clusters, CDBs and PDBs.
 
 If you have not reviewed it yet, we recommend checking the [OD@Azure use cases section](./odb-azure_use_cases/readme.md) to better understand the available scenarios and identify the one that best fits your needs.
 
