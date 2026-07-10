@@ -44,8 +44,8 @@ You can access, use and adapt to your needs the [**draw.io design artifact**](./
 
 | When to use it / Use Case  | One-shot reference deployment | 
 |---|---|
-| Workload Use Case 1 (WUC1): ADB-S@Azure <br><br><img src="./content/adb-s_azure_wuc1.jpg" width="220"> | Use when deploying a new ODB Network and an Autonomous AI Serverless Database. Published Use Case 1 artifacts are available in the [single-stack](./wuc1/single-stack/readme.md) folder. |
-| Workload Use Case 2 (WUC2): ExaDB-D@Azure<br><br><img src="./content/exadb-d_azure_wuc2.jpg" width="220"> | Use when deploying a new ODB Network and an Autonomous AI Serverless Database. Published Use Case 1 artifacts are available in the [single-stack](./wuc2/single-stack/readme.md) folder. |
+| **Workload Use Case 1 (WUC1): ADB-S@Azure** <br><br><img src="./content/adb-s_azure_wuc1.jpg" width="220"> | Use when deploying a new ODB Network and an Autonomous AI Serverless Database. Published Use Case 1 artifacts are available in the [single-stack](./wuc1/single-stack/readme.md) folder. |
+| **Workload Use Case 2 (WUC2): ExaDB-D@Azure**<br><br><img src="./content/exadb-d_azure_wuc2.jpg" width="220"> | Use when deploying a new ODB Network and an ExaDB-D infrastructure, VM Clusters, CDBs & PDBs. Published Use Case 2 artifacts are available in the [single-stack](./wuc2/single-stack/readme.md) folder. |
 
 &nbsp;
 
