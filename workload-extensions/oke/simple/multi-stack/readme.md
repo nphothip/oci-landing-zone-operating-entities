@@ -39,7 +39,7 @@ The published quickstart creates one production OKE platform by default. Add pre
 **Key Features:**
 - **Automated Dependency Resolution**: Network resources (VCN, subnets, NSGs) are automatically linked to the OKE cluster using configuration keys using dependency exchange across stacks
 - **CIS-Compliant**: Uses the CIS-compliant OKE module from [terraform-oci-modules-workloads](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/tree/main/cis-oke)
-- **CIS2 Customer-Managed Encryption**: The published OKE cluster and worker files declare CIS2 and use the Vault and cluster encryption key owned by an existing CIS2 Landing Zone.
+- **Encryption**: The published OKE cluster and worker files use CIS1 with Oracle-managed encryption and enable worker boot-volume encryption in transit.
 - **OKE Network Modes**: Published JSON is VCN-native by default; config-driven generation can also emit an overlay network shape for Flannel-compatible clusters
 - **No Hub L7 Load Balancer**: The published OKE stack does not provision a hub-level OCI L7 Load Balancer; Kubernetes `Service` resources of type `LoadBalancer` create OCI load balancers through OKE
 - **Multi-Step Deployment**: Deploy the Hub E landing zone first, then deploy the OKE stack separately
@@ -48,7 +48,7 @@ The published quickstart creates one production OKE platform by default. Add pre
 
 ## **3. Configuration Files**
 
-The deployment uses four JSON configuration files. Before deployment, create the customer-managed encryption key referenced by the OKE cluster and worker configuration in the shared security Vault and provide its key output as an Orchestrator KMS dependency.
+The deployment uses four JSON configuration files.
 
 | File | Purpose |
 | --- | --- |
@@ -74,7 +74,7 @@ The published surface includes companion JSONs with CIS-aligned observability se
 
 ### Prerequisites <!-- omit from toc -->
 
-- An existing One-OE Hub E CIS2 landing zone deployment with the shared security Vault and the generated OKE key available through the Orchestrator KMS dependency
+- An existing One-OE Hub E landing zone deployment
 - Access to OCI Console with appropriate permissions
 - DRG (Dynamic Routing Gateway) already created in your Hub E landing zone
 

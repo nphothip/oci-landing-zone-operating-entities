@@ -17,13 +17,18 @@
     "cis2_audit_vault_preserved": true,
     "cis2_oke_key_present": true,
     "cis2_shared_vault_present": true,
-    "cluster_cis_level": "2",
-    "cluster_key_reference": "KEY-FRA-LZ-PROD-OKE-KUBE-SECRETS-KEY",
-    "worker_boot_volume_encryption": {
-      "enable_encrypt_in_transit": true,
-      "kms_key_id": "KEY-FRA-LZ-PROD-OKE-KUBE-SECRETS-KEY"
+    "cluster_cis_level": "1",
+    "cluster_encryption_present": false,
+    "multi_cluster_cis_level": "1",
+    "multi_cluster_encryption_present": false,
+    "multi_worker_boot_volume_encryption": {
+      "enable_encrypt_in_transit": true
     },
-    "worker_cis_level": "2",
+    "multi_worker_cis_level": "1",
+    "worker_boot_volume_encryption": {
+      "enable_encrypt_in_transit": true
+    },
+    "worker_cis_level": "1",
     "worker_image": "9\\.[0-9]+"
   },
   "oke_service_policies": {
@@ -63,17 +68,11 @@
     "old_storage_keys_policy_present": false,
     "old_vcn_cni_policy_present": false,
     "security_policy": {
-      "blockstorage_key_statements": [
-        "allow service blockstorage to use keys in compartment cmp-lz-security"
-      ],
+      "blockstorage_key_statements": [],
       "compartment_id": "CMP-LZ-SECURITY-KEY",
       "key_present": true,
       "plural_key_delegate_statements": [],
       "statements": [
-        "allow any-user to use keys in compartment cmp-lz-security where all { request.principal.type = 'cluster' }",
-        "allow any-user to use key-delegate in compartment cmp-lz-security where all { request.principal.type = 'nodepool' }",
-        "allow any-user to use key-delegate in compartment cmp-lz-security where all { request.principal.type = 'cluster' }",
-        "allow service blockstorage to use keys in compartment cmp-lz-security",
         "allow any-user to manage certificate-authority-family in compartment cmp-lz-security where all { request.principal.type = 'cluster' }"
       ],
       "target_key_id_statements": []
@@ -103,6 +102,7 @@
     "prod": true
   },
   "profile_config": {
+    "cis_level": 1,
     "environments": [
       "prod"
     ],

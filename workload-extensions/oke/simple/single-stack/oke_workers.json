@@ -4,7 +4,7 @@
             "NDP-FRA-LZ-PROD-OKE-KEY": {
                 "name"                             : "ndp-fra-lz-prod-oke",
                 "compartment_id"                   : "CMP-LZ-PROD-OKE-KEY",
-                "cis_level"                        : "2",
+                "cis_level"                        : "1",
                 "cluster_id"                       : "CLR-FRA-LZ-PROD-OKE-KEY",
                 "enable_cycling"                   : false,
                 "size"                             : 1,
@@ -32,8 +32,7 @@
                     "node_shape"                   : "VM.Standard.E5.Flex",
 
                     "encryption": {
-                        "enable_encrypt_in_transit": true,
-                        "kms_key_id"               : "KEY-FRA-LZ-PROD-OKE-KUBE-SECRETS-KEY"
+                        "enable_encrypt_in_transit": true
                     },
 
                     "flex_shape_settings": {

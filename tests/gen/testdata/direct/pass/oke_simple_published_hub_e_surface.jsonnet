@@ -9,6 +9,10 @@ local clusters = (import 'gen/workload-extensions/oke/simple/single-stack/oke_cl
   .oke_clusters_configuration.clusters;
 local workers = (import 'gen/workload-extensions/oke/simple/single-stack/oke_workers.jsonnet')
   .oke_workers_configuration.node_pools;
+local multi_clusters = (import 'gen/workload-extensions/oke/simple/multi-stack/oke_clusters.jsonnet')
+  .oke_clusters_configuration.clusters;
+local multi_workers = (import 'gen/workload-extensions/oke/simple/multi-stack/oke_workers.jsonnet')
+  .oke_workers_configuration.node_pools;
 local identity = (import 'gen/workload-extensions/oke/simple/single-stack/oke_identity.jsonnet')
   .policies_configuration.supplied_policies;
 local single_security_cis1 = import 'gen/workload-extensions/oke/simple/single-stack/oke_security_cis1.jsonnet';
@@ -44,9 +48,12 @@ local oke_vault_key = 'VLT-LZ-SHARED-SECURITY-KEY';
 local kube_secret_key = 'KEY-FRA-LZ-PROD-OKE-KUBE-SECRETS-KEY';
 local cluster = clusters['CLR-FRA-LZ-PROD-OKE-KEY'];
 local worker = workers['NDP-FRA-LZ-PROD-OKE-KEY'];
+local multi_cluster = multi_clusters['CLR-FRA-LZ-PROD-OKE-KEY'];
+local multi_worker = multi_workers['NDP-FRA-LZ-PROD-OKE-KEY'];
 
 {
   profile_config: {
+    cis_level: profile_config.cis_level,
     hub_kind: profile_config.hub.kind,
     environments: std.objectFields(profile_config.environments),
     has_shared_project_network:
@@ -96,10 +103,14 @@ local worker = workers['NDP-FRA-LZ-PROD-OKE-KEY'];
   },
   oke_encryption: {
     cluster_cis_level: cluster.cis_level,
-    cluster_key_reference: cluster.encryption.kube_secret_kms_key_id,
+    cluster_encryption_present: std.objectHas(cluster, 'encryption'),
     worker_cis_level: worker.cis_level,
     worker_image: worker.node_config_details.image,
     worker_boot_volume_encryption: worker.node_config_details.encryption,
+    multi_cluster_cis_level: multi_cluster.cis_level,
+    multi_cluster_encryption_present: std.objectHas(multi_cluster, 'encryption'),
+    multi_worker_cis_level: multi_worker.cis_level,
+    multi_worker_boot_volume_encryption: multi_worker.node_config_details.encryption,
     cis1_vaults_configuration_present:
       std.objectHas(single_security_cis1, 'vaults_configuration'),
     cis2_shared_vault_present: std.objectHas(single_security_cis2.vaults_configuration.vaults, oke_vault_key),

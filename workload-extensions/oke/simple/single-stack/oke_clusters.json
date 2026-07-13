@@ -4,14 +4,10 @@
             "CLR-FRA-LZ-PROD-OKE-KEY": {
                 "name"                                 : "clr-fra-lz-prod-oke",
                 "compartment_id"                       : "CMP-LZ-PROD-OKE-KEY",
-                "cis_level"                            : "2",
+                "cis_level"                            : "1",
                 "cni_type"                             : "native",
                 "is_enhanced"                          : true,
                 "kubernetes_version"                   : "v1.35.2",
-
-                "encryption": {
-                    "kube_secret_kms_key_id"           : "KEY-FRA-LZ-PROD-OKE-KUBE-SECRETS-KEY"
-                },
 
                 "networking": {
                     "api_endpoint_nsg_ids"             : ["NSG-FRA-LZ-PROD-PLATFORM-OKE-CP-KEY"],

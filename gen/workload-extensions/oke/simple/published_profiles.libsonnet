@@ -16,6 +16,8 @@ local hub_e_prod_oke_config = {
   region: 'eu-frankfurt-1',
   region_short_name: 'fra',
   realm: 'oc1',
+  // Keep published OKE cluster and worker files usable with either CIS baseline.
+  cis_level: 1,
   security_targets: ['prod'],
   hub: {
     kind: 'hub_e',

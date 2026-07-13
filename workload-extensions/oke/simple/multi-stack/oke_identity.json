@@ -50,14 +50,10 @@
 
             "PCY-LZ-OKE-SERVICE-SECURITY-KEY": {
                 "name"                                    : "pcy-lz-oke-service-security",
-                "description"                             : "Grants OKE clusters, node pools, and the Block Storage service key and certificate authority permissions for OKE-managed resources and persistent volumes in the Landing Zone shared security compartment.",
+                "description"                             : "Grants OKE clusters certificate authority permissions for OKE-managed resources in the Landing Zone shared security compartment.",
                 "compartment_id"                          : "CMP-LZ-SECURITY-KEY",
 
                 "statements": [
-                    "allow any-user to use keys in compartment cmp-lz-security where all { request.principal.type = 'cluster' }",
-                    "allow any-user to use key-delegate in compartment cmp-lz-security where all { request.principal.type = 'nodepool' }",
-                    "allow any-user to use key-delegate in compartment cmp-lz-security where all { request.principal.type = 'cluster' }",
-                    "allow service blockstorage to use keys in compartment cmp-lz-security",
                     "allow any-user to manage certificate-authority-family in compartment cmp-lz-security where all { request.principal.type = 'cluster' }"
                 ]
             },
