@@ -59,7 +59,7 @@ Ensure the RPC requester policy includes the correct **Acceptor Tenancy OCID (Te
 
 After successful execution:
 
-- The group `grp-lz-network-admins` will be created.
+- The group `grp-lz-network-admin` will be created.
 
 - Obtain the generated Group OCID.
 
@@ -109,7 +109,7 @@ After successful execution:
 
 Once the Tenancy2 IAM deployment is completed:
 
-- Obtain the `grp-lz-network-admins` Group OCID.
+- Obtain the `grp-lz-network-admin` Group OCID.
 
 - Obtain the Tenancy2 OCID.
 
@@ -235,7 +235,7 @@ The RPC status can be verified from:
 
 > [!IMPORTANT]
 > The user executing Terraform/ORM automation must belong to:
-> - `grp-lz-network-admins`
+> - `grp-lz-network-admin`
 > Otherwise:
 > - The ORM stack deployment may fail.
 > - The OCI Console RPC status may display a `REVOKED` state.

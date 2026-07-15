@@ -3,7 +3,7 @@
 ## **An OCI Open LZ [Addon](#) for Remote Peering Across Regions and Tenancies using IaC**
 &nbsp;
 ## **Overview**
-The IaC-driven configuration enables connectivity between two regions in same tenancy and across multiple tenancies. It includes all necessary RPC configurations, such as IAM policies, RPC setup, and connection establishment. This approach ensures consistency, simplifying administration and reducing complexity in managing RPC across OCI regions and tenancies.
+The IaC-driven configuration enables connectivity between two regions in the same tenancy and across multiple tenancies. It includes all necessary RPC configurations, such as IAM policies, RPC setup, and connection establishment. This approach ensures consistency, simplifying administration and reducing complexity in managing RPC across OCI regions and tenancies.
 
 This document provides configuration views for the following use cases:
 - Multi-Tenancy-RPC: Establishes a remote peering connection between the same or different regions across multiple tenancies.
@@ -26,20 +26,20 @@ This guide details steps to set up a Remote Peering Connection (RPC) in OCI, ens
 
 ## 1. Single Tenancy Multi-Region
 Configuration details:
-  - The Region A & Region B comprises the following resources.
+  - Regions A and B comprise the following resources.
     - Dynamic Routing Gateway (DRG) and Remote Peering Connection (RPC)
 
 <img src="images/s-tenancy.png" width="900" height="value">
 
 ### Steps to Set Up Multi-Region RPC
-Any of the Landing Zone [Blueprints](https://github.com/oci-landing-zones/oci-landing-zone-operating-entities/tree/master/blueprints) can be deployed across both tenancies Tenancy1 and Tenancy2 to establish a structured and automated framework for configuring cross-tenancy networking.
+Any of the Landing Zone [Blueprints](https://github.com/oci-landing-zones/oci-landing-zone-operating-entities/tree/master/blueprints) can be deployed across both Tenancy 1 and Tenancy 2 to establish a structured and automated framework for configuring cross-tenancy networking.
 
 #### Configuration Update & Execution in Region A
 ***Step 1: Add the Remote Peering Connection (RPC) Block*** <br>
 Modify the network JSON config of Region A by adding the RPC block under the DRG section.
 
 ***Step 2: Execute the Terraform Deployment*** <br>
-`Plan` and `Apply` the newly added RPC configuration.Collect the RPC OCID upon successful deployment.
+`Plan` and `Apply` the newly added RPC configuration. Collect the RPC OCID upon successful deployment.
 
 #### Configuration Update & Execution in Region B
 ***Step 1: Add the Remote Peering Connection (RPC) Block***<br>
@@ -57,18 +57,18 @@ Modify the network JSON config of Region B by adding the RPC block under the **D
 ## 2. Multi-Tenancy-RPC
 &nbsp;
 Configuration details:
-  - The Tenancy1 comprises the following resources and components:
+  - Tenancy 1 comprises the following resources and components:
     - Dynamic Routing Gateway (DRG) and Remote Peering Connection (RPC)
-    - IAM policy (Acceptor) statements to accept the remote peering connection from other/spoke tenancy. 
-  - The Tenancy2 comprises the following resources and components
+    - IAM policy (Acceptor) statements to accept the remote peering connection from the requester tenancy. 
+  - Tenancy 2 comprises the following resources and components:
     - Dynamic Routing Gateway (DRG) and Remote Peering Connection (RPC)
-    - IAM policy (Requestor) statements to request the remote peering connection to the Tenancy1. 
+    - IAM policy (Requestor) statements to request the remote peering connection to Tenancy 1. 
 
 <img src="images/x-tenancy.png" width="900" height="value">
 
 
 
-#### IAM Policy Syntax for Tenancy1
+#### IAM Policy Syntax for Tenancy 1
 
 ```
 "policies_configuration": {
@@ -89,7 +89,7 @@ Configuration details:
     }
 ```
 
-#### IAM Policy Syntax for Tenancy2
+#### IAM Policy Syntax for Tenancy 2
 ```
 "policies_configuration": {
         "enable_cis_benchmark_checks": "false",
@@ -111,10 +111,10 @@ Configuration details:
 
 
 > [!NOTE]
-> Collect the following required OCIDs from both tenancies to configure the necessary policies in each tenancy. The Tenancy2 acts as the requester, while the Tenancy1 as the acceptor, approving RPC requests from the Tenancy1.
->- `requestorGroup` (Tenancy2) → OCID of the network administrator group.
->- `Requestor` Tenancy → OCID of the Tenancy2.
->- `Acceptor` Tenancy → OCID of Tenancy1.
+> Collect the following required OCIDs from both tenancies to configure the necessary policies in each tenancy. Tenancy 2 acts as the requester, while Tenancy 1 acts as the acceptor for RPC requests from Tenancy 2.
+>- `requestorGroup` (Tenancy 2) → OCID of the network administrator group.
+>- `Requestor` Tenancy → OCID of Tenancy 2.
+>- `Acceptor` Tenancy → OCID of Tenancy 1.
 > 
 > Refer to the tenancy1_iam.json and tenancy2_iam.json files for the complete IAM (Compartments, Groups & Policies) configuration sample template based on One-OE.
 >
