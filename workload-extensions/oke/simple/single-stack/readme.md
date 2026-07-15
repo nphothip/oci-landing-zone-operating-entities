@@ -30,7 +30,9 @@
 | **NAME**         | Complete Landing Zone with OKE (Single-Stack)                                    |
 | **OBJECTIVE**        | Deploy OneOE Landing Zone + Hub Model E + OKE cluster in a single unified Terraform deployment. |
 | **TARGET RESOURCES** | Complete LZ Foundation, IAM, Hub Network, DRG, OKE VCN, OKE Cluster with all components integrated |
-| **DEPLOYMENT**          | [<img src="../../../../commons/images/DeployToOCI.svg" height="30" align="center">](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/oci-landing-zones/terraform-oci-modules-orchestrator/archive/refs/tags/v2.0.12.zip&zipUrlVariables={"input_config_files_urls":"https://raw.githubusercontent.com/oci-landing-zones/oci-landing-zone-operating-entities/refs/heads/master/workload-extensions/oke/simple/single-stack/oke_workers.auto.tfvars.json,https://raw.githubusercontent.com/oci-landing-zones/oci-landing-zone-operating-entities/refs/heads/master/workload-extensions/oke/simple/single-stack/oke_network.auto.tfvars.json,https://raw.githubusercontent.com/oci-landing-zones/oci-landing-zone-operating-entities/refs/heads/master/workload-extensions/oke/simple/single-stack/oke_identity.auto.tfvars.json,https://raw.githubusercontent.com/oci-landing-zones/oci-landing-zone-operating-entities/refs/heads/master/workload-extensions/oke/simple/single-stack/oke_clusters.auto.tfvars.json,https://raw.githubusercontent.com/oci-landing-zones/oci-landing-zone-operating-entities/refs/heads/master/workload-extensions/oke/simple/single-stack/oke_governance.auto.tfvars.json"}) </br> **Note**: To understand how to perform this operation with ORM, follow these [steps](ORM_OKE-LZ-EXT_deployment_steps.md). [Terraform CLI](/commons/content/terraform.md)  can be also used.           |
+| **DEPLOYMENT**          | Use the JSON files in this folder with Terraform CLI, or stage them in a customer-controlled private source for OCI Resource Manager as described in [Deployment Steps](#5-deployment-steps). [Terraform CLI](/commons/content/terraform.md) can also be used. |
+
+For customized OKE landing zones generated from a configuration file, see [OKE Config-Driven Generation](../config-driven.md).
 
 
 &nbsp;
@@ -38,6 +40,8 @@
 ## **2. Architecture Overview**
 
 This deployment combines **OneOE Blueprint**, **Hub Model E networking**, and **OKE cluster** into a **single comprehensive Terraform deployment**. Unlike the multi-stack approach where OKE is added to an existing Landing Zone, this single-stack deployment creates everything together from scratch.
+
+The published quickstart creates one production OKE platform. Use config-driven generation when you need to add pre-production or more OKE platforms.
 
 <img src="../single-stack/content/oke_oneclick.png" width="800">
 
@@ -49,11 +53,11 @@ This deployment combines **OneOE Blueprint**, **Hub Model E networking**, and **
 
 **Key Features:**
 - **Complete Landing Zone Foundation**: OneOE compartment structure, IAM groups, policies
-- **Hub-and-Spoke Networking**: Hub VCN (Model E) with firewall capabilities + OKE Spoke VCN
-- **Automated Routing**: Hub route tables pre-configured  with OKE CIDR (10.0.80.0/21)
+- **Hub-and-Spoke Networking**: Hub VCN (Model E, no firewall) + OKE Spoke VCN
+- **Automated Routing**: Hub route tables pre-configured  with OKE CIDR (10.0.80.0/20)
 - **DRG Integration**: Dynamic Routing Gateway with route distributions configured for Hub-Spoke communication
 - **CIS-Compliant OKE**: Uses the CIS-compliant OKE module from [terraform-oci-modules-workloads](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/tree/main/cis-oke)
-- **Native Pod Networking**: Configured with VCN-native pod networking for improved security and performance
+- **OKE Network Modes**: Published JSON is VCN-native by default; config-driven generation can also emit an overlay network shape for Flannel-compatible clusters
 
 &nbsp;
 
@@ -73,25 +77,29 @@ The deployment includes the complete OneOE blueprint with:
 - Load Balancer subnet with Internet Gateway (for inbound public traffic)
 - Management subnet with NAT Gateway (for Hub management)
 - DRG for inter-VCN routing
-- **Routing **: Routes to OKE CIDR (`10.0.80.0/21 → DRG`) added to both Hub subnets and DRG throguh route distribution
+- **Routing **: Routes to OKE CIDR (`10.0.80.0/20 → DRG`) added to both Hub subnets and DRG throguh route distribution
 - **Hub Model E Characteristic**: Internet Gateway resides in Hub; spoke VCNs use their own NAT Gateways for outbound internet
 
 ### **3.3 OKE Spoke Network** <!-- omit from toc -->
 
-**OKE VCN (`10.0.80.0/21`)** with four dedicated subnets:
+**OKE VCN (`10.0.80.0/20`)** with dedicated subnets. The published single-stack JSON uses native networking and includes four subnets:
 
 | Subnet | CIDR | Purpose | Size |
 |--------|------|---------|------|
-| Control Plane | 10.0.80.128/25 | Kubernetes control plane | /25 (126 IPs) |
-| Internal LB | 10.0.80.0/25 | Internal load balancers | /25 (126 IPs) |
-| Worker Nodes | 10.0.82.0/23 | OKE worker instances | /23 (510 IPs) |
-| Pods | 10.0.84.0/23 | VCN-native pod networking | /23 (510 IPs) |
+| Control Plane | 10.0.90.64/29 | Kubernetes control plane | /29 (6 IPs) |
+| Internal LB | 10.0.90.0/26 | Internal load balancers | /26 (62 IPs) |
+| Worker Nodes | 10.0.88.0/23 | OKE worker instances | /23 (510 IPs) |
+| Pods | 10.0.80.0/21 | VCN-native pod networking | /21 (2046 IPs) |
 
 **Network Security Groups (NSGs):**
 - NSG for Control Plane (API server access, health checks)
 - NSG for Worker Nodes (full egress, selective ingress)
 - NSG for Pods (pod-to-pod, pod-to-services)
 - NSG for Internal Load Balancers (NodePort range)
+
+The published OKE quickstart does not create a hub-level OCI L7 Load Balancer. The Hub LB subnet remains available for OKE-created public load balancers, which are provisioned by OKE when Kubernetes workloads define `Service` resources of type `LoadBalancer`.
+
+For config-driven overlay generation, the OKE VCN uses only the Control Plane, Internal LB, and Worker Nodes subnets. The pod subnet, pod route table, pod security list, pod NSG, and worker pod networking fields are omitted because pod addressing comes from the Kubernetes overlay pod CIDR instead of an OCI pod subnet.
 
 **Gateways:**
 - NAT Gateway for outbound internet access (all subnets)
@@ -101,7 +109,7 @@ The deployment includes the complete OneOE blueprint with:
 ### **3.4 DRG Routing** <!-- omit from toc -->
 
 **Automatic DRG Configuration:**
-- **DRG Attachment**: OKE VCN attached to DRG with spoke route table (`DRGRT-FRA-LZP-SPOKES-KEY`)
+- **DRG Attachment**: OKE VCN attached to DRG with spoke route table (`DRGRT-FRA-LZ-SPOKES-KEY`)
 - **Route Distributions**:
   - Hub route distribution updated to accept routes from OKE VCN
   - Spoke route distribution updated to advertise OKE VCN routes
@@ -109,24 +117,55 @@ The deployment includes the complete OneOE blueprint with:
 
 ### **3.5 OKE Cluster** <!-- omit from toc -->
 
-- **Kubernetes Version**: 1.31.1
-- **Cluster Type**: Enhanced cluster with native pod networking
+- **Kubernetes Version**: v1.35.2
+- **Cluster Type**: Enhanced cluster
 - **Control Plane**: Private endpoint in dedicated subnet
-- **Worker Pool**: 1x VM.Standard.E4.Flex (1 OCPU, 8GB RAM) - easily scalable
-- **CNI**: VCN-native pod networking (OCI VCN-Native Pod Networking CNI)
+- **Worker Pool**: 1x VM.Standard.E5.Flex (1 OCPU, 8GB RAM, Oracle Linux 8.10) - easily scalable
+- **CNI**: VCN-native pod networking in the published JSON; config-driven overlay generation requests Flannel
 
 &nbsp;
 
+### **3.6 Native and Overlay Network Modes** <!-- omit from toc -->
+
+`oke_simple` separates the network shape emitted by the workload extension from the cluster CNI requested from the downstream OKE module.
+
+| Config parameter | Purpose | Supported values | Default |
+| --- | --- | --- | --- |
+| `cni_type` | Network shape emitted by this workload extension | `native`, `overlay` | `native` |
+| `cni` | OKE cluster CNI requested from the downstream OKE module | `vcn_native`, `flannel` | `vcn_native` for native, `flannel` for overlay |
+
+Native mode uses workload-extension `cni_type: native` and `cni: vcn_native`. It creates a pod subnet in the OKE VCN, creates the pod security list and pod NSG, and wires the worker node pool with `pods_subnet_id` and `pods_nsg_ids`.
+
+Overlay mode uses workload-extension `cni_type: overlay` and `cni: flannel`. It creates no OCI pod subnet and wires the worker node pool only with the worker subnet and worker NSG. Overlay mode defaults `pods_cidr` to `10.244.0.0/16`. Keep `services_cidr` and overlay `pods_cidr` non-overlapping with each other, the OKE VCN, and any routed on-premises, cloud, or peered ranges. Do not set workload-extension `cni_type` to `flannel`; `flannel` is the OKE CNI value, while `overlay` is the workload-extension network shape.
+
+For config-driven subnetting, prefer auto-subnet profiles. If `cluster_size` is omitted and no manual OKE subnet map is provided, the generator uses `small`. `small` requires an OKE VCN `/20`, `medium` requires `/18`, and `large` requires `/16`. Manual OKE subnet CIDRs are still supported by omitting `cluster_size` and defining `network.subnets` with the required native or overlay subnet keys.
+
 ## **4. Configuration Files**
 
-The deployment uses four JSON configuration files:
+The deployment uses five JSON configuration files:
 
-| File | Purpose  | 
+| File | Purpose  |
 | --- | --- |
-| `oke_identity.auto.tfvars.json` | OneOE IAM + OKE-specific groups/policies |
-| `oke_network.auto.tfvars.json` | OneOE + Hub E + OKE network |
-| `oke_clusters.auto.tfvars.json` | OKE cluster configuration |
-| `oke_workers.auto.tfvars.json` | OKE Node pool configuration | 
+| `oke_identity.json` | OneOE IAM + OKE-specific groups/policies |
+| `oke_network.json` | OneOE + Hub E + OKE network |
+| `oke_governance.json` | Tag namespaces and governance definitions |
+| `oke_clusters.json` | OKE cluster configuration |
+| `oke_workers.json` | OKE Node pool configuration |
+
+### Additional Published Security & Observability Outputs <!-- omit from toc -->
+
+The published package also includes companion JSONs that capture CIS-aligned security and observability settings for reference or downstream consumption. The one-click ORM link above wires only the core deployment inputs; it does **not** consume these companion files. If you want to apply them, fetch and handle them separately in your own workflow.
+
+| File | Purpose |
+| --- | --- |
+| `oke_security_cis1.json` | Baseline security controls (CIS profile 1) |
+| `oke_security_cis1_pre.json` | Pre-requisites for `oke_security_cis1.json` |
+| `oke_security_cis2.json` | Baseline security controls (CIS profile 2) |
+| `oke_security_cis2_pre.json` | Pre-requisites for `oke_security_cis2.json` |
+| `oke_observability_cis1.json` | Observability settings (CIS profile 1) |
+| `oke_observability_cis1_pre.json` | Pre-requisites for `oke_observability_cis1.json` |
+| `oke_observability_cis2.json` | Observability settings (CIS profile 2) |
+| `oke_observability_cis2_pre.json` | Pre-requisites for `oke_observability_cis2.json` |
 
 &nbsp;
 
@@ -144,13 +183,17 @@ The deployment uses four JSON configuration files:
 - No pre-configured DRG or compartments
 - Everything is created from scratch
 
-### Option A: Deploy via OCI Resource Manager (ORM) 
+### Option A: Deploy via OCI Resource Manager (ORM)
 
 1. **Create ORM Stack**
-   
-   Using one-click deployment. [<img src="../../../../commons/images/DeployToOCI.svg" height="30" align="center">](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/oci-landing-zones/terraform-oci-modules-orchestrator/archive/refs/tags/v2.0.12.zip&zipUrlVariables={"input_config_files_urls":"https://raw.githubusercontent.com/oci-landing-zones/oci-landing-zone-operating-entities/refs/heads/master/workload-extensions/oke/simple/single-stack/oke_workers.auto.tfvars.json,https://raw.githubusercontent.com/oci-landing-zones/oci-landing-zone-operating-entities/refs/heads/master/workload-extensions/oke/simple/single-stack/oke_network.auto.tfvars.json,https://raw.githubusercontent.com/oci-landing-zones/oci-landing-zone-operating-entities/refs/heads/master/workload-extensions/oke/simple/single-stack/oke_identity.auto.tfvars.json,https://raw.githubusercontent.com/oci-landing-zones/oci-landing-zone-operating-entities/refs/heads/master/workload-extensions/oke/simple/single-stack/oke_clusters.auto.tfvars.json,https://raw.githubusercontent.com/oci-landing-zones/oci-landing-zone-operating-entities/refs/heads/master/workload-extensions/oke/simple/single-stack/oke_governance.auto.tfvars.json"}) change working directory to `rms-facade`.
 
-2. **Review Configuration** (Optional Customization)
+   Create the stack from the pinned orchestrator release and set the working directory to `rms-facade`.
+
+2. **Stage Configuration Files in a Private Source**
+   - Upload `oke_governance.json`, `oke_identity.json`, `oke_network.json`, `oke_clusters.json`, and `oke_workers.json` to a customer-controlled private OCI Object Storage bucket, or make them available from an approved private GitHub source.
+   - The previous public repo-hosted one-click example is not the recommended customer deployment path.
+
+3. **Review Configuration** (Optional Customization)
 
    Before deployment, you may want to review the JSON configuration files and customize them as needed:
 
@@ -158,16 +201,16 @@ The deployment uses four JSON configuration files:
    - **Regions**: Default region code is `FRA` (Frankfurt) - update all keys and display names if deploying to a different region
    - **CIDR Blocks**:
      - Hub VCN: `10.0.0.0/21`
-     - OKE VCN: `10.0.80.0/21`
+     - OKE VCN: `10.0.80.0/20`
      - Adjust these in the JSON files if they conflict with existing networks
-   - **Configuration Keys**: Ensure keys like `DRG-FRA-LZP-HUB-KEY` match your naming convention
+   - **Configuration Keys**: Ensure keys like `DRG-FRA-LZ-HUB-KEY` match your naming convention
 
-3. **Run Terraform Plan**
+4. **Run Terraform Plan**
    - Click **Next** → **Create**
    - Click **Plan** to preview resources
 
 
-4. **Apply Configuration**
+5. **Apply Configuration**
    - Click **Apply**
    - Deployment takes approximately **20-30 minutes**
    - Monitor progress in the logs
@@ -206,7 +249,7 @@ cd terraform-oci-modules-orchestrator
 
 ```bash
 # Copy configuration files to orchestrator directory
-cp /path/to/workload-extensions/oke/simple/single-stack/*.auto.tfvars.json \
+cp /path/to/workload-extensions/oke/simple/single-stack/*.json \
    /path/to/terraform-oci-modules-orchestrator/
 ```
 
@@ -231,7 +274,7 @@ terraform apply tfplan
 
 ## **6. Post-Deployment Configuration**
 
-### 6.1 Access the OKE Cluster 
+### 6.1 Access the OKE Cluster
 OKE Cluster is deploying with private IP for the control plane, for accessing control plane you need to be on the same / routable network as OKE.
 
 #### Generate kubeconfig <!-- omit from toc -->
@@ -284,7 +327,7 @@ kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/late
 
 ### 7.1 Modify Network CIDRs
 
-**File**: `workload-extensions/oke/simple/single-stack/oke_network.auto.tfvars.json`
+**File**: `workload-extensions/oke/simple/single-stack/oke_network.json`
 
 Edit the JSON file to modify CIDR blocks:
 
@@ -294,14 +337,14 @@ Edit the JSON file to modify CIDR blocks:
     "network_configuration_categories": {
       "hub": {
         "vcns": {
-          "VCN-FRA-LZP-HUB-KEY": {
+          "VCN-FRA-LZ-HUB-KEY": {
             "cidr_blocks": ["10.1.0.0/21"]
           }
         }
       },
       "prod": {
         "vcns": {
-          "VCN-FRA-LZP-P-PLATFORM-OKE-KEY": {
+          "VCN-FRA-LZ-PROD-PLATFORM-OKE-KEY": {
             "cidr_blocks": ["10.1.80.0/21"]
           }
         }
@@ -315,13 +358,13 @@ Edit the JSON file to modify CIDR blocks:
 
 ### 7.2 Scale Worker Nodes
 
-**File**: `workload-extensions/oke/simple/single-stack/oke_workers.auto.tfvars.json`
+**File**: `workload-extensions/oke/simple/single-stack/oke_workers.json`
 
 ```json
 {
-  "node_pools_configuration": {
+  "oke_workers_configuration": {
     "node_pools": {
-      "NP-FRA-P-PLATFORM-OKE-01-KEY": {
+      "NDP-FRA-LZ-PROD-OKE-KEY": {
         "size": 3,  // Changed from 1 to 3 nodes
         ...
       }
@@ -332,17 +375,20 @@ Edit the JSON file to modify CIDR blocks:
 
 ### 7.3 Change Instance Shape
 
-**File**: `workload-extensions/oke/simple/single-stack/oke_workers.auto.tfvars.json`
+**File**: `workload-extensions/oke/simple/single-stack/oke_workers.json`
 
 ```json
 {
-  "node_pools_configuration": {
+  "oke_workers_configuration": {
     "node_pools": {
-      "NP-FRA-P-PLATFORM-OKE-01-KEY": {
-        "node_shape": "VM.Standard.E4.Flex",
-        "node_shape_config": {
-          "ocpus": 2,        // Changed from 1 to 2
-          "memory": 16       // Changed from 8 to 16 GB
+      "NDP-FRA-LZ-PROD-OKE-KEY": {
+        "node_config_details": {
+          "image": "8.10",
+          "node_shape": "VM.Standard.E5.Flex",
+          "flex_shape_settings": {
+            "ocpus": 2,        // Changed from 1 to 2
+            "memory": 16       // Changed from 8 to 16 GB
+          }
         },
         ...
       }
@@ -353,26 +399,34 @@ Edit the JSON file to modify CIDR blocks:
 
 ### 7.4 Upgrade Kubernetes Version
 
-**File**: `workload-extensions/oke/simple/single-stack/oke_clusters.auto.tfvars.json`
+**File**: `workload-extensions/oke/simple/single-stack/oke_clusters.json`
 
 ```json
 {
-  "clusters_configuration": {
+  "oke_clusters_configuration": {
     "clusters": {
-      "OKE-FRA-P-PLATFORM-KEY": {
+      "CLR-FRA-LZ-PROD-OKE-KEY": {
         "kubernetes_version": "v1.35.2",  // Updated version
-        ...
+        "options": {
+          "kubernetes_network_config": {
+            "services_cidr": "10.96.0.0/16"
+          }
+        }
       }
     }
   }
 }
 ```
 
+**Note**: Keep `options.kubernetes_network_config.services_cidr` aligned with your Kubernetes service network plan. It remains required for the published native OKE payload even though `pods_cidr` is no longer part of the standard single-stack example.
+
+For config-driven overlay clusters, `options.kubernetes_network_config` includes both `services_cidr` and `pods_cidr`. If `pods_cidr` is not provided, the generator defaults it to `10.244.0.0/16`.
+
 **Important**: [Check Supported Images, Shapes for Worker Nodes](https://docs.oracle.com/en-us/iaas/Content/ContEng/Reference/contengimagesshapes.htm) and [OKE supported versions](https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengaboutk8sversions.htm) before upgrading.
 
 ### 7.5 Add Custom NSG Rules
 
-**File**: `workload-extensions/oke/simple/single-stack/oke_network.auto.tfvars.json`
+**File**: `workload-extensions/oke/simple/single-stack/oke_network.json`
 
 To add custom NSG rules, locate the NSG configuration in the JSON file and add new rules. Example for allowing SSH to workers:
 
@@ -380,9 +434,9 @@ To add custom NSG rules, locate the NSG configuration in the JSON file and add n
 {
   "network_configuration": {
     "network_configuration_categories": {
-      "prod": {
+      "prod-platform-oke": {
         "network_security_groups": {
-          "NSG-PROD-WORKERS": {
+          "NSG-FRA-LZ-PROD-PLATFORM-OKE-WORKERS-KEY": {
             "ingress_rules": {
               "ssh_from_bastion": {
                 "description": "Allow SSH from bastion",
@@ -409,22 +463,22 @@ Understanding the routing is critical for troubleshooting connectivity. This dep
 
 ### 8.1 OKE Subnet Route Tables <!-- omit from toc -->
 
-All four OKE subnets (Control Plane, Internal LB, Workers, Pods) use the same routing pattern:
+The published native OKE subnets (Control Plane, Internal LB, Workers, Pods) use the same routing pattern. Config-driven overlay clusters use the same pattern for the remaining Control Plane, Internal LB, and Workers subnets, with no pod subnet route table.
 
 ```
 Default Route:
   Destination: 0.0.0.0/0
-  Target: NAT Gateway (NGW-PROD-OKE-KEY)
+  Target: NAT Gateway (NGW-FRA-LZ-PROD-PLATFORM-OKE-KEY)
   Purpose: Outbound internet access from spoke
 
 Hub and Other Networks Route:
   Destination: 10.0.0.0/16
-  Target: DRG (DRG-FRA-LZP-HUB-KEY)
+  Target: DRG (DRG-FRA-LZ-HUB-KEY)
   Purpose: Access to Hub VCN and other attached networks
 
 Service Gateway Route:
   Destination: all-services
-  Target: Service Gateway (SGW-PROD-OKE-KEY)
+  Target: Service Gateway (SGW-FRA-LZ-PROD-PLATFORM-OKE-KEY)
   Purpose: Direct access to OCI services (bypasses NAT)
 ```
 
@@ -451,7 +505,7 @@ Default Route:
   Target: Internet Gateway
 
 OKE VCN Route:
-  Destination: 10.0.80.0/21
+  Destination: 10.0.80.0/20
   Target: DRG
   Purpose: Return traffic to OKE VCN
 ```
@@ -463,7 +517,7 @@ Default Route:
   Target: NAT Gateway
 
 OKE VCN Route:
-  Destination: 10.0.80.0/21
+  Destination: 10.0.80.0/20
   Target: DRG
   Purpose: Management access to OKE VCN
 ```
@@ -476,15 +530,15 @@ OKE VCN Route:
 
 **Hub Route Table** (for Hub VCN attachment):
 - Configured via route distributions
-- Receives routes to OKE VCN (10.0.80.0/21)
+- Receives routes to OKE VCN (10.0.80.0/20)
 
 ### 8.4 DRG Route Distributions <!-- omit from toc -->
 
-**Hub Route Distribution** (`IRTD-FRA-LZP-HUB-KEY`):
+**Hub Route Distribution** (`IRTD-FRA-LZ-HUB-KEY`):
 - Priority 30: Accept routes from OKE VCN attachment
 - Imports OKE VCN routes to Hub route table
 
-**Spoke Route Distribution** (`IRTD-FRA-LZP-SPOKE-KEY`):
+**Spoke Route Distribution** (`IRTD-FRA-LZ-SPOKE-KEY`):
 - Priority 40: Accept routes from OKE VCN attachment
 - Advertises OKE routes to other spokes (if any)
 
@@ -506,13 +560,14 @@ OKE VCN Route:
 **Cause**: IAM policies may not be sufficient or VCN configuration incorrect.
 
 **Solution**:
-1. Verify IAM policies in `oke_identity.auto.tfvars.json`
+1. Verify IAM policies in `oke_identity.json`
 2. Check that VCN-native CNI policy exists:
    ```
-   PCY-P-PLATFORM-OKE-VCN-CNI
+   PCY-LZ-PROD-PLATFORM-OKE-VCN-CNI-KEY
    ```
-3. Verify subnet CIDRs don't overlap
-4. Check NSG rules allow required traffic
+3. If using overlay, verify the source config uses workload-extension `cni_type: overlay` and `cni: flannel`, and that the generated worker node pool does not include `pods_subnet_id` or `pods_nsg_ids`
+4. Verify subnet CIDRs don't overlap
+5. Check NSG rules allow required traffic
 
 ### Issue: Worker Nodes Not Joining Cluster <!-- omit from toc -->
 
@@ -543,14 +598,15 @@ OKE VCN Route:
 **Cause**: Pods don't have internet connectivity.
 
 **Solution**:
-1. Verify service gateway route exists in pod subnet route table
-2. Check NSG rules allow egress from pods:
+1. For native clusters, verify service gateway route exists in the pod subnet route table
+2. For overlay clusters, verify the worker subnet route table has service gateway and NAT/default routes because pod traffic exits through worker nodes
+3. Check NSG rules allow egress from pods or workers, depending on the selected network mode:
    ```
    Protocol: TCP
    Destination: 0.0.0.0/0
    Ports: 443
    ```
-3. For non-OCI registries, verify Hub NAT Gateway is working
+4. For non-OCI registries, verify NAT Gateway egress is working
 
 ### Issue: Configuration Key Not Found <!-- omit from toc -->
 
@@ -558,7 +614,7 @@ OKE VCN Route:
 
 **Solution**:
 1. Verify configuration keys match exactly (case-sensitive)
-2. Check for typos: `DRG-FRA-LZP-HUB-KEY` vs `DRG-FRA-LZP-HUB`
+2. Check for typos: `DRG-FRA-LZ-HUB-KEY` vs `DRG-FRA-LZ-HUB`
 3. In single-stack, all resources are created together, so this shouldn't happen unless there's a typo
 
 ### Issue: CIDR Block Conflicts <!-- omit from toc -->
@@ -609,6 +665,7 @@ terraform destroy
 - [OneOE Blueprint](https://github.com/oracle-quickstart/terraform-oci-open-lz/tree/master/blueprints/one-oe)
 - [OKE Documentation](https://docs.oracle.com/en-us/iaas/Content/ContEng/home.htm)
 - [VCN-Native Pod Networking](https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengpodnetworking_topic-OCI_CNI_plugin.htm)
+- [Flannel Pod Networking](https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengpodnetworking_topic-flannel_CNI_plugin.htm)
 - [Hub-and-Spoke Network Topology](https://docs.oracle.com/en/solutions/hub-spoke-network/index.html)
 
 &nbsp;

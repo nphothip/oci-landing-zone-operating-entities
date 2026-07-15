@@ -327,7 +327,8 @@
             },
 
             "LGRP-LZ-VCN-FLOW-KEY": {
-                "name"                          : "lgrp-lz-vcn-flow"
+                "name"                          : "lgrp-lz-vcn-flow",
+                "compartment_id"                : "CMP-LZ-SECURITY-KEY"
             }
         }
     },
@@ -394,7 +395,7 @@
         "default_compartment_id"                : "CMP-LZ-SECURITY-KEY",
 
         "buckets": {
-            "BKT-LZ-SERVICE-CONNECTOR": {
+            "BKT-LZ-SERVICE-CONNECTOR-KEY": {
                 "name"                          : "bkt-lz-service-connector",
                 "compartment_id"                : "CMP-LZ-SECURITY-KEY",
                 "cis_level"                     : "1"

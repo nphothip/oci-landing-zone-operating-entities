@@ -1,0 +1,19 @@
+// environments without shared_project_network still get environment security-zone targets
+local multi = import 'gen/landing_zone_multi.jsonnet';
+local outputs = multi({
+  cis_level: 1,
+  hub: { kind: 'hub_e', network: { vcn: '10.0.0.0/21' } },
+  environments: {
+    prod: {
+      projects: { proj1: {} },
+    },
+  },
+});
+local zones = outputs['security_cis1.json'].security_zones_configuration.security_zones;
+{
+  has_env_target: std.objectHas(zones, 'SZ-TGT-LZ-PROD-ENVIRONMENT-KEY'),
+  has_env_network_target: std.objectHas(zones, 'SZ-TGT-LZ-PROD-ENVIRONMENT-NETWORK-KEY'),
+  has_project_target: std.objectHas(zones, 'SZ-TGT-LZ-PROD-PROJ1-KEY'),
+  has_shared_network_target: std.objectHas(zones, 'SZ-TGT-LZ-SHARED-NETWORK-KEY'),
+  zone_keys: std.sort(std.objectFields(zones)),
+}

@@ -336,7 +336,7 @@
         "default_compartment_id"                : "CMP-LZ-SECURITY-KEY",
 
         "buckets": {
-            "BKT-LZ-SERVICE-CONNECTOR": {
+            "BKT-LZ-SERVICE-CONNECTOR-KEY": {
                 "name"                          : "bkt-lz-service-connector",
                 "compartment_id"                : "CMP-LZ-SECURITY-KEY",
                 "cis_level"                     : "2",
