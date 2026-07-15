@@ -32,6 +32,17 @@ function(ctx, overlay_output=false) {
           },
         },
       },
-    },
+    } + (if ctx.public_load_balancer then {
+      // The frontend NSG lives beside the public LB/NLB in the Hub VCN. One
+      // tagged NSG per platform keeps target-tag IAM isolation intact while
+      // the shared Hub policy keeps the statement count constant.
+      '0-shared'+: {
+        vcns+: {
+          [ctx.hub_vcn_key]+: {
+            network_security_groups+: resources.public_lb_frontend_nsg(ctx),
+          },
+        },
+      },
+    } else {}),
   },
 }

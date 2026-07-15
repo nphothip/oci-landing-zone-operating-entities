@@ -1,6 +1,7 @@
 // OKE render context and customer-authored parameter validation.
 
 local cidrs = import '../../../lib/cidrs.libsonnet';
+local public_lb = import './oke_public_load_balancer.libsonnet';
 
 {
   build(params, metadata)::
@@ -22,6 +23,11 @@ local cidrs = import '../../../lib/cidrs.libsonnet';
   local hub_lb_cidr =
     if routing != null && std.objectHas(routing, 'hub_lb_cidr') then routing.hub_lb_cidr
     else null;
+  local public_load_balancer = public_lb.public_load_balancer_enabled(params.platform_config);
+  assert !public_load_balancer || has_hub :
+    'oke_simple config_params.public_load_balancer requires a hub-backed platform network';
+  assert !public_load_balancer || hub_lb_cidr != null :
+    'oke_simple config_params.public_load_balancer requires the Hub load balancer subnet';
   local internet_default_target =
     if routing != null && std.objectHas(routing, 'internet_default_target')
     then routing.internet_default_target
@@ -159,6 +165,8 @@ local cidrs = import '../../../lib/cidrs.libsonnet';
     routing: routing,
     has_hub: has_hub,
     hub_lb_cidr: hub_lb_cidr,
+    public_load_balancer: public_load_balancer,
+    platform_tag_value: public_lb.platform_tag_value(scope.qualified_name, plat),
     internet_default_target: internet_default_target,
     use_local_natgw: use_local_natgw,
     category_key: category_key,
@@ -183,6 +191,7 @@ local cidrs = import '../../../lib/cidrs.libsonnet';
     kube_secret_key_name: n.display('key', display_segments + ['kube', 'secrets']),
     subnets: params.network.subnets,
 	    vcn_key: n.key('VCN', key_segments),
+	    hub_vcn_key: n.key('VCN', ['HUB']),
 	    sgw_key: n.key('SGW', key_segments),
 	    ngw_key: n.key('NGW', key_segments),
     drg_key: n.key('DRG', ['HUB']),
@@ -202,6 +211,7 @@ local cidrs = import '../../../lib/cidrs.libsonnet';
 	    nsg_lb_key: n.key('NSG', key_segments + ['INT-LB']),
 	    nsg_pods_key: n.key('NSG', key_segments + ['PODS']),
 	    nsg_workers_key: n.key('NSG', key_segments + ['WORKERS']),
+    hub_frontend_nsg_key: n.key('NSG', ['HUB'] + key_segments + ['PUBLIC-LB']),
     dns: scope.dns,
   },
 }

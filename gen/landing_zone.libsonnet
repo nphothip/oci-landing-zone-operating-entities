@@ -117,6 +117,7 @@ function(raw_config)
   });
   local extension_network_pre = extension_state.network_pre;
   local extension_iam = extension_state.iam;
+  local extension_governance = extension_state.governance;
   local extension_security_cis1 = extension_state.security_cis1;
   local extension_security_cis2 = extension_state.security_cis2;
   local extension_observability_cis1 = extension_state.observability_cis1;
@@ -158,7 +159,7 @@ function(raw_config)
     iam: checked_iam,
 
     // Governance output: tag namespaces and definitions
-    governance: governance_builder(config, n),
+    governance: governance_builder(config, n) + extension_governance,
 
     // Security outputs: 4 CIS variants (merged with extension contributions)
     security_cis1_pre: security.cis1_pre,

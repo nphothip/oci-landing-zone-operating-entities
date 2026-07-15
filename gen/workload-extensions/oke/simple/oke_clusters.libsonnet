@@ -1,5 +1,7 @@
 // OKE cluster output builder.
 
+local public_lb = import './oke_public_load_balancer.libsonnet';
+
 function(ctx) {
   oke_clusters_configuration+: {
     clusters+: {
@@ -33,6 +35,16 @@ function(ctx) {
             {
               services_cidr: ctx.services_cidr,
             } + ctx.optional_cluster_kubernetes_network_config,
+
+          // These are initial tags for LBs and NLBs created later by Kubernetes
+          // Services of type LoadBalancer. Existing-resource IAM compares this
+          // value with the requesting cluster's platform tag. Tag-override
+          // annotations must not replace it.
+          service_lb_config: {
+            defined_tags: {
+              [public_lb.platform_tag]: ctx.platform_tag_value,
+            },
+          },
         },
       },
     },

@@ -1,0 +1,245 @@
+// Public-LB access is opt-in, uses direct principal-to-target platform tag matching, and cannot change NSG rules.
+// contains: "public_policy_present": true
+// contains: "public_policy_statement_count": 6
+// contains: "lb_nlb_nsg_statements_have_one_enabled_platform_allowlist": true
+// contains: "disabled_platform_absent_from_lb_nlb_nsg_allowlist": true
+// contains: "target_isolation_statement_count": 3
+// contains: "frontend_nsg_present": true
+// contains: "disabled_platform_frontend_nsg_present": false
+// contains: "enabled_compartment_tags": {
+// contains: "removed_compartment_tags": []
+// contains: "nsg_membership_only_statement_present": true
+// contains: "load_balancer_move_excluded": true
+// contains: "network_load_balancer_move_excluded": true
+// contains: "forbidden_nsg_lifecycle_or_rule_permissions": []
+// contains: "forbidden_network_permissions": []
+// contains: "hub_ip_statements_allow_all_clusters_without_tags": true
+// contains: "unconditional_public_any_user_statements": []
+// contains: "private_network_allowlists_are_scope_specific": true
+// contains: "private_ip_statements_allow_all_clusters_without_tags": true
+// contains: "certificate_renewal_policy_keys": []
+// contains: "certificate_consumption_statement_count": 4
+// contains: "certificate_association_present": true
+// contains: "cluster_certificate_mutation_permissions": []
+// contains: "certificate_bundle_is_public_only": true
+// contains: "workload_certificate_statements": []
+// contains: "platform_compartment_principal_tag_conditions": []
+// contains: "platform_compartment_boundary_failures": []
+// contains: "unsafe_policy_descriptions": []
+local lz = import 'gen/landing_zone.libsonnet';
+local result = lz({
+  hub: { kind: 'hub_e', network: { vcn: '10.0.0.0/21' } },
+  environments: {
+    prod: {
+      platforms: {
+        oke: {
+          network: { vcn: '10.0.80.0/20' },
+          extension: {
+            type: 'oke_simple',
+            params: {
+              kubernetes_version: 'v1.35.2',
+              services_cidr: '10.96.0.0/16',
+              api_endpoint_allowed_cidrs: ['10.0.1.0/24'],
+              public_load_balancer: true,
+            },
+          },
+        },
+      },
+    },
+    preprod: {
+      platforms: {
+        oke: {
+          network: { vcn: '10.0.96.0/20' },
+          extension: {
+            type: 'oke_simple',
+            params: {
+              kubernetes_version: 'v1.35.2',
+              services_cidr: '10.97.0.0/16',
+              api_endpoint_allowed_cidrs: ['10.0.1.0/24'],
+            },
+          },
+        },
+      },
+    },
+  },
+});
+local policies = result.iam.policies_configuration.supplied_policies;
+local public_policy_key = 'PCY-LZ-OKE-SERVICE-PUBLIC-LB-HUB-KEY';
+local public_policy = policies[public_policy_key];
+local public_statements = public_policy.statements;
+local prod_network_statements = policies['PCY-LZ-PROD-OKE-SERVICE-NETWORK-KEY'].statements;
+local preprod_network_statements = policies['PCY-LZ-PREPROD-OKE-SERVICE-NETWORK-KEY'].statements;
+local security_statements = policies['PCY-LZ-PROD-PLATFORM-OKE-SERVICE-SECURITY-KEY'].statements;
+local cluster_certificate_statements = [
+  statement
+  for statement in security_statements
+  if std.length(std.findSubstr("request.principal.type = 'cluster'", statement)) > 0 &&
+     std.length(std.findSubstr('certificate', statement)) > 0
+];
+local root = result.iam.compartments_configuration.compartments['CMP-LANDINGZONE-KEY'];
+local prod_compartment = root.children['CMP-LZ-PROD-KEY'].children['CMP-LZ-PROD-PLATFORM-KEY']
+  .children['CMP-LZ-PROD-OKE-KEY'];
+local preprod_compartment = root.children['CMP-LZ-PREPROD-KEY'].children['CMP-LZ-PREPROD-PLATFORM-KEY']
+  .children['CMP-LZ-PREPROD-OKE-KEY'];
+local hub_nsgs = result.network.network_configuration.network_configuration_categories['0-shared']
+  .vcns['VCN-FRA-LZ-HUB-KEY'].network_security_groups;
+local required_platform_match =
+  'request.principal.compartment.tag.tagns-lz-oke.platform = target.resource.tag.tagns-lz-oke.platform';
+local required_enabled_platform =
+  "request.principal.compartment.tag.tagns-lz-oke.platform = 'prod-oke'";
+local hub_ip_statements = [
+  s
+  for s in public_statements
+  if std.startsWith(s, 'allow any-user to manage public-ips') ||
+     std.startsWith(s, 'allow any-user to use private-ips') ||
+     std.startsWith(s, 'allow any-user to manage floating-ips')
+];
+local hub_lb_nlb_nsg_statements = [
+  s
+  for s in public_statements
+  if std.startsWith(s, 'allow any-user to manage load-balancers') ||
+     std.startsWith(s, 'allow any-user to manage network-load-balancers') ||
+     std.startsWith(s, 'allow any-user to use network-security-groups')
+];
+local all_policy_statements = [
+  statement
+  for key in std.objectFields(policies)
+  for statement in policies[key].statements
+];
+local platform_service_policy_keys = [
+  key
+  for key in std.objectFields(policies)
+  if std.length(std.findSubstr('-PLATFORM-', key)) > 0 &&
+     std.length(std.findSubstr('-SERVICE-', key)) > 0
+];
+local platform_service_any_user_statements = [
+  statement
+  for key in platform_service_policy_keys
+  for statement in policies[key].statements
+  if std.startsWith(statement, 'allow any-user ')
+];
+
+{
+  public_policy_present: std.objectHas(policies, public_policy_key),
+  public_policy_statement_count: std.length(public_statements),
+  lb_nlb_nsg_statements_have_one_enabled_platform_allowlist:
+    std.length([
+      s
+      for s in hub_lb_nlb_nsg_statements
+      if std.length(std.findSubstr(required_enabled_platform, s)) == 1
+    ]) == 3,
+  disabled_platform_absent_from_lb_nlb_nsg_allowlist:
+    std.length([s for s in hub_lb_nlb_nsg_statements if std.length(std.findSubstr("'preprod-oke'", s)) > 0]) == 0,
+  target_isolation_statement_count:
+    std.length([s for s in public_statements if std.length(std.findSubstr(required_platform_match, s)) > 0]),
+  frontend_nsg_present:
+    std.objectHas(hub_nsgs, 'NSG-FRA-LZ-HUB-PROD-PLATFORM-OKE-PUBLIC-LB-KEY'),
+  disabled_platform_frontend_nsg_present:
+    std.objectHas(hub_nsgs, 'NSG-FRA-LZ-HUB-PREPROD-PLATFORM-OKE-PUBLIC-LB-KEY'),
+  enabled_compartment_tags: prod_compartment.defined_tags,
+  removed_compartment_tags: [
+    tag
+    for tag in ['tagns-lz-oke.managed-by', 'tagns-lz-oke.network-scope', 'tagns-lz-oke.public-load-balancer']
+    if std.objectHas(prod_compartment.defined_tags, tag) || std.objectHas(preprod_compartment.defined_tags, tag)
+  ],
+  nsg_membership_only_statement_present:
+    std.length([s for s in public_statements if std.startsWith(s, 'allow any-user to use network-security-groups')]) == 1,
+  load_balancer_move_excluded:
+    std.length([s for s in public_statements if std.length(std.findSubstr("request.permission != 'LOAD_BALANCER_MOVE'", s)) > 0]) == 1,
+  network_load_balancer_move_excluded:
+    std.length([s for s in public_statements if std.length(std.findSubstr("request.permission != 'NETWORK_LOAD_BALANCER_MOVE'", s)) > 0]) == 1,
+  forbidden_nsg_lifecycle_or_rule_permissions: [
+    permission
+    for permission in [
+      'NETWORK_SECURITY_GROUP_CREATE',
+      'NETWORK_SECURITY_GROUP_UPDATE',
+      'NETWORK_SECURITY_GROUP_DELETE',
+      'NETWORK_SECURITY_GROUP_MOVE',
+      'NETWORK_SECURITY_GROUP_UPDATE_SECURITY_RULES',
+    ]
+    if std.length([s for s in public_statements if std.length(std.findSubstr("request.permission = '%s'" % permission, s)) > 0]) > 0
+  ],
+  forbidden_network_permissions: [
+    forbidden
+    for forbidden in ['manage virtual-network-family', 'manage vcns', "request.permission = 'NETWORK_LOAD_BALANCER_MOVE'"]
+    if std.length([s for s in public_statements if std.length(std.findSubstr(forbidden, s)) > 0]) > 0
+  ],
+  hub_ip_statements_allow_all_clusters_without_tags:
+    std.length(hub_ip_statements) == 3 &&
+    std.length([
+      s
+      for s in hub_ip_statements
+      if std.length(std.findSubstr("request.principal.type = 'cluster'", s)) > 0 &&
+         std.length(std.findSubstr('request.principal.compartment.tag.', s)) == 0 &&
+         std.length(std.findSubstr('target.resource.tag.', s)) == 0
+    ]) == 3,
+  unconditional_public_any_user_statements: [
+    s
+    for s in public_statements
+    if std.startsWith(s, 'allow any-user ') && std.length(std.findSubstr(' where ', s)) == 0
+  ],
+  private_network_allowlists_are_scope_specific:
+    std.length([s for s in prod_network_statements if std.length(std.findSubstr("'prod-oke'", s)) > 0]) == 3 &&
+    std.length([s for s in prod_network_statements if std.length(std.findSubstr("'preprod-oke'", s)) > 0]) == 0 &&
+    std.length([s for s in preprod_network_statements if std.length(std.findSubstr("'preprod-oke'", s)) > 0]) == 3 &&
+    std.length([s for s in preprod_network_statements if std.length(std.findSubstr("'prod-oke'", s)) > 0]) == 0,
+  private_ip_statements_allow_all_clusters_without_tags:
+    std.length([
+      statement
+      for statement in prod_network_statements + preprod_network_statements
+      if std.startsWith(statement, 'allow any-user to use private-ips') &&
+         std.length(std.findSubstr("request.principal.type = 'cluster'", statement)) > 0 &&
+         std.length(std.findSubstr('tagns-lz-oke.platform', statement)) == 0
+    ]) == 2,
+  certificate_renewal_policy_keys: [
+    key
+    for key in std.objectFields(policies)
+    if std.length(std.findSubstr('CERTIFICATE-RENEWAL', key)) > 0
+  ],
+  certificate_consumption_statement_count: std.length(cluster_certificate_statements),
+  certificate_association_present:
+    std.length([
+      statement
+      for statement in cluster_certificate_statements
+      if std.length(std.findSubstr('manage certificate-associations', statement)) > 0
+    ]) == 1,
+  cluster_certificate_mutation_permissions: [
+    permission
+    for permission in [
+      'CERTIFICATE_CREATE',
+      'CERTIFICATE_UPDATE',
+      'CERTIFICATE_DELETE',
+      'CERTIFICATE_MOVE',
+      'CERTIFICATE_VERSION_DELETE',
+      'CERTIFICATE_VERSION_REVOKE',
+    ]
+    if std.length([s for s in cluster_certificate_statements if std.length(std.findSubstr(permission, s)) > 0]) > 0
+  ],
+  certificate_bundle_is_public_only:
+    std.length([
+      statement
+      for statement in cluster_certificate_statements
+      if std.length(std.findSubstr("target.leaf-certificate.bundle-type = 'CERTIFICATE_CONTENT_PUBLIC_ONLY'", statement)) > 0
+    ]) == 1,
+  workload_certificate_statements: [
+    statement
+    for statement in all_policy_statements
+    if std.length(std.findSubstr("request.principal.type = 'workload'", statement)) > 0 &&
+       std.length(std.findSubstr('certificate', statement)) > 0
+  ],
+  platform_compartment_principal_tag_conditions: [
+    statement
+    for statement in platform_service_any_user_statements
+    if std.length(std.findSubstr('request.principal.compartment.tag.', statement)) > 0
+  ],
+  platform_compartment_boundary_failures: [
+    statement
+    for statement in platform_service_any_user_statements
+    if std.length(std.findSubstr('request.principal.compartment.id = target.compartment.id', statement)) == 0
+  ],
+  unsafe_policy_descriptions: [
+    key
+    for key in std.objectFields(policies)
+    if std.startsWith(policies[key].description, 'Unsafe:')
+  ],
+}
