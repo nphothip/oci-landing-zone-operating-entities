@@ -11,7 +11,7 @@ The diagram below illustrates a sample routing setup for a multi-tenancy/multi-r
 <img src="../images/drg-routing.png" width="100%">
 
 > [!NOTE]  
-> The above diagram serves as a reference for designing DRG routing based on specific architecture requirements. The Tenancy 1 & 2 may follow different DRG routing styles, such as having firewalls on both sides, only on the Tenancy 1, or a mix of various configurations.
+> The above diagram serves as a reference for designing DRG routing based on specific architecture requirements. Tenancy 1 and Tenancy 2 may follow different DRG routing styles, such as having firewalls on both sides, only in Tenancy 1, or a mix of different routing configurations.
 
 &nbsp;
 ### 2. Sample JSON Configuration for RPC  
@@ -29,10 +29,7 @@ The diagram below illustrates a sample routing setup for a multi-tenancy/multi-r
     - To learn more about **HUB Model E**, refer to the [OCI Open LZ - Hub E Documentation](https://github.com/oci-landing-zones/oci-landing-zone-operating-entities/tree/master/addons/oci-hub-models/hub_e).  
 
 > [!NOTE]  
-> To spin up **Tenancy 1** or **Tenancy 2** with the **One-OE (HUB E) single-stack** plus **RPC** configuration, navigate to the respective directories below to access the complete JSON configuration files:
->
-> - [tenancy1](./tenancy1/)
-> - [tenancy2](./tenancy2/)
+> This addon runtime keeps only the RPC-specific Tenancy 1 and Tenancy 2 configuration files. It does not include full One-OE configs; these files are working reference sample configs to establish cross-tenancy RPC.
 
 
 #### License
