@@ -34,7 +34,7 @@ The simple multi-stack path is a Hub E quickstart that creates one production OK
 **Key Features:**
 - **Automated Dependency Resolution**: Network resources (VCN, subnets, NSGs) are automatically linked to the OKE cluster using configuration keys using dependency exchange across stacks
 - **CIS-Compliant**: Uses the CIS-compliant OKE module from [terraform-oci-modules-workloads](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/tree/main/cis-oke)
-- **Encryption**: The included OKE cluster and worker files use CIS1 with Oracle-managed encryption and enable worker boot-volume encryption in transit.
+- **Encryption**: The included OKE cluster and worker files use CIS1 with OCI-managed encryption. Worker boot-volume encryption in transit is enabled only for CIS2 generation.
 - **IAM profile**: `oke_identity.json` is rendered from CIS2 and includes compartment-scoped KMS authority. It is dormant for this quickstart because the CIS1 cluster and worker files contain no KMS key reference; keep unrelated keys out of the OKE platform compartment.
 - **OKE Network Mode**: The committed JSON uses VCN-native networking
 - **Public workload ingress**: OKE has narrowly scoped permissions to create public OCI Load Balancers and Network Load Balancers in the prepared Hub subnet; the quickstart does not provision a Terraform-managed Hub L7 Load Balancer
@@ -198,7 +198,7 @@ Edit `oke_workers.json`:
 - **Node Count**: Change `size` to scale worker nodes
 - **Instance Shape**: Modify `node_shape`, `ocpus`, `memory` for different compute resources
 - **Worker Image**: The default `9\\.[0-9]+` selector chooses a matching Oracle Linux 9 OKE image; update `node_config_details.image` after checking the supported images for the target Kubernetes version
-- **Encryption**: The committed multi-stack files use CIS1 with Oracle-managed encryption and enable boot-volume encryption in transit.
+- **Encryption**: The committed multi-stack files use CIS1 with OCI-managed encryption and leave boot-volume encryption in transit disabled.
 - **Boot Volume**: Adjust `boot_volume.size` for storage requirements
 - **SSH Access**: Update `default_ssh_public_key_path` with your SSH public key path
 - **Cloud-init**: Customize `cloud_init` for additional node configuration

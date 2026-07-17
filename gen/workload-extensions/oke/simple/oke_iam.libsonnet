@@ -20,16 +20,6 @@ function(ctx) {
     "request.principal.type = 'nodepool'",
     'request.principal.compartment.id = target.compartment.id',
   ],
-  local certificate_association_permission_condition =
-    "any { %s }" % std.join(', ', [
-      "request.permission = '%s'" % permission
-      for permission in [
-        'CERTIFICATE_ASSOCIATION_INSPECT',
-        'CERTIFICATE_ASSOCIATION_READ',
-        'CERTIFICATE_ASSOCIATION_CREATE',
-        'CERTIFICATE_ASSOCIATION_DELETE',
-      ]
-    ]),
   groups_configuration+: {
     groups+: {
       [n.key_global('GRP', [ctx.env, 'PLATFORM', ctx.plat, 'ADMINS'])]: {
@@ -69,6 +59,7 @@ function(ctx) {
           "allow group 'id_lz_common'/'%s' to use network-security-groups in compartment %s" % [root._group_names.admins, net_path],
           "allow group 'id_lz_common'/'%s' to use vnics in compartment %s" % [root._group_names.admins, net_path],
           "allow group 'id_lz_common'/'%s' to manage private-ips in compartment %s" % [root._group_names.admins, net_path],
+          "allow group 'id_lz_common'/'%s' to use compute-capacity-reservations in compartment %s" % [root._group_names.admins, cmp_path],
         ],
       },
 
@@ -92,8 +83,8 @@ function(ctx) {
       [n.key_global('PCY', [ctx.env, 'PLATFORM', ctx.plat, 'SERVICE', 'COMPUTE'])]: {
         name: n.display_global('pcy', ctx.display_segments + ['service', 'compute']),
         description: desc.policy.grants(
-          'OKE clusters',
-          'compute permissions for OKE-managed resources',
+          'OKE service, clusters, and node pools',
+          'compute and capacity-reservation permissions for OKE-managed resources',
           'the %s environment OKE platform compartment' % ctx.env_long_title
         ),
         compartment_id: ctx.cmp_key,
@@ -106,6 +97,11 @@ function(ctx) {
           "allow any-user to read instance-images in compartment %s where all { %s }" % [
             cmp_name,
             std.join(', ', cluster_compartment_source_conditions),
+          ],
+          "allow service oke to use compute-capacity-reservations in compartment %s" % cmp_name,
+          "allow any-user to use compute-capacity-reservations in compartment %s where all { %s }" % [
+            cmp_name,
+            std.join(', ', nodepool_compartment_source_conditions),
           ],
         ],
       },
@@ -124,34 +120,13 @@ function(ctx) {
             n.display_global('grp', ['security', 'admin']),
             cmp_name,
           ],
-          // Certificate OCIDs come from the TLS ConfigMap. The owning OKE
-          // platform compartment is the target-resource boundary.
-          "allow any-user to read leaf-certificates in compartment %s where all { %s }" % [
+          // OKE's OCI Certificates integration requires the aggregate leaf
+          // certificate family grant. The owning platform compartment is the
+          // target boundary and must contain only certificates approved for
+          // its cluster.
+          "allow any-user to manage leaf-certificate-family in compartment %s where all { %s }" % [
             cmp_name,
-            std.join(', ', cluster_compartment_source_conditions + [
-              "request.permission = 'CERTIFICATE_READ'",
-            ]),
-          ],
-          "allow any-user to read leaf-certificate-versions in compartment %s where all { %s }" % [
-            cmp_name,
-            std.join(', ', cluster_compartment_source_conditions + [
-              "request.permission = 'CERTIFICATE_VERSION_READ'",
-            ]),
-          ],
-          "allow any-user to read leaf-certificate-bundles in compartment %s where all { %s }" % [
-            cmp_name,
-            std.join(', ', cluster_compartment_source_conditions + [
-              "target.leaf-certificate.bundle-type = 'CERTIFICATE_CONTENT_PUBLIC_ONLY'",
-              "request.permission = 'CERTIFICATE_BUNDLE_READ'",
-            ]),
-          ],
-          // Association create cannot use target.resource.tag because the
-          // association does not exist yet. The platform compartment is the
-          // hard boundary; it may contain only certificates approved for this
-          // OKE platform.
-          "allow any-user to manage certificate-associations in compartment %s where all { %s }" % [
-            cmp_name,
-            std.join(', ', cluster_compartment_source_conditions + [certificate_association_permission_condition]),
+            "request.principal.type = 'cluster'",
           ],
         ] else []) + (if ctx.cis_level == 2 then [
           // The platform compartment contains one OKE cluster and one

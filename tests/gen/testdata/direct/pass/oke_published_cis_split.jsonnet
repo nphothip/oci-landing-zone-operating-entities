@@ -47,7 +47,8 @@ local cluster_kms_references(clusters) = [
 local worker_kms_references(workers) = [
   key
   for key in std.objectFields(workers)
-  if std.objectHas(workers[key].node_config_details.encryption, 'kms_key_id')
+  if std.objectHas(workers[key].node_config_details, 'encryption') &&
+     std.objectHas(workers[key].node_config_details.encryption, 'kms_key_id')
 ];
 
 {

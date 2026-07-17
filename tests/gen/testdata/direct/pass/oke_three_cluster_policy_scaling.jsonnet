@@ -1,11 +1,11 @@
 // Three CIS2 OKE platforms keep shared IAM statement counts fixed, use tag equality for isolation, and remain below policy limits.
-// contains: "network_policy_statement_count": 4
-// contains: "hub_public_policy_statement_count": 6
+// contains: "network_policy_statement_count": 6
+// contains: "hub_public_policy_statement_count": 8
 // contains: "tagging_policy_statement_count": 1
 // contains: "frontend_nsg_count": 3
 // contains: "unique_frontend_platform_tags": 3
 // contains: "shared_source_allowlist_has_all_platforms": true
-// contains: "shared_reconciliation_uses_platform_tag_equality": true
+// contains: "shared_reconciliation_platform_tag_equality_count": 4
 // contains: "platform_certificate_policy_failures": []
 // contains: "below_repository_safety_budget": true
 // contains: "below_oci_limit": true
@@ -86,12 +86,12 @@ local expected_platform_policies = {
         if std.length(std.findSubstr("tagns-lz-oke.platform = '%s'" % platform, statement)) > 0
       ]) > 0
     ]) == 3,
-  shared_reconciliation_uses_platform_tag_equality:
+  shared_reconciliation_platform_tag_equality_count:
     std.length([
       statement
       for statement in network_policy.statements + hub_policy.statements
       if std.length(std.findSubstr(tag_equality, statement)) > 0
-    ]) == 6,
+    ]),
   platform_certificate_policy_failures: [
     platform
     for platform in std.objectFields(expected_platform_policies)

@@ -52,6 +52,13 @@ function(contexts)
     ]);
   local target_condition(source_conditions) =
     all_conditions(source_conditions + matching_target);
+  // OKE CCM does not apply service_lb_config defined tags to the frontend NSG
+  // it creates in NSG management mode. The spoke network compartment is
+  // therefore the authorization boundary for NSG lifecycle.
+  local spoke_nsg_condition(source_conditions) =
+    all_conditions(source_conditions + [
+      "request.permission != 'NETWORK_SECURITY_GROUP_MOVE'",
+    ]);
   local network_scope_keys = std.uniq(std.sort([
     ctx.scope.network_compartment_key
     for ctx in contexts
@@ -68,7 +75,7 @@ function(contexts)
       name: n.display_global('pcy', [scope_label(first), 'oke', 'service', 'network']),
       description: desc.policy.grants(
         'OKE cluster resource principals',
-        'scope-allowlisted private Load Balancer, Network Load Balancer, and NSG permissions plus cluster-wide private-IP use',
+        'scope-allowlisted private Load Balancer, Network Load Balancer, and NSG permissions plus the VCN prerequisites for NSG lifecycle and cluster-wide private-IP use',
         'the %s network compartment' % scope_label(first)
       ),
       compartment_id: scope_key,
@@ -79,15 +86,25 @@ function(contexts)
           cmp_name,
           all_conditions(any_cluster_source),
         ],
-        "allow any-user to use network-security-groups in compartment %s where %s" % [
+        "allow any-user to manage network-security-groups in compartment %s where %s" % [
           cmp_name,
-          target_condition(source),
+          spoke_nsg_condition(source),
+        ],
+        "allow any-user to manage vcns in compartment %s where %s" % [
+          cmp_name,
+          all_conditions(source + [
+            "any { request.operation = 'CreateNetworkSecurityGroup', request.operation = 'DeleteNetworkSecurityGroup' }",
+          ]),
+        ],
+        "allow any-user to read vcns in compartment %s where %s" % [
+          cmp_name,
+          all_conditions(source),
         ],
         "allow any-user to manage load-balancers in compartment %s where %s" % [
           cmp_name,
           lifecycle_condition(
             source,
-            ['LOAD_BALANCER_INSPECT', 'LOAD_BALANCER_CREATE'],
+            ['LOAD_BALANCER_INSPECT', 'LOAD_BALANCER_READ', 'LOAD_BALANCER_CREATE'],
             'LOAD_BALANCER_MOVE'
           ),
         ],
@@ -95,7 +112,7 @@ function(contexts)
           cmp_name,
           lifecycle_condition(
             source,
-            ['NETWORK_LOAD_BALANCER_INSPECT', 'NETWORK_LOAD_BALANCER_CREATE'],
+            ['NETWORK_LOAD_BALANCER_INSPECT', 'NETWORK_LOAD_BALANCER_READ', 'NETWORK_LOAD_BALANCER_CREATE'],
             'NETWORK_LOAD_BALANCER_MOVE'
           ),
         ],
@@ -118,9 +135,16 @@ function(contexts)
       compartment_id: n.key_global('CMP', ['NETWORK']),
       local hub_cmp = n.display_global('cmp', ['network']),
       statements: [
-        "allow any-user to manage load-balancers in compartment %s where %s" % [hub_cmp, lifecycle_condition(public_source, ['LOAD_BALANCER_INSPECT', 'LOAD_BALANCER_CREATE'], 'LOAD_BALANCER_MOVE')],
-        "allow any-user to manage network-load-balancers in compartment %s where %s" % [hub_cmp, lifecycle_condition(public_source, ['NETWORK_LOAD_BALANCER_INSPECT', 'NETWORK_LOAD_BALANCER_CREATE'], 'NETWORK_LOAD_BALANCER_MOVE')],
-        "allow any-user to use network-security-groups in compartment %s where %s" % [hub_cmp, target_condition(public_source)],
+        "allow any-user to manage load-balancers in compartment %s where %s" % [hub_cmp, lifecycle_condition(public_source, ['LOAD_BALANCER_INSPECT', 'LOAD_BALANCER_READ', 'LOAD_BALANCER_CREATE'], 'LOAD_BALANCER_MOVE')],
+        "allow any-user to manage network-load-balancers in compartment %s where %s" % [hub_cmp, lifecycle_condition(public_source, ['NETWORK_LOAD_BALANCER_INSPECT', 'NETWORK_LOAD_BALANCER_READ', 'NETWORK_LOAD_BALANCER_CREATE'], 'NETWORK_LOAD_BALANCER_MOVE')],
+        // CreateLoadBalancer evaluates Hub NSG membership without exposing the
+        // referenced NSG's target tags to IAM. Keep this membership-only and
+        // source-allowlisted; OKE still cannot create NSGs or change rules.
+        "allow any-user to use network-security-groups in compartment %s where %s" % [hub_cmp, all_conditions(public_source)],
+        // Public LBs use an alternative subnet in the Hub VCN. These grants
+        // permit discovery and attachment without VCN or subnet mutation.
+        "allow any-user to use subnets in compartment %s where %s" % [hub_cmp, all_conditions(public_source)],
+        "allow any-user to read vcns in compartment %s where %s" % [hub_cmp, all_conditions(public_source)],
         // OKE's cross-compartment reserved-IP contracts differ for LB and NLB.
         // A Service selects an existing reserved address; it does not create
         // the reservation. OCI nevertheless requires manage public-ips for the
@@ -129,7 +153,7 @@ function(contexts)
         // platform tags for IP access.
         "allow any-user to manage public-ips in compartment %s where %s" % [hub_cmp, all_conditions(any_cluster_source)],
         "allow any-user to use private-ips in compartment %s where %s" % [hub_cmp, all_conditions(any_cluster_source)],
-        "allow any-user to manage floating-ips in tenancy where %s" % all_conditions(any_cluster_source),
+        "allow any-user to manage floating-ips in compartment %s where %s" % [hub_cmp, all_conditions(any_cluster_source)],
       ],
     },
   };

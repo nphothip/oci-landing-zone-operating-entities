@@ -54,7 +54,7 @@ The quickstart creates one production OKE platform.
 - **Automated Routing**: Hub route tables pre-configured  with OKE CIDR (10.0.80.0/20)
 - **DRG Integration**: Dynamic Routing Gateway with route distributions configured for Hub-Spoke communication
 - **CIS-Compliant OKE**: Uses the CIS-compliant OKE module from [terraform-oci-modules-workloads](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/tree/main/cis-oke)
-- **Encryption**: The included OKE cluster and worker files use CIS1 with Oracle-managed encryption and enable worker boot-volume encryption in transit.
+- **Encryption**: The included OKE cluster and worker files use CIS1 with OCI-managed encryption. Worker boot-volume encryption in transit is enabled only for CIS2 generation.
 - **IAM profile**: `oke_identity.json` is rendered from CIS2 and includes compartment-scoped KMS authority. It is dormant for this quickstart because the CIS1 cluster and worker files contain no KMS key reference; keep unrelated keys out of the OKE platform compartment.
 - **OKE Network Mode**: The committed JSON uses VCN-native networking
 - **Public workload ingress**: OKE has narrowly scoped permissions to create public OCI Load Balancers and Network Load Balancers in the prepared Hub subnet
@@ -122,7 +122,7 @@ Before granting Kubernetes Service permissions, review the shared [operational a
 - **Control Plane**: Private endpoint in dedicated subnet
 - **Worker Pool**: 1x VM.Standard.E5.Flex (1 OCPU, 8GB RAM, latest matching Oracle Linux 9 OKE image) - easily scalable
 - **CNI**: VCN-native pod networking
-- **Kubernetes Secrets and Worker Boot Volume Encryption**: Oracle-managed encryption, with worker boot-volume encryption in transit enabled
+- **Kubernetes Secrets and Worker Boot Volume Encryption**: OCI-managed encryption; worker boot-volume encryption in transit is disabled for the included CIS1 configuration
 
 &nbsp;
 

@@ -1,16 +1,25 @@
-// Public-LB access is opt-in, uses direct principal-to-target platform tag matching, and cannot change NSG rules.
+// Public-LB access is opt-in; LB/NLB lifecycle uses target matching while Hub NSG membership is source-scoped.
 // contains: "public_policy_present": true
-// contains: "public_policy_statement_count": 6
+// contains: "public_policy_statement_count": 8
 // contains: "lb_nlb_nsg_statements_have_one_enabled_platform_allowlist": true
 // contains: "disabled_platform_absent_from_lb_nlb_nsg_allowlist": true
-// contains: "target_isolation_statement_count": 3
+// contains: "target_isolation_statement_count": 2
 // contains: "frontend_nsg_present": true
 // contains: "disabled_platform_frontend_nsg_present": false
 // contains: "enabled_compartment_tags": {
 // contains: "removed_compartment_tags": []
 // contains: "nsg_membership_only_statement_present": true
+// contains: "hub_nsg_target_tag_condition_absent": true
+// contains: "hub_vcn_subnet_prerequisites_present": true
+// contains: "spoke_nsg_lifecycle_statement_present": true
+// contains: "spoke_nsg_create_allowed": true
+// contains: "spoke_nsg_move_excluded": true
+// contains: "spoke_nsg_target_tag_condition_absent": true
+// contains: "spoke_nsg_vcn_prerequisites_present": true
 // contains: "load_balancer_move_excluded": true
 // contains: "network_load_balancer_move_excluded": true
+// contains: "load_balancer_work_request_read_allowed": true
+// contains: "network_load_balancer_work_request_read_allowed": true
 // contains: "forbidden_nsg_lifecycle_or_rule_permissions": []
 // contains: "forbidden_network_permissions": []
 // contains: "hub_ip_statements_allow_all_clusters_without_tags": true
@@ -18,10 +27,10 @@
 // contains: "private_network_allowlists_are_scope_specific": true
 // contains: "private_ip_statements_allow_all_clusters_without_tags": true
 // contains: "certificate_renewal_policy_keys": []
-// contains: "certificate_consumption_statement_count": 4
-// contains: "certificate_association_present": true
-// contains: "cluster_certificate_mutation_permissions": []
-// contains: "certificate_bundle_is_public_only": true
+// contains: "certificate_consumption_statement_count": 1
+// contains: "leaf_certificate_family_manage_present": true
+// contains: "certificate_scope_is_platform_compartment": true
+// contains: "certificate_policy_excludes_ca_family": true
 // contains: "workload_certificate_statements": []
 // contains: "platform_compartment_principal_tag_conditions": []
 // contains: "platform_compartment_boundary_failures": []
@@ -101,6 +110,11 @@ local hub_lb_nlb_nsg_statements = [
      std.startsWith(s, 'allow any-user to manage network-load-balancers') ||
      std.startsWith(s, 'allow any-user to use network-security-groups')
 ];
+local prod_spoke_nsg_statements = [
+  s
+  for s in prod_network_statements
+  if std.startsWith(s, 'allow any-user to manage network-security-groups')
+];
 local all_policy_statements = [
   statement
   for key in std.objectFields(policies)
@@ -144,10 +158,59 @@ local platform_service_any_user_statements = [
   ],
   nsg_membership_only_statement_present:
     std.length([s for s in public_statements if std.startsWith(s, 'allow any-user to use network-security-groups')]) == 1,
+  hub_nsg_target_tag_condition_absent:
+    std.length([
+      s
+      for s in public_statements
+      if std.startsWith(s, 'allow any-user to use network-security-groups') &&
+         std.length(std.findSubstr('target.resource.tag.', s)) == 0
+    ]) == 1,
+  hub_vcn_subnet_prerequisites_present:
+    std.length([
+      s
+      for s in public_statements
+      if (std.startsWith(s, 'allow any-user to use subnets') ||
+          std.startsWith(s, 'allow any-user to read vcns')) &&
+         std.length(std.findSubstr(required_enabled_platform, s)) > 0 &&
+         std.length(std.findSubstr('target.resource.tag.', s)) == 0
+    ]) == 2,
+  spoke_nsg_lifecycle_statement_present:
+    std.length(prod_spoke_nsg_statements) == 1 &&
+    std.length(std.findSubstr(required_enabled_platform, prod_spoke_nsg_statements[0])) > 0,
+  spoke_nsg_create_allowed:
+    std.length(prod_spoke_nsg_statements) == 1 &&
+    std.startsWith(prod_spoke_nsg_statements[0], 'allow any-user to manage network-security-groups'),
+  spoke_nsg_move_excluded:
+    std.length(prod_spoke_nsg_statements) == 1 &&
+    std.length(std.findSubstr("request.permission != 'NETWORK_SECURITY_GROUP_MOVE'", prod_spoke_nsg_statements[0])) > 0,
+  spoke_nsg_target_tag_condition_absent:
+    std.length(prod_spoke_nsg_statements) == 1 &&
+    std.length(std.findSubstr('target.resource.tag.', prod_spoke_nsg_statements[0])) == 0,
+  spoke_nsg_vcn_prerequisites_present:
+    std.length([
+      s
+      for s in prod_network_statements
+      if std.startsWith(s, 'allow any-user to manage vcns') &&
+         std.length(std.findSubstr("request.operation = 'CreateNetworkSecurityGroup'", s)) > 0 &&
+         std.length(std.findSubstr("request.operation = 'DeleteNetworkSecurityGroup'", s)) > 0 &&
+         std.length(std.findSubstr(required_enabled_platform, s)) > 0
+    ]) == 1 &&
+    std.length([
+      s
+      for s in prod_network_statements
+      if std.startsWith(s, 'allow any-user to read vcns') &&
+         std.length(std.findSubstr(required_enabled_platform, s)) > 0
+    ]) == 1,
   load_balancer_move_excluded:
     std.length([s for s in public_statements if std.length(std.findSubstr("request.permission != 'LOAD_BALANCER_MOVE'", s)) > 0]) == 1,
   network_load_balancer_move_excluded:
     std.length([s for s in public_statements if std.length(std.findSubstr("request.permission != 'NETWORK_LOAD_BALANCER_MOVE'", s)) > 0]) == 1,
+  load_balancer_work_request_read_allowed:
+    std.length([s for s in public_statements if std.length(std.findSubstr("request.permission = 'LOAD_BALANCER_READ'", s)) > 0]) == 1 &&
+    std.length([s for s in prod_network_statements if std.length(std.findSubstr("request.permission = 'LOAD_BALANCER_READ'", s)) > 0]) == 1,
+  network_load_balancer_work_request_read_allowed:
+    std.length([s for s in public_statements if std.length(std.findSubstr("request.permission = 'NETWORK_LOAD_BALANCER_READ'", s)) > 0]) == 1 &&
+    std.length([s for s in prod_network_statements if std.length(std.findSubstr("request.permission = 'NETWORK_LOAD_BALANCER_READ'", s)) > 0]) == 1,
   forbidden_nsg_lifecycle_or_rule_permissions: [
     permission
     for permission in [
@@ -179,9 +242,9 @@ local platform_service_any_user_statements = [
     if std.startsWith(s, 'allow any-user ') && std.length(std.findSubstr(' where ', s)) == 0
   ],
   private_network_allowlists_are_scope_specific:
-    std.length([s for s in prod_network_statements if std.length(std.findSubstr("'prod-oke'", s)) > 0]) == 3 &&
+    std.length([s for s in prod_network_statements if std.length(std.findSubstr("'prod-oke'", s)) > 0]) == 5 &&
     std.length([s for s in prod_network_statements if std.length(std.findSubstr("'preprod-oke'", s)) > 0]) == 0 &&
-    std.length([s for s in preprod_network_statements if std.length(std.findSubstr("'preprod-oke'", s)) > 0]) == 3 &&
+    std.length([s for s in preprod_network_statements if std.length(std.findSubstr("'preprod-oke'", s)) > 0]) == 5 &&
     std.length([s for s in preprod_network_statements if std.length(std.findSubstr("'prod-oke'", s)) > 0]) == 0,
   private_ip_statements_allow_all_clusters_without_tags:
     std.length([
@@ -197,30 +260,17 @@ local platform_service_any_user_statements = [
     if std.length(std.findSubstr('CERTIFICATE-RENEWAL', key)) > 0
   ],
   certificate_consumption_statement_count: std.length(cluster_certificate_statements),
-  certificate_association_present:
+  leaf_certificate_family_manage_present:
     std.length([
       statement
       for statement in cluster_certificate_statements
-      if std.length(std.findSubstr('manage certificate-associations', statement)) > 0
+      if std.length(std.findSubstr('manage leaf-certificate-family', statement)) > 0
     ]) == 1,
-  cluster_certificate_mutation_permissions: [
-    permission
-    for permission in [
-      'CERTIFICATE_CREATE',
-      'CERTIFICATE_UPDATE',
-      'CERTIFICATE_DELETE',
-      'CERTIFICATE_MOVE',
-      'CERTIFICATE_VERSION_DELETE',
-      'CERTIFICATE_VERSION_REVOKE',
-    ]
-    if std.length([s for s in cluster_certificate_statements if std.length(std.findSubstr(permission, s)) > 0]) > 0
-  ],
-  certificate_bundle_is_public_only:
-    std.length([
-      statement
-      for statement in cluster_certificate_statements
-      if std.length(std.findSubstr("target.leaf-certificate.bundle-type = 'CERTIFICATE_CONTENT_PUBLIC_ONLY'", statement)) > 0
-    ]) == 1,
+  certificate_scope_is_platform_compartment:
+    std.length(cluster_certificate_statements) == 1 &&
+    std.length(std.findSubstr('in compartment cmp-lz-prod-oke', cluster_certificate_statements[0])) > 0,
+  certificate_policy_excludes_ca_family:
+    std.length([s for s in cluster_certificate_statements if std.length(std.findSubstr('certificate-authority-family', s)) > 0]) == 0,
   workload_certificate_statements: [
     statement
     for statement in all_policy_statements
@@ -235,7 +285,8 @@ local platform_service_any_user_statements = [
   platform_compartment_boundary_failures: [
     statement
     for statement in platform_service_any_user_statements
-    if std.length(std.findSubstr('request.principal.compartment.id = target.compartment.id', statement)) == 0
+    if std.length(std.findSubstr('request.principal.compartment.id = target.compartment.id', statement)) == 0 &&
+       std.length(std.findSubstr('manage leaf-certificate-family', statement)) == 0
   ],
   unsafe_policy_descriptions: [
     key

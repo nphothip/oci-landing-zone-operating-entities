@@ -10,6 +10,7 @@
 // contains: "forbidden_kms_authorization": []
 // contains: "unauthorized_key_management_statements": []
 // contains: "shared_security_kms_policy_present": false
+// contains: "worker_encrypt_in_transit_failures": []
 local lz = import 'gen/landing_zone.libsonnet';
 local oke(vcn, services) = {
   network: { vcn: vcn },
@@ -75,6 +76,11 @@ local all_kms_statements = [
        vaults.keys[expected[env].key].vault_key != 'VLT-LZ-SHARED-SECURITY-KEY' ||
        clusters[expected[env].cluster].encryption.kube_secret_kms_key_id != expected[env].key ||
        workers[expected[env].worker].node_config_details.encryption.kms_key_id != expected[env].key
+  ],
+  worker_encrypt_in_transit_failures: [
+    env
+    for env in std.objectFields(expected)
+    if workers[expected[env].worker].node_config_details.encryption.enable_encrypt_in_transit != true
   ],
   platform_kms_statement_counts: {
     [expected[env].policy]: std.length(kms_statements(env))

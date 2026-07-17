@@ -7,6 +7,8 @@
 // contains: "security_policy_keys": []
 // contains: "public_hub_policy_present": false
 // contains: "public_hub_network_rules": []
+// contains: "worker_encryption_present": {
+// contains: false
 local lz = import 'gen/landing_zone.libsonnet';
 local result = lz({
   cis_level: 1,
@@ -69,12 +71,14 @@ local worker_nsg = prod_vcn.network_security_groups[worker_nsg_key];
     [key]: workers[key].cis_level
     for key in std.objectFields(workers)
   },
-  worker_encrypt_in_transit: {
-    [key]: workers[key].node_config_details.encryption.enable_encrypt_in_transit
+  worker_encryption_present: {
+    [key]: std.objectHas(workers[key].node_config_details, 'encryption')
     for key in std.objectFields(workers)
   },
   worker_kms_key_present: {
-    [key]: std.objectHas(workers[key].node_config_details.encryption, 'kms_key_id')
+    [key]:
+      std.objectHas(workers[key].node_config_details, 'encryption') &&
+      std.objectHas(workers[key].node_config_details.encryption, 'kms_key_id')
     for key in std.objectFields(workers)
   },
   cis1_vaults_configuration_present:
