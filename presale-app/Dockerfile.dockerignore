@@ -1,0 +1,10 @@
+# BuildKit per-Dockerfile ignore: keep the build context (repo root) small —
+# only gen/ and presale-app/ are needed.
+*
+!gen/
+!presale-app/
+presale-app/node_modules/
+presale-app/.next/
+presale-app/.env
+presale-app/.env.local
+gen/testdata/

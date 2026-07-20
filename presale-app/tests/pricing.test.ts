@@ -1,0 +1,44 @@
+import { describe, expect, it } from "vitest";
+import { tieredCost, unitPriceAt, type PriceEntry } from "@/lib/pricing/price-client";
+import { priceBom } from "@/lib/pricing/resolve";
+import { TEMPLATES } from "@/lib/templates";
+import fallback from "@/lib/pricing/fallback-prices.json";
+
+describe("tiered pricing math", () => {
+  const lbBase: PriceEntry = {
+    name: "Load Balancer Base",
+    metric: "Load Balancer",
+    tiers: [
+      { value: 0, min: 0, max: 744 },
+      { value: 0.0113, min: 744, max: null },
+    ],
+  };
+
+  it("keeps the first LB free and charges the second", () => {
+    expect(tieredCost(lbBase, 744)).toBe(0); // one LB month
+    expect(tieredCost(lbBase, 1488)).toBeCloseTo(744 * 0.0113, 5); // two LBs
+    expect(unitPriceAt(lbBase, 744)).toBe(0);
+  });
+
+  it("charges flat SKUs linearly", () => {
+    const nfw: PriceEntry = { name: "NFW", metric: "Instance Per Hour", tiers: [{ value: 2.75, min: 0, max: null }] };
+    expect(tieredCost(nfw, 744)).toBeCloseTo(2046, 2);
+  });
+});
+
+describe("BOM pricing end-to-end (fallback snapshot)", () => {
+  it("prices every default template with a positive total", () => {
+    for (const id of ["web_app", "chatbot", "dr", "backup"] as const) {
+      const bom = priceBom(TEMPLATES[id].buildBom(TEMPLATES[id].defaults()));
+      expect(bom.totals.monthlyUsd, id).toBeGreaterThan(0);
+      expect(bom.totals.unpricedCount, id).toBe(0);
+    }
+  });
+
+  it("fallback snapshot covers key SKUs with expected unit prices", () => {
+    const prices = (fallback as { prices: Record<string, { tiers: { value: number }[] }> }).prices;
+    expect(prices.B97384.tiers[0].value).toBe(0.03); // E5 OCPU
+    expect(prices.B95403.tiers[0].value).toBe(2.75); // NFW instance
+    expect(prices.B95702.tiers[0].value).toBe(0.336); // ADB ECPU
+  });
+});
