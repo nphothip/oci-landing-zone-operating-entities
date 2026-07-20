@@ -6,9 +6,10 @@ import { TEMPLATES } from "@/lib/templates";
 import { BomTable } from "./BomTable";
 import { DiagramsTab } from "./DiagramsTab";
 import { LacTab } from "./LacTab";
+import { DesignDocTab } from "./DesignDocTab";
 import { L, useLang } from "@/lib/i18n";
 
-type Tab = "summary" | "bom" | "diagrams" | "lac";
+type Tab = "summary" | "bom" | "diagrams" | "doc" | "lac";
 
 export function ResultView({ result }: { result: GenerateResult }) {
   const { t } = useLang();
@@ -20,6 +21,7 @@ export function ResultView({ result }: { result: GenerateResult }) {
     { id: "summary", label: L("สรุป", "Summary") },
     { id: "bom", label: L("BOM & ราคา", "BOM & Pricing") },
     { id: "diagrams", label: L("Diagram (5 views)", "Diagrams (5 views)") },
+    { id: "doc", label: L("เอกสารออกแบบ", "Design Doc") },
     { id: "lac", label: L("LaC code", "LaC code") },
   ];
 
@@ -74,6 +76,7 @@ export function ResultView({ result }: { result: GenerateResult }) {
       ) : null}
       {tab === "bom" ? <BomTable result={result} /> : null}
       {tab === "diagrams" ? <DiagramsTab diagrams={result.diagrams} baseName={baseName} /> : null}
+      {tab === "doc" ? <DesignDocTab result={result} /> : null}
       {tab === "lac" ? <LacTab files={result.lac.files} diagrams={result.diagrams} baseName={baseName} /> : null}
     </div>
   );

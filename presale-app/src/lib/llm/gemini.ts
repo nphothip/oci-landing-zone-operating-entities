@@ -18,7 +18,7 @@ export function isGeminiConfigured(): boolean {
   return geminiAuthMode() !== null;
 }
 
-async function resolveGeminiRequest(model: string, body: object): Promise<
+export async function resolveGeminiRequest(model: string, body: object): Promise<
   | { ok: true; url: string; headers: Record<string, string> }
   | { ok: false; reason: string }
 > {
