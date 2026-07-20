@@ -3,18 +3,20 @@
 //   npx tsx scripts/emit-bom-xlsx.mts <template> <out.xlsx>
 import fs from "node:fs";
 import { TEMPLATES } from "../src/lib/templates";
+import { finalizeBom } from "../src/lib/bom/env";
 import { priceBom } from "../src/lib/pricing/resolve";
 import { buildBomWorkbook } from "../src/lib/export/bom-xlsx";
 import { workbookToXlsx } from "../src/lib/export/xlsx";
-import type { GenerateResult, LocalizedText, TemplateId } from "../src/lib/domain/types";
+import type { EnvName, GenerateResult, LocalizedText, TemplateId } from "../src/lib/domain/types";
 
-const [templateId = "erp", out = "bom.xlsx"] = process.argv.slice(2);
+const [templateId = "erp", out = "bom.xlsx", envsCsv] = process.argv.slice(2);
 const tpl = TEMPLATES[templateId as TemplateId];
 const spec = tpl.defaults();
+if (envsCsv) spec.environments = envsCsv.split(",") as EnvName[];
 const result: GenerateResult = {
   spec,
   factoryConfig: {} as never,
-  bom: priceBom(tpl.buildBom(spec)),
+  bom: priceBom(finalizeBom(tpl.buildBom(spec))),
   diagrams: [],
   lac: { files: [] },
   assumptions: tpl.assumptions(spec),

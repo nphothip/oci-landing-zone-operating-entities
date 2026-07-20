@@ -22,6 +22,8 @@ export interface XlsxSheet {
   /** Column widths (Excel width units), left to right */
   cols: number[];
   rows: XlsxCell[][];
+  /** A1-style range to enable Excel AutoFilter on, e.g. "A4:J40" */
+  autoFilter?: string;
 }
 
 function esc(s: string): string {
@@ -123,8 +125,9 @@ function sheetXml(sheet: XlsxSheet): string {
       return `<row r="${rn}">${cx}</row>`;
     })
     .join("");
+  const filter = sheet.autoFilter ? `<autoFilter ref="${sheet.autoFilter}"/>` : "";
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${cols}<sheetData>${rows}</sheetData></worksheet>`;
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${cols}<sheetData>${rows}</sheetData>${filter}</worksheet>`;
 }
 
 /** Build an .xlsx workbook Blob (for browser download) from sheet definitions. */

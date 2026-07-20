@@ -5,6 +5,7 @@ import { buildFactoryConfig } from "@/lib/factory/config-builder";
 import { runGenerator } from "@/lib/factory/run-generator";
 import { buildLacReadme } from "@/lib/factory/readme-template";
 import { TEMPLATES } from "@/lib/templates";
+import { finalizeBom } from "@/lib/bom/env";
 import { priceBom } from "@/lib/pricing/resolve";
 import { buildDiagrams } from "@/lib/diagrams";
 
@@ -39,7 +40,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   const template = TEMPLATES[spec.template];
   const warnings: string[] = [];
   const assumptions = template.assumptions(spec);
-  const bom = priceBom(template.buildBom(spec));
+  const bom = priceBom(finalizeBom(template.buildBom(spec)));
   if (bom.totals.unpricedCount > 0) {
     warnings.push(`${bom.totals.unpricedCount} BOM item(s) could not be priced — totals are partial`);
   }

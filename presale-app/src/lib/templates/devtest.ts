@@ -1,6 +1,7 @@
 import type { BomItem, DevtestSizing, SolutionSpec, TemplateDefinition } from "@/lib/domain/types";
 import { lzBaselineAssumptions, lzBaselineBom } from "./lz-baseline";
 import { baseFactoryConfig } from "./common";
+import { perEnv } from "@/lib/bom/env";
 
 // Dev/Test environments — the SME cost-saver: development and test spokes on
 // the free hub, with compute/DB billed only for the hours they actually run
@@ -60,76 +61,79 @@ export const devtestTemplate: TemplateDefinition = {
   },
   buildBom(spec): BomItem[] {
     const s = sizing(spec);
-    const envs = spec.environments.length;
-    const items = lzBaselineBom(spec);
     const H = s.runningHoursPerMonth;
-    const totalOcpu = s.vmPerEnv * s.ocpusPerVm * envs;
-    const totalMem = s.vmPerEnv * s.memGbPerVm * envs;
     const savePct = Math.round((1 - H / 744) * 100);
+    const ocpu = s.vmPerEnv * s.ocpusPerVm;
+    const mem = s.vmPerEnv * s.memGbPerVm;
+    const bootGb = s.vmPerEnv * s.bootGbPerVm;
 
-    items.push(
-      {
-        catalogKey: "compute_e5_ocpu",
-        label: { th: `Dev/Test VMs ×${s.vmPerEnv}/env — OCPU (${H} ชม./เดือน)`, en: `Dev/Test VMs ×${s.vmPerEnv}/env — OCPU (${H} hrs/month)` },
-        category: "compute",
-        quantity: totalOcpu,
-        unit: "OCPU",
-        monthlyMetricQty: totalOcpu * H,
-        deployedByLz: false,
-        notes: { th: `ตั้งเวลาปิดเครื่องนอกเวลางาน — ประหยัด ~${savePct}% เทียบ 24/7`, en: `Auto-stop outside working hours — saves ~${savePct}% vs 24/7` },
-      },
-      {
-        catalogKey: "compute_e5_mem",
-        label: { th: "Dev/Test VMs — memory", en: "Dev/Test VMs — memory" },
-        category: "compute",
-        quantity: totalMem,
-        unit: "GB",
-        monthlyMetricQty: totalMem * H,
-        deployedByLz: false,
-      },
-      {
-        catalogKey: "block_storage_gb",
-        label: { th: "Boot volumes (คิดเต็มเดือนแม้เครื่องปิด)", en: "Boot volumes (billed full month even when stopped)" },
-        category: "storage",
-        quantity: s.vmPerEnv * s.bootGbPerVm * envs,
-        unit: "GB",
-        monthlyMetricQty: s.vmPerEnv * s.bootGbPerVm * envs,
-        deployedByLz: false,
-      },
-      {
-        catalogKey: "block_vpu",
-        label: { th: "Boot volume performance (Balanced)", en: "Boot volume performance (Balanced)" },
-        category: "storage",
-        quantity: s.vmPerEnv * s.bootGbPerVm * envs,
-        unit: "GB",
-        monthlyMetricQty: s.vmPerEnv * s.bootGbPerVm * envs * 10,
-        deployedByLz: false,
-      },
-    );
-    if (s.dbEcpusPerEnv > 0) {
-      items.push(
+    const workload = perEnv(spec, () => {
+      const list: BomItem[] = [
         {
-          catalogKey: "adb_ecpu",
-          label: { th: `ADB ต่อ env — ECPU (${H} ชม./เดือน)`, en: `ADB per env — ECPU (${H} hrs/month)` },
-          category: "database",
-          quantity: s.dbEcpusPerEnv * envs,
-          unit: "ECPU",
-          monthlyMetricQty: s.dbEcpusPerEnv * envs * H,
+          catalogKey: "compute_e5_ocpu",
+          label: { th: `Dev/Test VMs ×${s.vmPerEnv} — OCPU (${H} ชม./เดือน)`, en: `Dev/Test VMs ×${s.vmPerEnv} — OCPU (${H} hrs/month)` },
+          category: "compute",
+          quantity: ocpu,
+          unit: "OCPU",
+          monthlyMetricQty: ocpu * H,
           deployedByLz: false,
-          notes: { th: "ADB stop ได้ตอนไม่ใช้ — จ่ายเฉพาะ storage", en: "ADB can be stopped when idle — storage-only billing" },
+          notes: { th: `ตั้งเวลาปิดเครื่องนอกเวลางาน — ประหยัด ~${savePct}% เทียบ 24/7`, en: `Auto-stop outside working hours — saves ~${savePct}% vs 24/7` },
         },
         {
-          catalogKey: "adb_storage_gb",
-          label: { th: "ADB — storage", en: "ADB — storage" },
-          category: "database",
-          quantity: s.dbStorageGbPerEnv * envs,
+          catalogKey: "compute_e5_mem",
+          label: { th: "Dev/Test VMs — memory", en: "Dev/Test VMs — memory" },
+          category: "compute",
+          quantity: mem,
           unit: "GB",
-          monthlyMetricQty: s.dbStorageGbPerEnv * envs,
+          monthlyMetricQty: mem * H,
           deployedByLz: false,
         },
-      );
-    }
-    return items;
+        {
+          catalogKey: "block_storage_gb",
+          label: { th: "Boot volumes (คิดเต็มเดือนแม้เครื่องปิด)", en: "Boot volumes (billed full month even when stopped)" },
+          category: "storage",
+          quantity: bootGb,
+          unit: "GB",
+          monthlyMetricQty: bootGb,
+          deployedByLz: false,
+        },
+        {
+          catalogKey: "block_vpu",
+          label: { th: "Boot volume performance (Balanced)", en: "Boot volume performance (Balanced)" },
+          category: "storage",
+          quantity: bootGb,
+          unit: "GB",
+          monthlyMetricQty: bootGb * 10,
+          deployedByLz: false,
+        },
+      ];
+      if (s.dbEcpusPerEnv > 0) {
+        list.push(
+          {
+            catalogKey: "adb_ecpu",
+            label: { th: `ADB — ECPU (${H} ชม./เดือน)`, en: `ADB — ECPU (${H} hrs/month)` },
+            category: "database",
+            quantity: s.dbEcpusPerEnv,
+            unit: "ECPU",
+            monthlyMetricQty: s.dbEcpusPerEnv * H,
+            deployedByLz: false,
+            notes: { th: "ADB stop ได้ตอนไม่ใช้ — จ่ายเฉพาะ storage", en: "ADB can be stopped when idle — storage-only billing" },
+          },
+          {
+            catalogKey: "adb_storage_gb",
+            label: { th: "ADB — storage", en: "ADB — storage" },
+            category: "database",
+            quantity: s.dbStorageGbPerEnv,
+            unit: "GB",
+            monthlyMetricQty: s.dbStorageGbPerEnv,
+            deployedByLz: false,
+          },
+        );
+      }
+      return list;
+    });
+
+    return [...lzBaselineBom(spec), ...workload];
   },
   assumptions(spec) {
     const s = sizing(spec);

@@ -282,6 +282,12 @@ export interface BomItem {
   catalogKey: string;
   label: LocalizedText;
   category: BomCategory;
+  /**
+   * Which environment this line belongs to, for filtering:
+   * "shared" = hub/tenancy-level infra, or an env name ("prod", "preprod", …)
+   * for per-environment workload. Set by finalizeBom / perEnv.
+   */
+  env?: string;
   /** Human-facing quantity, e.g. 4 (OCPU), 500 (GB) */
   quantity: number;
   /** Human-facing unit, e.g. "OCPU", "GB", "M tokens" */

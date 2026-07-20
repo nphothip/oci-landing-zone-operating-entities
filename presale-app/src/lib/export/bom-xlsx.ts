@@ -26,8 +26,6 @@ const HUB_LABEL: Record<string, string> = {
   hub_e: "HUB E (no firewall)",
 };
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
-
 export function buildBomWorkbook(result: GenerateResult, t: T): XlsxSheet[] {
   const { bom, spec } = result;
   const templateName = t(TEMPLATES[spec.template].name);
@@ -39,7 +37,10 @@ export function buildBomWorkbook(result: GenerateResult, t: T): XlsxSheet[] {
   const money = (n: number | null, style: number = XS.currency): XlsxCell => (n == null ? null : { v: n, s: style });
   const txt = (v: string, s?: number): XlsxCell => ({ v, s });
 
-  // ---- BOM sheet ----------------------------------------------------------
+  // ---- BOM sheet (flat, filterable table with an Excel AutoFilter) --------
+  const scopeLabel = (byLz: boolean) =>
+    byLz ? t({ th: "Landing Zone", en: "Landing Zone" }) : t({ th: "หลัง LZ", en: "post-LZ" });
+
   const rows: XlsxCell[][] = [];
   rows.push([txt(`OCI Presale BOM — ${templateName}`, XS.title)]);
   rows.push([
@@ -52,41 +53,46 @@ export function buildBomWorkbook(result: GenerateResult, t: T): XlsxSheet[] {
   ]);
   rows.push([]);
   const headers = [
+    t({ th: "หมวด", en: "Category" }),
     t({ th: "รายการ", en: "Item" }),
+    t({ th: "Environment", en: "Environment" }),
+    t({ th: "ขอบเขต", en: "Scope" }),
     "SKU",
     t({ th: "จำนวน", en: "Qty" }),
     t({ th: "หน่วย", en: "Unit" }),
     t({ th: "ราคาต่อหน่วย (USD)", en: "Unit price (USD)" }),
     t({ th: "ต่อเดือน (USD)", en: "Monthly (USD)" }),
-    t({ th: "ขอบเขต", en: "Scope" }),
     t({ th: "หมายเหตุ", en: "Notes" }),
   ];
+  const headerRow = rows.length + 1; // 1-based row index of the header
   rows.push(headers.map((h) => txt(h, XS.header)));
 
+  // one flat row per item, ordered by category then env so it groups visually
   const categories = [...new Set(bom.items.map((i) => i.category))];
-  for (const cat of categories) {
-    const catItems = bom.items.filter((i) => i.category === cat);
-    const subtotal = round2(catItems.reduce((acc, i) => acc + (i.monthlyUsd ?? 0), 0));
-    rows.push([txt(t(CATEGORY_LABEL[cat]), XS.catLabel), null, null, null, null, money(subtotal, XS.catCurrency), null, null]);
-    for (const item of catItems) {
-      rows.push([
-        txt(t(item.label)),
-        txt(item.sku ?? ""),
-        { v: item.quantity },
-        txt(item.unit),
-        money(item.unitPriceUsd),
-        money(item.monthlyUsd),
-        txt(item.deployedByLz ? t({ th: "Landing Zone", en: "Landing Zone" }) : t({ th: "หลัง LZ", en: "post-LZ" })),
-        txt(item.notes ? t(item.notes) : ""),
-      ]);
-    }
+  const ordered = [...bom.items].sort(
+    (a, b) => categories.indexOf(a.category) - categories.indexOf(b.category),
+  );
+  for (const item of ordered) {
+    rows.push([
+      txt(t(CATEGORY_LABEL[item.category])),
+      txt(t(item.label)),
+      txt(item.env ?? "shared"),
+      txt(scopeLabel(item.deployedByLz)),
+      txt(item.sku ?? ""),
+      { v: item.quantity },
+      txt(item.unit),
+      money(item.unitPriceUsd),
+      money(item.monthlyUsd),
+      txt(item.notes ? t(item.notes) : ""),
+    ]);
   }
+  const lastItemRow = rows.length; // 1-based
   rows.push([]);
   rows.push([
     txt(t({ th: "รวมทั้งหมดต่อเดือน", en: "Total per month" }), XS.header),
-    null, null, null, null,
+    null, null, null, null, null, null, null,
     money(bom.totals.monthlyUsd, XS.boldCurrency),
-    null, null,
+    null,
   ]);
   if (bom.totals.unpricedCount > 0) {
     rows.push([
@@ -101,8 +107,10 @@ export function buildBomWorkbook(result: GenerateResult, t: T): XlsxSheet[] {
 
   const bomSheet: XlsxSheet = {
     name: "BOM",
-    cols: [46, 12, 9, 14, 16, 15, 13, 48],
+    cols: [16, 44, 13, 12, 12, 9, 12, 16, 15, 44],
     rows,
+    // AutoFilter across the header + item rows (J = 10th column)
+    autoFilter: `A${headerRow}:J${lastItemRow}`,
   };
 
   // ---- Summary sheet ------------------------------------------------------

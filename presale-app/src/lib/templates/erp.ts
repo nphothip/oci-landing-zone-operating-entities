@@ -2,6 +2,7 @@ import type { BomItem, ErpSizing, SolutionSpec, TemplateDefinition } from "@/lib
 import { hours } from "@/lib/bom/formulas";
 import { lzBaselineAssumptions, lzBaselineBom } from "./lz-baseline";
 import { baseFactoryConfig } from "./common";
+import { perEnv } from "@/lib/bom/env";
 
 // ERP / business application hosting — the classic Thai SME deal: SAP
 // Business One, Dynamics, payroll/accounting or a custom ERP moved onto OCI
@@ -82,65 +83,68 @@ export const erpTemplate: TemplateDefinition = {
   },
   buildBom(spec): BomItem[] {
     const s = sizing(spec);
-    const envs = spec.environments.length;
     const items = lzBaselineBom(spec);
-    const totalOcpu = s.appVmCount * s.ocpusPerVm * envs;
+    const ocpu = s.appVmCount * s.ocpusPerVm;
 
-    items.push(
-      {
-        catalogKey: "compute_e5_ocpu",
-        label: { th: `ERP App VM ×${s.appVmCount}/env (E5.Flex) — OCPU`, en: `ERP app VMs ×${s.appVmCount}/env (E5.Flex) — OCPU` },
-        category: "compute",
-        quantity: totalOcpu,
-        unit: "OCPU",
-        monthlyMetricQty: hours(totalOcpu),
-        deployedByLz: false,
-      },
-      {
-        catalogKey: "compute_e5_mem",
-        label: { th: "ERP App VM — memory", en: "ERP app VMs — memory" },
-        category: "compute",
-        quantity: s.appVmCount * s.memGbPerVm * envs,
-        unit: "GB",
-        monthlyMetricQty: hours(s.appVmCount * s.memGbPerVm * envs),
-        deployedByLz: false,
-      },
-    );
-    if (s.os === "windows") {
-      items.push({
-        catalogKey: "windows_ocpu",
-        label: { th: "Windows Server license", en: "Windows Server license" },
-        category: "compute",
-        quantity: totalOcpu,
-        unit: "OCPU",
-        monthlyMetricQty: hours(totalOcpu),
-        deployedByLz: false,
-        notes: { th: "คิดต่อ OCPU ที่รัน Windows — ใช้ license-included ของ OCI", en: "Billed per Windows OCPU — OCI license-included" },
-      });
-    }
-    items.push(
-      {
-        catalogKey: "block_storage_gb",
-        label: { th: "Boot/data volumes", en: "Boot/data volumes" },
-        category: "storage",
-        quantity: s.appVmCount * s.bootGbPerVm * envs,
-        unit: "GB",
-        monthlyMetricQty: s.appVmCount * s.bootGbPerVm * envs,
-        deployedByLz: false,
-      },
-      {
-        catalogKey: "block_vpu",
-        label: { th: "Volume performance (Balanced)", en: "Volume performance (Balanced)" },
-        category: "storage",
-        quantity: s.appVmCount * s.bootGbPerVm * envs,
-        unit: "GB",
-        monthlyMetricQty: s.appVmCount * s.bootGbPerVm * envs * 10,
-        deployedByLz: false,
-      },
-    );
+    // per-environment app tier
+    const workload = perEnv(spec, () => {
+      const list: BomItem[] = [
+        {
+          catalogKey: "compute_e5_ocpu",
+          label: { th: `ERP App VM ×${s.appVmCount} (E5.Flex) — OCPU`, en: `ERP app VMs ×${s.appVmCount} (E5.Flex) — OCPU` },
+          category: "compute",
+          quantity: ocpu,
+          unit: "OCPU",
+          monthlyMetricQty: hours(ocpu),
+          deployedByLz: false,
+        },
+        {
+          catalogKey: "compute_e5_mem",
+          label: { th: "ERP App VM — memory", en: "ERP app VMs — memory" },
+          category: "compute",
+          quantity: s.appVmCount * s.memGbPerVm,
+          unit: "GB",
+          monthlyMetricQty: hours(s.appVmCount * s.memGbPerVm),
+          deployedByLz: false,
+        },
+        {
+          catalogKey: "block_storage_gb",
+          label: { th: "Boot/data volumes", en: "Boot/data volumes" },
+          category: "storage",
+          quantity: s.appVmCount * s.bootGbPerVm,
+          unit: "GB",
+          monthlyMetricQty: s.appVmCount * s.bootGbPerVm,
+          deployedByLz: false,
+        },
+        {
+          catalogKey: "block_vpu",
+          label: { th: "Volume performance (Balanced)", en: "Volume performance (Balanced)" },
+          category: "storage",
+          quantity: s.appVmCount * s.bootGbPerVm,
+          unit: "GB",
+          monthlyMetricQty: s.appVmCount * s.bootGbPerVm * 10,
+          deployedByLz: false,
+        },
+      ];
+      if (s.os === "windows") {
+        list.push({
+          catalogKey: "windows_ocpu",
+          label: { th: "Windows Server license", en: "Windows Server license" },
+          category: "compute",
+          quantity: ocpu,
+          unit: "OCPU",
+          monthlyMetricQty: hours(ocpu),
+          deployedByLz: false,
+          notes: { th: "คิดต่อ OCPU ที่รัน Windows — ใช้ license-included ของ OCI", en: "Billed per Windows OCPU — OCI license-included" },
+        });
+      }
+      return list;
+    });
 
+    // shared central database + storage
+    const shared: BomItem[] = [];
     if (s.db.engine === "base_db_vm") {
-      items.push(
+      shared.push(
         {
           catalogKey: "base_db_ecpu",
           label: { th: "Base Database Enterprise — ECPU", en: "Base Database Enterprise — ECPU" },
@@ -170,7 +174,7 @@ export const erpTemplate: TemplateDefinition = {
         },
       );
     } else {
-      items.push(
+      shared.push(
         {
           catalogKey: "adb_ecpu",
           label: { th: "Autonomous DB — ECPU", en: "Autonomous DB — ECPU" },
@@ -193,7 +197,7 @@ export const erpTemplate: TemplateDefinition = {
     }
 
     if (s.fssGb > 0) {
-      items.push({
+      shared.push({
         catalogKey: "fss_gb",
         label: { th: "File Storage (shared NFS/SMB)", en: "File Storage (shared NFS/SMB)" },
         category: "storage",
@@ -205,7 +209,7 @@ export const erpTemplate: TemplateDefinition = {
       });
     }
     if (s.backupGb > 0) {
-      items.push({
+      shared.push({
         catalogKey: "os_standard_gb",
         label: { th: "Backups (RMAN + VM) → Object Storage", en: "Backups (RMAN + VM) → Object Storage" },
         category: "storage",
@@ -215,7 +219,7 @@ export const erpTemplate: TemplateDefinition = {
         deployedByLz: false,
       });
     }
-    return items;
+    return [...items, ...workload, ...shared];
   },
   assumptions(spec) {
     const s = sizing(spec);

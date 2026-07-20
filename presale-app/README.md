@@ -4,7 +4,7 @@ Web app ภายในสำหรับทีม presale — ใส่ require
 
 | Output | รายละเอียด |
 |---|---|
-| **BOM** | รายการ OCI services + SKU (part number) จัดกลุ่มตามหมวด พร้อมป้ายบอกว่าอะไร deploy โดย LZ / อะไร provision หลัง LZ — **ดาวน์โหลดเป็น Excel (.xlsx)** ได้ (2 sheet: BOM แยกหมวด+ยอดรวม, Summary+สมมติฐาน; money cell มี currency format) |
+| **BOM** | รายการ OCI services + SKU (part number) จัดกลุ่มตามหมวด — มีคอลัมน์ **Env** (shared = โครงสร้างกลาง, ชื่อ env = workload แยกต่อ environment) และ **Scope** (Landing Zone / หลัง LZ) กรองบนจอได้ทั้งสองคอลัมน์ · **ดาวน์โหลดเป็น Excel (.xlsx)** — ตารางแบนพร้อม **AutoFilter** (2 sheet: BOM, Summary+สมมติฐาน; money cell มี currency format) |
 | **ราคาต่อเดือน (USD)** | OCI list price (Pay-As-You-Go) จาก OCI Price List API สาธารณะ — ราคา USD เท่ากันทั่วโลก ใช้กับ `ap-singapore-1` ได้ตรง ๆ (คิด 744 ชม./เดือน แบบ tiered ตามจริง เช่น 10TB egress แรกฟรี) |
 | **Diagram 5 views** | Functional / Security / Network / Operations / Runtime — วาดจากไฟล์ LZ ที่ generate จริง (ไม่ใช่ภาพนิ่ง) ดาวน์โหลดเป็น SVG / PNG / **draw.io** (แก้ต่อได้ ไฟล์เดียว 5 หน้า) |
 | **LaC code** | แพ็กเกจ ZIP: `config.json` + `generated/*.json` + `README.md` คู่มือ deploy — ได้จากการรัน **Blueprint Factory ของ repo นี้จริง ๆ** (`gen/` config mode) พร้อมใช้กับ [OCI Landing Zones Orchestrator](https://github.com/oci-landing-zones/terraform-oci-modules-orchestrator) |

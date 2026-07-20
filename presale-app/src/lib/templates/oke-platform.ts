@@ -2,6 +2,7 @@ import type { BomItem, EnvironmentConfig, OkePlatformSizing, SolutionSpec, Templ
 import { hours } from "@/lib/bom/formulas";
 import { OKE_SERVICES_CIDR, envBlocks, hubMgmtSubnet, orderEnvs } from "@/lib/domain/cidr";
 import { lzBaselineAssumptions, lzBaselineBom } from "./lz-baseline";
+import { perEnv } from "@/lib/bom/env";
 
 // Container platform (OKE) — for SMEs/mid-size teams standardizing on
 // Kubernetes. The one template where the LZ deploys the workload platform
@@ -80,27 +81,37 @@ export const okePlatformTemplate: TemplateDefinition = {
   },
   buildBom(spec): BomItem[] {
     const s = sizing(spec);
-    const envs = spec.environments.length;
-    const items = lzBaselineBom(spec);
+    const shared: BomItem[] = [...lzBaselineBom(spec)];
+    if (s.registryGb > 0) {
+      shared.push({
+        catalogKey: "os_standard_gb",
+        label: { th: "Container Registry + artifacts (Object Storage)", en: "Container Registry + artifacts (Object Storage)" },
+        category: "storage",
+        quantity: s.registryGb,
+        unit: "GB",
+        monthlyMetricQty: s.registryGb,
+        deployedByLz: false,
+      });
+    }
 
-    items.push(
+    const workload = perEnv(spec, () => [
       {
         catalogKey: "oke_cluster",
-        label: { th: `OKE Enhanced Cluster ×${envs}`, en: `OKE Enhanced Cluster ×${envs}` },
+        label: { th: "OKE Enhanced Cluster", en: "OKE Enhanced Cluster" },
         category: "compute",
-        quantity: envs,
+        quantity: 1,
         unit: "cluster",
-        monthlyMetricQty: hours(envs),
+        monthlyMetricQty: hours(1),
         deployedByLz: true,
         notes: { th: "สร้างโดย LaC (oke_simple extension) พร้อม NSG/subnet ตามมาตรฐาน", en: "Created by the LaC (oke_simple extension) with standard NSGs/subnets" },
       },
       {
         catalogKey: "compute_e5_ocpu",
-        label: { th: `Workers ×${s.workerCount}/env (E5.Flex) — OCPU`, en: `Workers ×${s.workerCount}/env (E5.Flex) — OCPU` },
+        label: { th: `Workers ×${s.workerCount} (E5.Flex) — OCPU`, en: `Workers ×${s.workerCount} (E5.Flex) — OCPU` },
         category: "compute",
-        quantity: s.workerCount * s.workerOcpus * envs,
+        quantity: s.workerCount * s.workerOcpus,
         unit: "OCPU",
-        monthlyMetricQty: hours(s.workerCount * s.workerOcpus * envs),
+        monthlyMetricQty: hours(s.workerCount * s.workerOcpus),
         deployedByLz: true,
         notes: {
           th: "LaC สร้าง node pool เริ่มต้น 1 node (1 OCPU/8GB) — ขยายเป็นตาม BOM หลัง deploy",
@@ -111,42 +122,32 @@ export const okePlatformTemplate: TemplateDefinition = {
         catalogKey: "compute_e5_mem",
         label: { th: "Workers — memory", en: "Workers — memory" },
         category: "compute",
-        quantity: s.workerCount * s.workerMemGb * envs,
+        quantity: s.workerCount * s.workerMemGb,
         unit: "GB",
-        monthlyMetricQty: hours(s.workerCount * s.workerMemGb * envs),
+        monthlyMetricQty: hours(s.workerCount * s.workerMemGb),
         deployedByLz: true,
       },
       {
         catalogKey: "block_storage_gb",
         label: { th: `Worker boot volumes (${BOOT_GB}GB/node)`, en: `Worker boot volumes (${BOOT_GB}GB/node)` },
         category: "storage",
-        quantity: s.workerCount * BOOT_GB * envs,
+        quantity: s.workerCount * BOOT_GB,
         unit: "GB",
-        monthlyMetricQty: s.workerCount * BOOT_GB * envs,
+        monthlyMetricQty: s.workerCount * BOOT_GB,
         deployedByLz: true,
       },
       {
         catalogKey: "block_vpu",
         label: { th: "Worker boot performance (Balanced)", en: "Worker boot performance (Balanced)" },
         category: "storage",
-        quantity: s.workerCount * BOOT_GB * envs,
+        quantity: s.workerCount * BOOT_GB,
         unit: "GB",
-        monthlyMetricQty: s.workerCount * BOOT_GB * envs * 10,
+        monthlyMetricQty: s.workerCount * BOOT_GB * 10,
         deployedByLz: true,
       },
-    );
-    if (s.registryGb > 0) {
-      items.push({
-        catalogKey: "os_standard_gb",
-        label: { th: "Container Registry + artifacts (Object Storage)", en: "Container Registry + artifacts (Object Storage)" },
-        category: "storage",
-        quantity: s.registryGb,
-        unit: "GB",
-        monthlyMetricQty: s.registryGb,
-        deployedByLz: false,
-      });
-    }
-    return items;
+    ]);
+
+    return [...shared, ...workload];
   },
   assumptions(spec) {
     const s = sizing(spec);
