@@ -14,6 +14,11 @@ const sizings = {
   chatbot: { kind: "chatbot", runtime: "oke", chatsPerMonth: 50000, avgTokensPerChat: 4000, modelClass: "small", rag: true, vectorDbEcpus: 4, docStorageGb: 20, appVmCount: 2, ocpusPerVm: 2, memGbPerVm: 16, okeWorkerCount: 3, okeWorkerOcpus: 2, okeWorkerMemGb: 16 },
   dr: { kind: "dr", mode: "pilot_light", protectedVmCount: 10, avgOcpusPerVm: 2, avgMemGbPerVm: 16, avgBootGbPerVm: 100, blockReplicaGb: 2000, objectBackupGb: 1000, dbDr: "adb_cross_region", dbEcpus: 4, dbStorageGb: 500 },
   backup: { kind: "backup", standardGb: 1000, infrequentGb: 5000, archiveGb: 20000, monthlyRestoreGb: 500, dbBackup: false, dbBackupGb: 0 },
+  erp: { kind: "erp", users: 50, appVmCount: 2, ocpusPerVm: 4, memGbPerVm: 32, bootGbPerVm: 200, os: "windows", db: { engine: "base_db_vm", ecpus: 8, storageGb: 500 }, fssGb: 200, backupGb: 500 },
+  migration: { kind: "migration", vmCount: 15, avgOcpusPerVm: 2, avgMemGbPerVm: 16, windowsVmCount: 8, totalStorageGb: 4000, monthlyEgressGb: 200 },
+  analytics: { kind: "analytics", adwEcpus: 4, adwStorageGb: 1000, oacUsers: 20, oacTier: "professional", dataLakeGb: 500, etlHoursPerMonth: 80 },
+  devtest: { kind: "devtest", vmPerEnv: 4, ocpusPerVm: 1, memGbPerVm: 8, bootGbPerVm: 100, dbEcpusPerEnv: 2, dbStorageGbPerEnv: 100, runningHoursPerMonth: 260 },
+  oke_platform: { kind: "oke_platform", workerCount: 3, workerOcpus: 2, workerMemGb: 16, registryGb: 100 },
 };
 
 const cases = [
@@ -24,6 +29,11 @@ const cases = [
   { name: "chatbot/oke/hub_b", template: "chatbot", hub: "hub_b", cis: 1 },
   { name: "dr/fastconnect", template: "dr", hub: "hub_b", cis: 1, connectivity: "fastconnect_1g" },
   { name: "backup/hub_e+vpn", template: "backup", hub: "hub_e", cis: 1, connectivity: "vpn" },
+  { name: "erp/hub_b+vpn+windows", template: "erp", hub: "hub_b", cis: 1, connectivity: "vpn" },
+  { name: "migration/hub_b+vpn", template: "migration", hub: "hub_b", cis: 1, connectivity: "vpn" },
+  { name: "analytics/hub_e", template: "analytics", hub: "hub_e", cis: 1, connectivity: "vpn" },
+  { name: "devtest/hub_e/dev+test", template: "devtest", hub: "hub_e", cis: 1, connectivity: "vpn", environments: ["dev", "test"] },
+  { name: "oke_platform/hub_b", template: "oke_platform", hub: "hub_b", cis: 1 },
 ];
 
 let failed = 0;

@@ -60,7 +60,12 @@ export function lzBaselineBom(spec: SolutionSpec): BomItem[] {
     });
   }
 
-  // --- hub public load balancer (sample app path ships with the LZ) --------
+  // --- hub public load balancer --------------------------------------------
+  // The generator ships a sample hub LB only for spoke-based designs; when an
+  // OKE platform is present it omits it (ingress via the OKE int-lb subnet).
+  const lzShipsHubLb =
+    spec.template !== "oke_platform" &&
+    !(spec.template === "chatbot" && spec.sizing.kind === "chatbot" && spec.sizing.runtime === "oke");
   items.push({
     catalogKey: "lb_base",
     label: { th: "Flexible Load Balancer (hub public ingress)", en: "Flexible Load Balancer (hub public ingress)" },
@@ -68,7 +73,13 @@ export function lzBaselineBom(spec: SolutionSpec): BomItem[] {
     quantity: 1,
     unit: "LB",
     monthlyMetricQty: hours(1), // first 744 LB-hours are free per price list
-    deployedByLz: true,
+    deployedByLz: lzShipsHubLb,
+    notes: lzShipsHubLb
+      ? undefined
+      : {
+          th: "ดีไซน์ OKE ไม่มี sample LB ใน LaC — สร้าง ingress ชี้ OKE int-lb หลัง deploy",
+          en: "OKE designs ship no sample LB in the LaC — provision ingress towards the OKE int-lb after deploy",
+        },
   });
 
   // --- connectivity ---------------------------------------------------------

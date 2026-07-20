@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-07-20T13:45:36.225Z",
+  "fetchedAt": "2026-07-20T19:43:21.123Z",
   "prices": {
     "B108079": {
       "name": "OCI Generative AI - Embed Cohere",
@@ -67,6 +67,17 @@
         }
       ]
     },
+    "B88318": {
+      "name": "Compute - Windows OS",
+      "metric": "OCPU Per Hour",
+      "tiers": [
+        {
+          "value": 0.092,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
     "B88325": {
       "name": "OCI - FastConnect 1 Gbps",
       "metric": "Port Hour",
@@ -84,6 +95,17 @@
       "tiers": [
         {
           "value": 1.275,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
+    "B89057": {
+      "name": "File Storage - Storage",
+      "metric": "Gigabyte Storage Capacity Per Month",
+      "tiers": [
+        {
+          "value": 0.3,
           "min": 0,
           "max": null
         }
@@ -155,6 +177,39 @@
         {
           "value": 0.05,
           "min": 10,
+          "max": null
+        }
+      ]
+    },
+    "B92598": {
+      "name": "OCI Data Integration - Workspace Usage",
+      "metric": "Workspace Usage Per Hour",
+      "tiers": [
+        {
+          "value": 0.16,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
+    "B92682": {
+      "name": "Oracle Analytics Cloud - Professional - Users",
+      "metric": "User Per Month",
+      "tiers": [
+        {
+          "value": 16,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
+    "B92683": {
+      "name": "Oracle Analytics Cloud - Enterprise - Users",
+      "metric": "User Per Month",
+      "tiers": [
+        {
+          "value": 80,
+          "min": 0,
           "max": null
         }
       ]
@@ -282,6 +337,17 @@
         }
       ]
     },
+    "B95701": {
+      "name": "Oracle Autonomous AI Lakehouse - ECPU",
+      "metric": "ECPU Per Hour",
+      "tiers": [
+        {
+          "value": 0.336,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
     "B95702": {
       "name": "Oracle Autonomous AI Transaction Processing - ECPU",
       "metric": "ECPU Per Hour",
@@ -299,6 +365,17 @@
       "tiers": [
         {
           "value": 0.1953,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
+    "B95754": {
+      "name": "Oracle Autonomous AI Database Storage",
+      "metric": "Gigabyte Storage Capacity Per Month",
+      "tiers": [
+        {
+          "value": 0.0299,
           "min": 0,
           "max": null
         }

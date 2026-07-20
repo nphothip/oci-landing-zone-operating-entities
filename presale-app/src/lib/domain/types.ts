@@ -7,7 +7,16 @@
 //   - templates/*.buildBom            -> BOM items -> pricing/resolve
 //   - diagrams/layout/*               -> the five architecture views
 
-export type TemplateId = "web_app" | "chatbot" | "dr" | "backup";
+export type TemplateId =
+  | "web_app"
+  | "chatbot"
+  | "dr"
+  | "backup"
+  | "erp"
+  | "migration"
+  | "analytics"
+  | "devtest"
+  | "oke_platform";
 export type HubKind = "hub_a" | "hub_b" | "hub_c" | "hub_e";
 export type CisLevel = 1 | 2;
 // Environment names the generator orders canonically (gen/topology.libsonnet).
@@ -97,7 +106,78 @@ export interface BackupSizing {
   dbBackupGb: number;
 }
 
-export type Sizing = WebAppSizing | ChatbotSizing | DrSizing | BackupSizing;
+export interface ErpSizing {
+  kind: "erp";
+  /** Named/concurrent business users — drives default sizing sanity checks */
+  users: number;
+  appVmCount: number;
+  ocpusPerVm: number;
+  memGbPerVm: number;
+  bootGbPerVm: number;
+  os: "linux" | "windows";
+  db: {
+    engine: "base_db_vm" | "adb_serverless";
+    ecpus: number;
+    storageGb: number;
+  };
+  /** Shared file storage (interfaces, attachments, reports) */
+  fssGb: number;
+  backupGb: number;
+}
+
+export interface MigrationSizing {
+  kind: "migration";
+  vmCount: number;
+  avgOcpusPerVm: number;
+  avgMemGbPerVm: number;
+  /** Of vmCount, how many run Windows Server (license billed per OCPU) */
+  windowsVmCount: number;
+  totalStorageGb: number;
+  monthlyEgressGb: number;
+}
+
+export interface AnalyticsSizing {
+  kind: "analytics";
+  adwEcpus: number;
+  adwStorageGb: number;
+  oacUsers: number;
+  oacTier: "professional" | "enterprise";
+  dataLakeGb: number;
+  /** OCI Data Integration workspace hours per month (0 = not used) */
+  etlHoursPerMonth: number;
+}
+
+export interface DevtestSizing {
+  kind: "devtest";
+  vmPerEnv: number;
+  ocpusPerVm: number;
+  memGbPerVm: number;
+  bootGbPerVm: number;
+  dbEcpusPerEnv: number;
+  dbStorageGbPerEnv: number;
+  /** Compute/DB running hours per month (e.g. 12h × 22 days ≈ 260) */
+  runningHoursPerMonth: number;
+}
+
+export interface OkePlatformSizing {
+  kind: "oke_platform";
+  workerCount: number;
+  workerOcpus: number;
+  workerMemGb: number;
+  /** Container Registry + artifacts on Object Storage */
+  registryGb: number;
+}
+
+export type Sizing =
+  | WebAppSizing
+  | ChatbotSizing
+  | DrSizing
+  | BackupSizing
+  | ErpSizing
+  | MigrationSizing
+  | AnalyticsSizing
+  | DevtestSizing
+  | OkePlatformSizing;
 
 // ---------------------------------------------------------------------------
 // SolutionSpec
@@ -257,6 +337,7 @@ export type NodeKind =
   | "persona"
   | "note"
   | "zone"
+  | "legend"
   | "arrowLabel";
 
 export interface DiagramNode {
@@ -273,15 +354,21 @@ export interface DiagramNode {
   parent?: string;
   /** Style token key into diagrams/theme.ts */
   style: string;
-  /** routeCard rows */
-  rows?: { left: string; right: string }[];
+  /** routeCard / list rows; legend rows use `swatch` as a theme token per row */
+  rows?: { left: string; right?: string; swatch?: string; bold?: boolean }[];
+  /** routeCard column header labels (rendered as a header row) */
+  colHeaders?: [string, string];
+  /** line-art glyph key (diagrams/icons registry) drawn inside/above the shape */
+  icon?: string;
+  /** render label as a caption below the shape (gateway/icon services) */
+  captionBelow?: boolean;
 }
 
 export interface DiagramEdge {
   id: string;
   from: string;
   to: string;
-  kind: "assoc" | "flow" | "drgLink";
+  kind: "assoc" | "flow" | "drgLink" | "leader";
   label?: string;
   /** Optional waypoints (absolute) between from/to anchors */
   points?: { x: number; y: number }[];

@@ -18,7 +18,11 @@ const oneOf = <T extends string>(v: unknown, allowed: readonly T[], dflt: T): T 
 export function normalizeWire(wire: WireResult):
   | { ok: true; spec: SolutionSpec }
   | { ok: false; message: string } {
-  const template = oneOf<TemplateId>(wire.template, ["web_app", "chatbot", "dr", "backup"], "web_app");
+  const template = oneOf<TemplateId>(
+    wire.template,
+    ["web_app", "chatbot", "dr", "backup", "erp", "migration", "analytics", "devtest", "oke_platform"],
+    "web_app",
+  );
   const spec = TEMPLATES[template].defaults();
 
   if (typeof wire.customerName === "string" && wire.customerName.trim()) {
@@ -76,6 +80,47 @@ export function normalizeWire(wire: WireResult):
     spec.sizing.monthlyRestoreGb = int(b.monthlyRestoreGb, 0, 10000000, spec.sizing.monthlyRestoreGb);
     spec.sizing.dbBackup = bool(b.dbBackup, spec.sizing.dbBackup);
     spec.sizing.dbBackupGb = int(b.dbBackupGb, 0, 10000000, spec.sizing.dbBackupGb);
+  } else if (template === "erp" && spec.sizing.kind === "erp") {
+    const e = wire.erpSizing ?? {};
+    spec.sizing.users = int(e.users, 5, 5000, spec.sizing.users);
+    spec.sizing.appVmCount = int(e.appVmCount, 1, 20, spec.sizing.appVmCount);
+    spec.sizing.ocpusPerVm = int(e.ocpusPerVm, 1, 32, spec.sizing.ocpusPerVm);
+    spec.sizing.memGbPerVm = int(e.memGbPerVm, 4, 512, spec.sizing.memGbPerVm);
+    spec.sizing.os = oneOf(e.os, ["linux", "windows"], spec.sizing.os);
+    spec.sizing.db.engine = oneOf(e.dbEngine, ["base_db_vm", "adb_serverless"], spec.sizing.db.engine);
+    spec.sizing.db.ecpus = int(e.dbEcpus, 2, 128, spec.sizing.db.ecpus);
+    spec.sizing.db.storageGb = int(e.dbStorageGb, 50, 50000, spec.sizing.db.storageGb);
+    spec.sizing.fssGb = int(e.fssGb, 0, 100000, spec.sizing.fssGb);
+    spec.sizing.backupGb = int(e.backupGb, 0, 1000000, spec.sizing.backupGb);
+  } else if (template === "migration" && spec.sizing.kind === "migration") {
+    const m = wire.migrationSizing ?? {};
+    spec.sizing.vmCount = int(m.vmCount, 1, 300, spec.sizing.vmCount);
+    spec.sizing.avgOcpusPerVm = int(m.avgOcpusPerVm, 1, 32, spec.sizing.avgOcpusPerVm);
+    spec.sizing.avgMemGbPerVm = int(m.avgMemGbPerVm, 2, 512, spec.sizing.avgMemGbPerVm);
+    spec.sizing.windowsVmCount = int(m.windowsVmCount, 0, 300, spec.sizing.windowsVmCount);
+    spec.sizing.totalStorageGb = int(m.totalStorageGb, 0, 2000000, spec.sizing.totalStorageGb);
+    spec.sizing.monthlyEgressGb = int(m.monthlyEgressGb, 0, 1000000, spec.sizing.monthlyEgressGb);
+  } else if (template === "analytics" && spec.sizing.kind === "analytics") {
+    const a = wire.analyticsSizing ?? {};
+    spec.sizing.adwEcpus = int(a.adwEcpus, 2, 512, spec.sizing.adwEcpus);
+    spec.sizing.adwStorageGb = int(a.adwStorageGb, 20, 500000, spec.sizing.adwStorageGb);
+    spec.sizing.oacUsers = int(a.oacUsers, 0, 2000, spec.sizing.oacUsers);
+    spec.sizing.oacTier = oneOf(a.oacTier, ["professional", "enterprise"], spec.sizing.oacTier);
+    spec.sizing.dataLakeGb = int(a.dataLakeGb, 0, 5000000, spec.sizing.dataLakeGb);
+    spec.sizing.etlHoursPerMonth = int(a.etlHoursPerMonth, 0, 744, spec.sizing.etlHoursPerMonth);
+  } else if (template === "devtest" && spec.sizing.kind === "devtest") {
+    const v = wire.devtestSizing ?? {};
+    spec.sizing.vmPerEnv = int(v.vmPerEnv, 1, 50, spec.sizing.vmPerEnv);
+    spec.sizing.ocpusPerVm = int(v.ocpusPerVm, 1, 16, spec.sizing.ocpusPerVm);
+    spec.sizing.memGbPerVm = int(v.memGbPerVm, 2, 256, spec.sizing.memGbPerVm);
+    spec.sizing.dbEcpusPerEnv = int(v.dbEcpusPerEnv, 0, 64, spec.sizing.dbEcpusPerEnv);
+    spec.sizing.runningHoursPerMonth = int(v.runningHoursPerMonth, 40, 744, spec.sizing.runningHoursPerMonth);
+  } else if (template === "oke_platform" && spec.sizing.kind === "oke_platform") {
+    const k = wire.okePlatformSizing ?? {};
+    spec.sizing.workerCount = int(k.workerCount, 1, 100, spec.sizing.workerCount);
+    spec.sizing.workerOcpus = int(k.workerOcpus, 1, 64, spec.sizing.workerOcpus);
+    spec.sizing.workerMemGb = int(k.workerMemGb, 4, 1024, spec.sizing.workerMemGb);
+    spec.sizing.registryGb = int(k.registryGb, 0, 100000, spec.sizing.registryGb);
   }
 
   spec.assumptionNotes = (Array.isArray(wire.assumptionNotes) ? wire.assumptionNotes : [])

@@ -20,6 +20,7 @@ export const CATALOG: Record<string, CatalogEntry> = Object.fromEntries(
       // --- compute -------------------------------------------------------
       { key: "compute_e5_ocpu", sku: "B97384", name: { th: "Compute VM.Standard.E5.Flex — OCPU", en: "Compute VM.Standard.E5.Flex — OCPU" } },
       { key: "compute_e5_mem", sku: "B97385", name: { th: "Compute VM.Standard.E5.Flex — Memory", en: "Compute VM.Standard.E5.Flex — Memory" } },
+      { key: "windows_ocpu", sku: "B88318", name: { th: "Windows Server license — ต่อ OCPU", en: "Windows Server license — per OCPU" } },
       { key: "block_storage_gb", sku: "B91961", name: { th: "Block/Boot Volume — ความจุ", en: "Block/Boot Volume — capacity" } },
       { key: "block_vpu", sku: "B91962", name: { th: "Block Volume Performance Units (Balanced 10 VPU/GB)", en: "Block Volume Performance Units (Balanced 10 VPU/GB)" } },
       // --- database ------------------------------------------------------
@@ -39,12 +40,19 @@ export const CATALOG: Record<string, CatalogEntry> = Object.fromEntries(
       { key: "vpn_ipsec", sku: null, name: { th: "Site-to-Site VPN (IPSec) — ฟรี", en: "Site-to-Site VPN (IPSec) — free" } },
       { key: "nlb", sku: null, name: { th: "Network Load Balancer — ฟรี", en: "Network Load Balancer — free" } },
       // --- storage -------------------------------------------------------
+      { key: "fss_gb", sku: "B89057", name: { th: "File Storage Service — ความจุ", en: "File Storage Service — capacity" } },
       { key: "os_standard_gb", sku: "B91628", name: { th: "Object Storage — Standard", en: "Object Storage — Standard" } },
       { key: "os_ia_gb", sku: "B93000", name: { th: "Object Storage — Infrequent Access", en: "Object Storage — Infrequent Access" } },
       { key: "os_archive_gb", sku: "B91633", name: { th: "Object Storage — Archive", en: "Object Storage — Archive" } },
       { key: "os_ia_retrieval_gb", sku: "B93001", name: { th: "Infrequent Access — data retrieval", en: "Infrequent Access — data retrieval" } },
       // --- containers ----------------------------------------------------
       { key: "oke_cluster", sku: "B96545", name: { th: "OKE Enhanced Cluster — control plane", en: "OKE Enhanced Cluster — control plane" } },
+      // --- analytics -----------------------------------------------------
+      { key: "adw_ecpu", sku: "B95701", name: { th: "Autonomous Data Warehouse — ECPU", en: "Autonomous Data Warehouse — ECPU" } },
+      { key: "adw_storage_gb", sku: "B95754", name: { th: "Autonomous Data Warehouse — storage", en: "Autonomous Data Warehouse — storage" } },
+      { key: "oac_user_pro", sku: "B92682", name: { th: "Oracle Analytics Cloud Professional — ต่อผู้ใช้", en: "Oracle Analytics Cloud Professional — per user" } },
+      { key: "oac_user_ent", sku: "B92683", name: { th: "Oracle Analytics Cloud Enterprise — ต่อผู้ใช้", en: "Oracle Analytics Cloud Enterprise — per user" } },
+      { key: "di_workspace_hr", sku: "B92598", name: { th: "OCI Data Integration — workspace", en: "OCI Data Integration — workspace" } },
       // --- AI ------------------------------------------------------------
       { key: "genai_small_10k", sku: "B111035", name: { th: "OCI Generative AI — Meta Llama 4 Scout (on-demand)", en: "OCI Generative AI — Meta Llama 4 Scout (on-demand)" } },
       { key: "genai_large_10k", sku: "B110517", name: { th: "OCI Generative AI — Meta Llama 3.1 405B (on-demand)", en: "OCI Generative AI — Meta Llama 3.1 405B (on-demand)" } },

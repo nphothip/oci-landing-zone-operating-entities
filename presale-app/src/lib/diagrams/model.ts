@@ -41,3 +41,22 @@ export function textWidth(text: string, fontSize = 12): number {
 export function rowX(x: number, index: number, w: number, gap = 16): number {
   return x + index * (w + gap);
 }
+
+/** Standard legend block (right column of every view, like the originals). */
+export function addLegend(
+  d: Doc,
+  x: number,
+  y: number,
+  rows: { left: string; swatch: string }[],
+): DiagramNode {
+  return d.add({
+    kind: "legend",
+    label: "Legend:",
+    x,
+    y,
+    w: 210,
+    h: 30 + rows.length * 24,
+    style: "legendTitle",
+    rows,
+  });
+}

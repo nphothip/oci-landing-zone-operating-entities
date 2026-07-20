@@ -9,6 +9,9 @@ services:
       # LLM (free-text mode) — optional; template mode works without any key
       LLM_PROVIDER: ${LLM_PROVIDER:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-}
+      GEMINI_PROJECT_ID: ${GEMINI_PROJECT_ID:-}
+      GEMINI_LOCATION: ${GEMINI_LOCATION:-us-central1}
       GEMINI_MODEL: ${GEMINI_MODEL:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-}

@@ -38,7 +38,7 @@ describe("diagram pipeline", () => {
     const network = diagrams.find((d) => d.view === "network")!;
     expect(network.nodes.some((n) => n.label === "vcn-sin-lz-hub")).toBe(true);
     expect(network.nodes.filter((n) => n.kind === "vcn")).toHaveLength(3); // hub + 2 spokes
-    expect(network.nodes.some((n) => n.label === "NFW")).toBe(true); // hub_b fixture
+    expect(network.nodes.some((n) => n.style === "fw")).toBe(true); // hub_b fixture has an NFW
   });
 
   it("keeps sibling boxes from overlapping", () => {
@@ -67,6 +67,7 @@ function assertNoSiblingOverlap(doc: DiagramDoc) {
         const b = siblings[j];
         if (a.kind === "canvasTitle" || b.kind === "canvasTitle") continue;
         if (a.kind === "gateway" || b.kind === "gateway") continue; // gateways sit on borders by design
+        if (a.style === "adTab" || b.style === "adTab") continue; // AD tabs peek over the VCN edge by design
         const overlap = a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
         expect(overlap, `${doc.view}: "${a.label}" overlaps "${b.label}" (parent ${parent})`).toBe(false);
       }

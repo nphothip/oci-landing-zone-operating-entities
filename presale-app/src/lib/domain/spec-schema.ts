@@ -70,8 +70,64 @@ const backupSizing = z.object({
   dbBackupGb: z.number().int().min(0).max(10000000),
 });
 
+const erpSizing = z.object({
+  kind: z.literal("erp"),
+  users: z.number().int().min(5).max(5000),
+  appVmCount: z.number().int().min(1).max(20),
+  ocpusPerVm: z.number().int().min(1).max(32),
+  memGbPerVm: z.number().int().min(4).max(512),
+  bootGbPerVm: z.number().int().min(50).max(2000),
+  os: z.enum(["linux", "windows"]),
+  db: z.object({
+    engine: z.enum(["base_db_vm", "adb_serverless"]),
+    ecpus: z.number().int().min(2).max(128),
+    storageGb: z.number().int().min(50).max(50000),
+  }),
+  fssGb: z.number().int().min(0).max(100000),
+  backupGb: z.number().int().min(0).max(1000000),
+});
+
+const migrationSizing = z.object({
+  kind: z.literal("migration"),
+  vmCount: z.number().int().min(1).max(300),
+  avgOcpusPerVm: z.number().int().min(1).max(32),
+  avgMemGbPerVm: z.number().int().min(2).max(512),
+  windowsVmCount: z.number().int().min(0).max(300),
+  totalStorageGb: z.number().int().min(0).max(2000000),
+  monthlyEgressGb: z.number().int().min(0).max(1000000),
+});
+
+const analyticsSizing = z.object({
+  kind: z.literal("analytics"),
+  adwEcpus: z.number().int().min(2).max(512),
+  adwStorageGb: z.number().int().min(20).max(500000),
+  oacUsers: z.number().int().min(0).max(2000),
+  oacTier: z.enum(["professional", "enterprise"]),
+  dataLakeGb: z.number().int().min(0).max(5000000),
+  etlHoursPerMonth: z.number().int().min(0).max(744),
+});
+
+const devtestSizing = z.object({
+  kind: z.literal("devtest"),
+  vmPerEnv: z.number().int().min(1).max(50),
+  ocpusPerVm: z.number().int().min(1).max(16),
+  memGbPerVm: z.number().int().min(2).max(256),
+  bootGbPerVm: z.number().int().min(50).max(1000),
+  dbEcpusPerEnv: z.number().int().min(0).max(64),
+  dbStorageGbPerEnv: z.number().int().min(0).max(10000),
+  runningHoursPerMonth: z.number().int().min(40).max(744),
+});
+
+const okePlatformSizing = z.object({
+  kind: z.literal("oke_platform"),
+  workerCount: z.number().int().min(1).max(100),
+  workerOcpus: z.number().int().min(1).max(64),
+  workerMemGb: z.number().int().min(4).max(1024),
+  registryGb: z.number().int().min(0).max(100000),
+});
+
 export const solutionSpecSchema = z.object({
-  template: z.enum(["web_app", "chatbot", "dr", "backup"]),
+  template: z.enum(["web_app", "chatbot", "dr", "backup", "erp", "migration", "analytics", "devtest", "oke_platform"]),
   customerName: z.string().max(120).optional(),
   region: regionSchema,
   cisLevel: z.union([z.literal(1), z.literal(2)]),
@@ -83,7 +139,10 @@ export const solutionSpecSchema = z.object({
     .array(z.enum(["prod", "preprod", "staging", "uat", "dev", "test"]))
     .min(1)
     .max(4),
-  sizing: z.discriminatedUnion("kind", [webAppSizing, chatbotSizing, drSizing, backupSizing]),
+  sizing: z.discriminatedUnion("kind", [
+    webAppSizing, chatbotSizing, drSizing, backupSizing,
+    erpSizing, migrationSizing, analyticsSizing, devtestSizing, okePlatformSizing,
+  ]),
   assumptionNotes: z.array(z.string().max(500)).max(30),
 }).superRefine((spec, ctx) => {
   if (spec.sizing.kind !== spec.template) {

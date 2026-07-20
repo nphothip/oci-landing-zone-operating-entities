@@ -1,7 +1,10 @@
 "use client";
 
-import type { BomCategory, BomResult } from "@/lib/domain/types";
+import type { BomCategory, BomResult, GenerateResult } from "@/lib/domain/types";
 import { L, useLang } from "@/lib/i18n";
+import { buildBomWorkbook } from "@/lib/export/bom-xlsx";
+import { workbookToXlsx } from "@/lib/export/xlsx";
+import { downloadBlob } from "@/lib/diagrams/export";
 
 const CATEGORY_LABEL: Record<BomCategory, { th: string; en: string }> = {
   landing_zone: L("Landing Zone", "Landing Zone"),
@@ -17,9 +20,15 @@ const CATEGORY_LABEL: Record<BomCategory, { th: string; en: string }> = {
 const usd = (n: number | null) =>
   n === null ? "—" : n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });
 
-export function BomTable({ bom }: { bom: BomResult }) {
+export function BomTable({ result }: { result: GenerateResult }) {
   const { t } = useLang();
+  const bom = result.bom;
   const categories = [...new Set(bom.items.map((i) => i.category))];
+
+  const downloadExcel = async () => {
+    const blob = await workbookToXlsx(buildBomWorkbook(result, t));
+    downloadBlob(blob, `oci-${result.spec.template}-${result.spec.region.shortName}-bom.xlsx`);
+  };
 
   return (
     <div className="space-y-4">
@@ -32,8 +41,17 @@ export function BomTable({ bom }: { bom: BomResult }) {
               : t(L(`snapshot ${bom.priceFetchedAt.slice(0, 10)}`, `snapshot ${bom.priceFetchedAt.slice(0, 10)}`))}
           </span>
         </div>
-        <div className="text-lg font-bold">
-          {t(L("รวมต่อเดือน:", "Monthly total:"))} <span className="text-[#C74634]">{usd(bom.totals.monthlyUsd)}</span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => void downloadExcel()}
+            className="rounded-lg border border-green-700 px-3 py-1.5 text-sm font-medium text-green-800 hover:bg-green-50"
+            title={t(L("ดาวน์โหลด BOM เป็นไฟล์ Excel (.xlsx) พร้อม sheet สรุป", "Download the BOM as an Excel (.xlsx) file with a summary sheet"))}
+          >
+            ⬇ Excel
+          </button>
+          <div className="text-lg font-bold">
+            {t(L("รวมต่อเดือน:", "Monthly total:"))} <span className="text-[#C74634]">{usd(bom.totals.monthlyUsd)}</span>
+          </div>
         </div>
       </div>
 

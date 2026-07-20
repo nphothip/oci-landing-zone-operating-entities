@@ -6,18 +6,40 @@ import type { ChatbotSizing } from "@/lib/domain/types";
 describe("factory config per template", () => {
   it("builds a valid config from every template's defaults", () => {
     for (const tpl of TEMPLATE_LIST) {
-      const res = buildFactoryConfig(tpl.defaults());
+      const spec = tpl.defaults();
+      const res = buildFactoryConfig(spec);
       expect(res.ok, tpl.id).toBe(true);
       if (!res.ok) continue;
       expect(res.config.region).toBe("ap-singapore-1");
       expect(res.config.region_short_name).toBe("sin");
       expect(res.config.realm).toBe("oc1");
-      expect(res.config.hub.kind).toBe(tpl.defaults().hub.kind);
-      expect(Object.keys(res.config.environments)).toContain("prod");
-      const prod = res.config.environments.prod;
-      expect(prod.shared_project_network?.network.vcn).toBe("10.0.64.0/21");
-      expect(Object.keys(prod.projects ?? {})).toHaveLength(1);
+      expect(res.config.hub.kind).toBe(spec.hub.kind);
+      expect(Object.keys(res.config.environments).sort(), tpl.id).toEqual([...spec.environments].sort());
+      for (const [env, cfg] of Object.entries(res.config.environments)) {
+        const hasSpoke = Boolean(cfg.shared_project_network);
+        const hasPlatform = Object.keys(cfg.platforms ?? {}).length > 0;
+        expect(hasSpoke || hasPlatform, `${tpl.id}/${env} needs a spoke or platform`).toBe(true);
+      }
     }
+  });
+
+  it("keeps the canonical prod spoke CIDR for spoke-based templates", () => {
+    const res = buildFactoryConfig(TEMPLATES.web_app.defaults());
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.config.environments.prod.shared_project_network?.network.vcn).toBe("10.0.64.0/21");
+    expect(Object.keys(res.config.environments.prod.projects ?? {})).toHaveLength(1);
+  });
+
+  it("builds OKE-only environments for the oke_platform template", () => {
+    const spec = TEMPLATES.oke_platform.defaults();
+    const res = buildFactoryConfig(spec);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    const prod = res.config.environments.prod;
+    expect(prod.shared_project_network).toBeUndefined();
+    expect(prod.platforms?.oke.extension?.type).toBe("oke_simple");
+    expect(prod.platforms?.oke.network?.vcn).toBe("10.0.96.0/20");
   });
 
   it("adds an oke_simple platform for the chatbot OKE runtime", () => {

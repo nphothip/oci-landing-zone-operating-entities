@@ -4,7 +4,7 @@ Web app ภายในสำหรับทีม presale — ใส่ require
 
 | Output | รายละเอียด |
 |---|---|
-| **BOM** | รายการ OCI services + SKU (part number) จัดกลุ่มตามหมวด พร้อมป้ายบอกว่าอะไร deploy โดย LZ / อะไร provision หลัง LZ |
+| **BOM** | รายการ OCI services + SKU (part number) จัดกลุ่มตามหมวด พร้อมป้ายบอกว่าอะไร deploy โดย LZ / อะไร provision หลัง LZ — **ดาวน์โหลดเป็น Excel (.xlsx)** ได้ (2 sheet: BOM แยกหมวด+ยอดรวม, Summary+สมมติฐาน; money cell มี currency format) |
 | **ราคาต่อเดือน (USD)** | OCI list price (Pay-As-You-Go) จาก OCI Price List API สาธารณะ — ราคา USD เท่ากันทั่วโลก ใช้กับ `ap-singapore-1` ได้ตรง ๆ (คิด 744 ชม./เดือน แบบ tiered ตามจริง เช่น 10TB egress แรกฟรี) |
 | **Diagram 5 views** | Functional / Security / Network / Operations / Runtime — วาดจากไฟล์ LZ ที่ generate จริง (ไม่ใช่ภาพนิ่ง) ดาวน์โหลดเป็น SVG / PNG / **draw.io** (แก้ต่อได้ ไฟล์เดียว 5 หน้า) |
 | **LaC code** | แพ็กเกจ ZIP: `config.json` + `generated/*.json` + `README.md` คู่มือ deploy — ได้จากการรัน **Blueprint Factory ของ repo นี้จริง ๆ** (`gen/` config mode) พร้อมใช้กับ [OCI Landing Zones Orchestrator](https://github.com/oci-landing-zones/terraform-oci-modules-orchestrator) |
@@ -57,8 +57,20 @@ npm run dev        # http://localhost:3000
 
 ## โหมดการใช้งาน
 
-1. **เลือกจาก Template** — Web App (3-tier) / Chatbot (GenAI+RAG) / DR Solution / Backup Solution
-   แล้วปรับ knob (hub model, CIS level, environments, ขนาด VM/DB/storage ฯลฯ) — ใช้ได้โดยไม่ต้องมี API key ใด ๆ
+1. **เลือกจาก Template** (9 แบบ เรียงตามดีล SME ที่เจอบ่อย) แล้วปรับ knob — ใช้ได้โดยไม่ต้องมี API key ใด ๆ
+
+   | Template | ใช้กับดีลแบบไหน |
+   |---|---|
+   | 🌐 Web Application (3-tier) | เว็บ/ระบบบริการลูกค้า: LB → App VMs → DB |
+   | 🏢 ERP / Business Application | SAP B1, Dynamics, บัญชี/payroll, ERP custom (เลือก Windows ได้ — คิด license ต่อ OCPU) |
+   | 🚚 Server Migration (Lift & Shift) | ย้าย VM จาก on-prem/VMware — คละ Windows/Linux + right-size note |
+   | 🤖 Chatbot (Generative AI) | GenAI on-demand + RAG (vector ADB) รันบน VM หรือ OKE |
+   | 📊 Data Warehouse & BI | ADW + Oracle Analytics Cloud รายผู้ใช้ + data lake + Data Integration |
+   | ☸️ Container Platform (OKE) | Kubernetes ที่ **LaC deploy cluster ให้จริง** (oke_simple extension) |
+   | 🧪 Dev/Test Environments | non-prod บน hub ฟรี คิด compute ตามชั่วโมงเปิดเครื่อง (~ประหยัด 65%) |
+   | 🛟 DR Solution | pilot light / warm standby + Full Stack DR |
+   | 💾 Backup Solution | Object Storage 3 tiers + retention |
+
 2. **พิมพ์อธิบาย (AI)** — พิมพ์ requirement ภาษาไทย/อังกฤษ → LLM (Gemini หรือ OpenAI, เลือกผ่าน env)
    แปลงเป็นสเปก → ตรวจ/แก้ในฟอร์มเดียวกันก่อนกด generate; ถ้าข้อมูลไม่พอ AI จะถามกลับ ≤3 ข้อ
 

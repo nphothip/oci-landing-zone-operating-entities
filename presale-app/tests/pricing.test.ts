@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { tieredCost, unitPriceAt, type PriceEntry } from "@/lib/pricing/price-client";
 import { priceBom } from "@/lib/pricing/resolve";
-import { TEMPLATES } from "@/lib/templates";
+import { TEMPLATE_LIST } from "@/lib/templates";
 import fallback from "@/lib/pricing/fallback-prices.json";
 
 describe("tiered pricing math", () => {
@@ -28,10 +28,10 @@ describe("tiered pricing math", () => {
 
 describe("BOM pricing end-to-end (fallback snapshot)", () => {
   it("prices every default template with a positive total", () => {
-    for (const id of ["web_app", "chatbot", "dr", "backup"] as const) {
-      const bom = priceBom(TEMPLATES[id].buildBom(TEMPLATES[id].defaults()));
-      expect(bom.totals.monthlyUsd, id).toBeGreaterThan(0);
-      expect(bom.totals.unpricedCount, id).toBe(0);
+    for (const tpl of TEMPLATE_LIST) {
+      const bom = priceBom(tpl.buildBom(tpl.defaults()));
+      expect(bom.totals.monthlyUsd, tpl.id).toBeGreaterThan(0);
+      expect(bom.totals.unpricedCount, tpl.id).toBe(0);
     }
   });
 

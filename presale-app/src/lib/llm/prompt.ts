@@ -7,7 +7,7 @@ export const WIRE_SCHEMA = {
   type: "object",
   additionalProperties: false,
   properties: {
-    template: { type: ["string", "null"], enum: ["web_app", "chatbot", "dr", "backup", null] },
+    template: { type: ["string", "null"], enum: ["web_app", "chatbot", "dr", "backup", "erp", "migration", "analytics", "devtest", "oke_platform", null] },
     customerName: { type: ["string", "null"] },
     hubKind: { type: ["string", "null"], enum: ["hub_a", "hub_b", "hub_c", "hub_e", null] },
     cisLevel: { type: ["integer", "null"], enum: [1, 2, null] },
@@ -75,18 +75,85 @@ export const WIRE_SCHEMA = {
       },
       required: ["standardGb", "infrequentGb", "archiveGb", "monthlyRestoreGb", "dbBackup", "dbBackupGb"],
     },
+    erpSizing: {
+      type: ["object", "null"],
+      additionalProperties: false,
+      properties: {
+        users: { type: ["integer", "null"] },
+        appVmCount: { type: ["integer", "null"] },
+        ocpusPerVm: { type: ["integer", "null"] },
+        memGbPerVm: { type: ["integer", "null"] },
+        os: { type: ["string", "null"], enum: ["linux", "windows", null] },
+        dbEngine: { type: ["string", "null"], enum: ["base_db_vm", "adb_serverless", null] },
+        dbEcpus: { type: ["integer", "null"] },
+        dbStorageGb: { type: ["integer", "null"] },
+        fssGb: { type: ["integer", "null"] },
+        backupGb: { type: ["integer", "null"] },
+      },
+      required: ["users", "appVmCount", "ocpusPerVm", "memGbPerVm", "os", "dbEngine", "dbEcpus", "dbStorageGb", "fssGb", "backupGb"],
+    },
+    migrationSizing: {
+      type: ["object", "null"],
+      additionalProperties: false,
+      properties: {
+        vmCount: { type: ["integer", "null"] },
+        avgOcpusPerVm: { type: ["integer", "null"] },
+        avgMemGbPerVm: { type: ["integer", "null"] },
+        windowsVmCount: { type: ["integer", "null"] },
+        totalStorageGb: { type: ["integer", "null"] },
+        monthlyEgressGb: { type: ["integer", "null"] },
+      },
+      required: ["vmCount", "avgOcpusPerVm", "avgMemGbPerVm", "windowsVmCount", "totalStorageGb", "monthlyEgressGb"],
+    },
+    analyticsSizing: {
+      type: ["object", "null"],
+      additionalProperties: false,
+      properties: {
+        adwEcpus: { type: ["integer", "null"] },
+        adwStorageGb: { type: ["integer", "null"] },
+        oacUsers: { type: ["integer", "null"] },
+        oacTier: { type: ["string", "null"], enum: ["professional", "enterprise", null] },
+        dataLakeGb: { type: ["integer", "null"] },
+        etlHoursPerMonth: { type: ["integer", "null"] },
+      },
+      required: ["adwEcpus", "adwStorageGb", "oacUsers", "oacTier", "dataLakeGb", "etlHoursPerMonth"],
+    },
+    devtestSizing: {
+      type: ["object", "null"],
+      additionalProperties: false,
+      properties: {
+        vmPerEnv: { type: ["integer", "null"] },
+        ocpusPerVm: { type: ["integer", "null"] },
+        memGbPerVm: { type: ["integer", "null"] },
+        dbEcpusPerEnv: { type: ["integer", "null"] },
+        runningHoursPerMonth: { type: ["integer", "null"] },
+      },
+      required: ["vmPerEnv", "ocpusPerVm", "memGbPerVm", "dbEcpusPerEnv", "runningHoursPerMonth"],
+    },
+    okePlatformSizing: {
+      type: ["object", "null"],
+      additionalProperties: false,
+      properties: {
+        workerCount: { type: ["integer", "null"] },
+        workerOcpus: { type: ["integer", "null"] },
+        workerMemGb: { type: ["integer", "null"] },
+        registryGb: { type: ["integer", "null"] },
+      },
+      required: ["workerCount", "workerOcpus", "workerMemGb", "registryGb"],
+    },
     assumptionNotes: { type: "array", items: { type: "string" } },
     clarifyingQuestions: { type: "array", items: { type: "string" } },
   },
   required: [
     "template", "customerName", "hubKind", "cisLevel", "connectivity", "environments",
     "webAppSizing", "chatbotSizing", "drSizing", "backupSizing",
+    "erpSizing", "migrationSizing", "analyticsSizing", "devtestSizing", "okePlatformSizing",
     "assumptionNotes", "clarifyingQuestions",
   ],
 } as const;
 
 export interface WireResult {
-  template: "web_app" | "chatbot" | "dr" | "backup" | null;
+  template: "web_app" | "chatbot" | "dr" | "backup" | "erp" | "migration" | "analytics" | "devtest" | "oke_platform" | null;
   customerName: string | null;
   hubKind: "hub_a" | "hub_b" | "hub_c" | "hub_e" | null;
   cisLevel: 1 | 2 | null;
@@ -96,6 +163,11 @@ export interface WireResult {
   chatbotSizing: Record<string, unknown> | null;
   drSizing: Record<string, unknown> | null;
   backupSizing: Record<string, unknown> | null;
+  erpSizing: Record<string, unknown> | null;
+  migrationSizing: Record<string, unknown> | null;
+  analyticsSizing: Record<string, unknown> | null;
+  devtestSizing: Record<string, unknown> | null;
+  okePlatformSizing: Record<string, unknown> | null;
   assumptionNotes: string[];
   clarifyingQuestions: string[];
 }
@@ -108,16 +180,29 @@ map it onto EXACTLY ONE solution template plus sizing values, returned as JSON
 matching the provided schema. Do not write prose outside the JSON.
 
 Templates:
-- web_app  : 3-tier web application (LB -> app VMs [VM.Standard.E5.Flex] -> DB)
-- chatbot  : Generative-AI chatbot (OCI GenAI on-demand, optional RAG with
-             vector ADB + Object Storage; runtime "vm" or "oke")
-- dr       : DR site on OCI (pilot_light = standby VMs stopped, storage only;
-             warm_standby = ~half fleet running; block replicas, object
-             backups, optional DB standby)
-- backup   : backup-to-OCI (Object Storage Standard/IA/Archive tiers)
+- web_app     : 3-tier web application (LB -> app VMs [VM.Standard.E5.Flex] -> DB)
+- erp         : ERP / business application hosting (SAP B1, Dynamics, payroll,
+                accounting, custom ERP; app VMs [linux|windows] + Oracle DB +
+                file share + VPN to office)
+- migration   : lift & shift server migration (move an existing VM fleet from
+                on-prem/VMware/hosting onto OCI compute; mixed Windows/Linux)
+- chatbot     : Generative-AI chatbot (OCI GenAI on-demand, optional RAG with
+                vector ADB + Object Storage; runtime "vm" or "oke")
+- analytics   : data warehouse & BI (Autonomous Data Warehouse + Oracle
+                Analytics Cloud per-user dashboards + Object Storage data lake)
+- oke_platform: Kubernetes/container platform (OKE cluster deployed by the LZ)
+- devtest     : dev/test environments (cheap non-prod on the free hub; compute
+                billed per running hour, e.g. 12h x 22 days = 260 h/month)
+- dr          : DR site on OCI (pilot_light = standby VMs stopped, storage only;
+                warm_standby = ~half fleet running; block replicas, object
+                backups, optional DB standby)
+- backup      : backup-to-OCI (Object Storage Standard/IA/Archive tiers)
 
-Thai keyword hints: เว็บแอป/เว็บไซต์/ระบบเว็บ -> web_app; แชทบอท/บอทตอบลูกค้า/AI ตอบแชท -> chatbot;
-ดีอาร์/กู้คืนระบบ/ศูนย์สำรอง/แผนฉุกเฉิน -> dr; สำรองข้อมูล/แบ็คอัพ/backup -> backup.
+Thai keyword hints: เว็บแอป/เว็บไซต์/ระบบเว็บ -> web_app; อีอาร์พี/ERP/ระบบบัญชี/เงินเดือน/payroll/SAP -> erp;
+ย้ายเซิร์ฟเวอร์/ย้ายขึ้นคลาวด์/migrate/ยกระบบเดิม/VMware -> migration; แชทบอท/บอทตอบลูกค้า/AI ตอบแชท -> chatbot;
+คลังข้อมูล/รายงานผู้บริหาร/BI/dashboard/data warehouse -> analytics; คูเบอร์เนเตส/kubernetes/container/microservices -> oke_platform;
+เครื่องทดสอบ/สภาพแวดล้อมพัฒนา/dev/test/UAT -> devtest; ดีอาร์/กู้คืนระบบ/ศูนย์สำรอง/แผนฉุกเฉิน -> dr;
+สำรองข้อมูล/แบ็คอัพ/backup -> backup.
 
 Landing zone options:
 - hubKind: hub_a (2x OCI Network Firewall, HA, expensive), hub_b (1x NFW,

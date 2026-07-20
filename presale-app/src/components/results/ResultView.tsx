@@ -72,7 +72,7 @@ export function ResultView({ result }: { result: GenerateResult }) {
           </div>
         </div>
       ) : null}
-      {tab === "bom" ? <BomTable bom={result.bom} /> : null}
+      {tab === "bom" ? <BomTable result={result} /> : null}
       {tab === "diagrams" ? <DiagramsTab diagrams={result.diagrams} baseName={baseName} /> : null}
       {tab === "lac" ? <LacTab files={result.lac.files} diagrams={result.diagrams} baseName={baseName} /> : null}
     </div>

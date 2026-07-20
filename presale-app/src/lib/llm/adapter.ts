@@ -1,5 +1,5 @@
 import type { WireResult } from "./prompt";
-import { geminiParse } from "./gemini";
+import { geminiParse, isGeminiConfigured } from "./gemini";
 import { openaiParse } from "./openai";
 
 export type LlmOutcome =
@@ -15,9 +15,12 @@ export interface LlmAdapter {
 export function activeProvider(): { provider: "gemini" | "openai" | "none"; reason?: string } {
   const requested = (process.env.LLM_PROVIDER || "").toLowerCase();
   if (requested === "gemini") {
-    return process.env.GEMINI_API_KEY
+    return isGeminiConfigured()
       ? { provider: "gemini" }
-      : { provider: "none", reason: "LLM_PROVIDER=gemini but GEMINI_API_KEY is not set" };
+      : {
+          provider: "none",
+          reason: "LLM_PROVIDER=gemini but GEMINI_API_KEY / GOOGLE_APPLICATION_CREDENTIALS is not set",
+        };
   }
   if (requested === "openai") {
     return process.env.OPENAI_API_KEY
@@ -26,9 +29,12 @@ export function activeProvider(): { provider: "gemini" | "openai" | "none"; reas
   }
   if (requested === "none" || requested === "") {
     // Auto-detect from available keys when the provider is not pinned.
-    if (process.env.GEMINI_API_KEY) return { provider: "gemini" };
+    if (isGeminiConfigured()) return { provider: "gemini" };
     if (process.env.OPENAI_API_KEY) return { provider: "openai" };
-    return { provider: "none", reason: "no LLM API key configured (GEMINI_API_KEY / OPENAI_API_KEY)" };
+    return {
+      provider: "none",
+      reason: "no LLM credentials configured (GEMINI_API_KEY, GOOGLE_APPLICATION_CREDENTIALS, or OPENAI_API_KEY)",
+    };
   }
   return { provider: "none", reason: `unknown LLM_PROVIDER: ${requested}` };
 }
