@@ -55,7 +55,6 @@ export const migrationTemplate: TemplateDefinition = {
   buildBom(spec): BomItem[] {
     const s = sizing(spec);
     const items = lzBaselineBom(spec);
-    const winVms = Math.min(s.windowsVmCount, s.vmCount);
     const totalOcpu = s.vmCount * s.avgOcpusPerVm;
 
     items.push(
@@ -78,17 +77,9 @@ export const migrationTemplate: TemplateDefinition = {
         deployedByLz: false,
       },
     );
-    if (winVms > 0) {
-      items.push({
-        catalogKey: "windows_ocpu",
-        label: { th: `Windows Server license ×${winVms} VM`, en: `Windows Server license ×${winVms} VMs` },
-        category: "compute",
-        quantity: winVms * s.avgOcpusPerVm,
-        unit: "OCPU",
-        monthlyMetricQty: hours(winVms * s.avgOcpusPerVm),
-        deployedByLz: false,
-      });
-    }
+    // Windows Server licensing is intentionally NOT priced — the AIS Cloud
+    // calculator does not charge it (Linux/Ubuntu only). windowsVmCount is kept
+    // as informational sizing; quote Windows licensing separately if needed.
     items.push(
       {
         catalogKey: "block_storage_gb",

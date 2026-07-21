@@ -53,8 +53,8 @@ describe("BOM Excel export", () => {
     expect(sheet1).toContain("OCI Presale BOM");
     // the grand total appears as a numeric cell value
     expect(sheet1).toContain(`<v>${result.bom.totals.monthlyThb}</v>`);
-    // Windows license line (erp default is Windows) is present
-    expect(sheet1).toContain("Windows Server license");
+    // Base Database line (erp default DB is Base Database VM) is present
+    expect(sheet1).toContain("Base Database");
     // Environment + Scope columns and an AutoFilter for easy filtering
     expect(sheet1).toContain("Environment");
     expect(sheet1).toContain("<autoFilter ref=");

@@ -22,6 +22,15 @@ const burstSchema = z
   })
   .optional();
 
+const trafficSchema = z
+  .object({
+    lbBandwidthMbps: z.number().int().min(0).max(100000).optional(),
+    nfwDataGbPerMonth: z.number().int().min(0).max(10000000).optional(),
+    egressGbPerMonth: z.number().int().min(0).max(10000000).optional(),
+    wafRequestsM: z.number().int().min(0).max(100000).optional(),
+  })
+  .optional();
+
 const webAppSizing = z.object({
   kind: z.literal("web_app"),
   appVmCount: z.number().int().min(1).max(50),
@@ -191,6 +200,7 @@ export const solutionSpecSchema = z.object({
   customerName: z.string().max(120).optional(),
   region: regionSchema,
   burst: burstSchema,
+  traffic: trafficSchema,
   cisLevel: z.union([z.literal(1), z.literal(2)]),
   hub: z.object({
     kind: z.enum(["hub_a", "hub_b", "hub_c", "hub_e"]),

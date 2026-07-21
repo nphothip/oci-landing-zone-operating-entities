@@ -7,6 +7,7 @@ import { buildLacReadme } from "@/lib/factory/readme-template";
 import { TEMPLATES } from "@/lib/templates";
 import { finalizeBom } from "@/lib/bom/env";
 import { applyBurst, burstAssumptions } from "@/lib/bom/burst";
+import { applyTraffic } from "@/lib/bom/traffic";
 import { priceBom } from "@/lib/pricing/resolve";
 import { buildDiagrams } from "@/lib/diagrams";
 
@@ -41,7 +42,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   const template = TEMPLATES[spec.template];
   const warnings: string[] = [];
   const assumptions = [...template.assumptions(spec), ...burstAssumptions(spec)];
-  const bom = priceBom(finalizeBom(applyBurst(spec, template.buildBom(spec))));
+  const bom = priceBom(finalizeBom(applyTraffic(spec, applyBurst(spec, template.buildBom(spec)))));
   if (bom.totals.unpricedCount > 0) {
     warnings.push(`${bom.totals.unpricedCount} BOM item(s) could not be priced — totals are partial`);
   }

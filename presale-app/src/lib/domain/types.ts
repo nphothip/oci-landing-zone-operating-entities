@@ -267,6 +267,19 @@ export interface BurstConfig {
   dbPctMonthAbove?: number;
 }
 
+/** Optional traffic / data-transfer quantities. Any field left undefined keeps
+ *  the template's built-in default; a set field overrides (or adds) that line. */
+export interface TrafficConfig {
+  /** Load Balancer bandwidth (Mbps). First 10 Mbps is free via the SKU tier. */
+  lbBandwidthMbps?: number;
+  /** Hub Network Firewall data processed per month (GB). First 10 TB free. */
+  nfwDataGbPerMonth?: number;
+  /** Outbound data transfer / internet egress per month (GB). */
+  egressGbPerMonth?: number;
+  /** WAF incoming requests per month, in millions. First 10 M free. */
+  wafRequestsM?: number;
+}
+
 export interface SolutionSpec {
   template: TemplateId;
   customerName?: string;
@@ -274,6 +287,8 @@ export interface SolutionSpec {
   cisLevel: CisLevel;
   /** Burst / autoscaling options (undefined = off; existing totals unchanged). */
   burst?: BurstConfig;
+  /** Traffic / data-transfer overrides (undefined = template defaults). */
+  traffic?: TrafficConfig;
   hub: {
     kind: HubKind;
     connectivity: Connectivity;

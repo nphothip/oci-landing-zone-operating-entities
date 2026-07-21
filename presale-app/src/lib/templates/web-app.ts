@@ -63,7 +63,6 @@ export const webAppTemplate: TemplateDefinition = {
     },
     { path: "sizing.db.ecpus", label: { th: "DB ECPU", en: "DB ECPUs" }, input: { type: "number", min: 2, max: 64, step: 2, unit: "ECPU" }, visibleIf: (s) => sizing(s).db.engine !== "none" },
     { path: "sizing.db.storageGb", label: { th: "DB storage (GB)", en: "DB storage (GB)" }, input: { type: "number", min: 20, max: 10000, step: 20, unit: "GB" }, visibleIf: (s) => sizing(s).db.engine !== "none" },
-    { path: "sizing.lbBandwidthMbps", label: { th: "LB bandwidth (Mbps)", en: "LB bandwidth (Mbps)" }, input: { type: "number", min: 10, max: 2000, step: 10, unit: "Mbps" } },
     { path: "sizing.waf", label: { th: "เปิด Web Application Firewall", en: "Enable Web Application Firewall" }, input: { type: "boolean" } },
   ],
   buildFactoryConfig(spec) {

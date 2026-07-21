@@ -1,6 +1,6 @@
 {
   "currency": "THB",
-  "fetchedAt": "2026-07-21T01:52:22.505Z",
+  "fetchedAt": "2026-07-21T03:26:29.245Z",
   "prices": {
     "B108077": {
       "name": "Oracle Cloud Infrastructure Generative AI - Large Cohere",
@@ -52,17 +52,6 @@
       "tiers": [
         {
           "value": 5.0807827125,
-          "min": 0,
-          "max": null
-        }
-      ]
-    },
-    "B88318": {
-      "name": "Oracle Cloud Infrastructure - Compute - Windows OS",
-      "metric": "OCPU Per Hour",
-      "tiers": [
-        {
-          "value": 0,
           "min": 0,
           "max": null
         }

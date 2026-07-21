@@ -127,18 +127,9 @@ export const erpTemplate: TemplateDefinition = {
           deployedByLz: false,
         },
       ];
-      if (s.os === "windows") {
-        list.push({
-          catalogKey: "windows_ocpu",
-          label: { th: "Windows Server license", en: "Windows Server license" },
-          category: "compute",
-          quantity: ocpu,
-          unit: "OCPU",
-          monthlyMetricQty: hours(ocpu),
-          deployedByLz: false,
-          notes: { th: "คิดต่อ OCPU ที่รัน Windows — ใช้ license-included ของ OCI", en: "Billed per Windows OCPU — OCI license-included" },
-        });
-      }
+      // Windows Server licensing is intentionally NOT priced here — the AIS
+      // Cloud calculator does not charge it (Linux/Ubuntu only). Quote it
+      // separately if the customer runs Windows.
       return list;
     });
 

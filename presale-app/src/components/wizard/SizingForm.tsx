@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ChangeEvent } from "react";
 import type { EnvName, HubKind, SolutionSpec } from "@/lib/domain/types";
 import { TEMPLATES } from "@/lib/templates";
 import { getPath, setPath } from "@/lib/domain/path";
@@ -21,15 +21,27 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
   const { t } = useLang();
   const template = TEMPLATES[spec.template];
 
-  // Which burst options apply to this workload (from the template's own BOM).
+  // Which burst / traffic options apply to this workload (from its own BOM),
+  // plus each traffic line's current default so the fields show real values.
   const caps = useMemo(() => {
     const items = template.buildBom(spec);
+    const q = (key: string) => items.find((i) => i.catalogKey === key)?.quantity;
     return {
       hasVm: items.some((i) => i.catalogKey === "compute_e5_ocpu"),
       hasDb: items.some((i) => i.catalogKey === "adb_ecpu" || i.catalogKey === "adw_ecpu"),
+      hasLb: items.some((i) => i.catalogKey === "lb_base" || i.catalogKey === "lb_bandwidth"),
+      hasNfw: items.some((i) => i.catalogKey === "nfw_data_gb"),
+      hasWaf: items.some((i) => i.catalogKey === "waf_requests_m"),
+      lbMbps: q("lb_bandwidth") ?? 100,
+      nfwGb: q("nfw_data_gb") ?? 2048,
+      wafM: q("waf_requests_m") ?? 30,
+      egressGb: q("egress_apac_gb") ?? 0,
     };
   }, [template, spec]);
   const burst = spec.burst ?? {};
+  const traffic = spec.traffic ?? {};
+  const numTraffic = (path: string, e: ChangeEvent<HTMLInputElement>) =>
+    onChange(setPath(spec, path, Math.max(0, Math.round(Number(e.target.value) || 0))));
 
   const toggleEnv = (env: EnvName) => {
     const has = spec.environments.includes(env);
@@ -267,6 +279,68 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
           </div>
         </section>
       ) : null}
+
+      {/* traffic / data-transfer quantities */}
+      <section className="rounded-xl border border-neutral-200 bg-white p-4">
+        <h3 className="mb-1 text-sm font-semibold text-neutral-700">{t(L("Traffic / Data transfer (ปริมาณ)", "Traffic / Data transfer"))}</h3>
+        <p className="mb-3 text-[11px] text-neutral-500">{t(L("ปรับปริมาณตามจริงเพื่อคิดค่า bandwidth/data ให้ตรง", "set the real volumes so bandwidth/data charges are accurate"))}</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {caps.hasLb ? (
+            <div>
+              <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("LB bandwidth (Mbps)", "LB bandwidth (Mbps)"))}</label>
+              <input
+                type="number"
+                min={0}
+                max={100000}
+                className="w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-sm"
+                value={Number(traffic.lbBandwidthMbps ?? caps.lbMbps)}
+                onChange={(e) => numTraffic("traffic.lbBandwidthMbps", e)}
+              />
+              <p className="mt-0.5 text-[11px] text-neutral-500">{t(L("10 Mbps แรกฟรี", "first 10 Mbps free"))}</p>
+            </div>
+          ) : null}
+          {caps.hasNfw ? (
+            <div>
+              <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("NFW data processing (GB/เดือน)", "NFW data processed (GB/month)"))}</label>
+              <input
+                type="number"
+                min={0}
+                max={10000000}
+                className="w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-sm"
+                value={Number(traffic.nfwDataGbPerMonth ?? caps.nfwGb)}
+                onChange={(e) => numTraffic("traffic.nfwDataGbPerMonth", e)}
+              />
+              <p className="mt-0.5 text-[11px] text-neutral-500">{t(L("10TB แรก/เดือนฟรี", "first 10TB/month free"))}</p>
+            </div>
+          ) : null}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("Outbound / internet egress (GB/เดือน)", "Outbound / internet egress (GB/month)"))}</label>
+            <input
+              type="number"
+              min={0}
+              max={10000000}
+              className="w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-sm"
+              value={Number(traffic.egressGbPerMonth ?? caps.egressGb)}
+              onChange={(e) => numTraffic("traffic.egressGbPerMonth", e)}
+            />
+            <p className="mt-0.5 text-[11px] text-neutral-500">{t(L("10TB แรก/เดือนฟรี (APAC)", "first 10TB/month free (APAC)"))}</p>
+          </div>
+          {caps.hasWaf ? (
+            <div>
+              <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("WAF requests (ล้าน/เดือน)", "WAF requests (M/month)"))}</label>
+              <input
+                type="number"
+                min={0}
+                max={100000}
+                className="w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-sm"
+                value={Number(traffic.wafRequestsM ?? caps.wafM)}
+                onChange={(e) => numTraffic("traffic.wafRequestsM", e)}
+              />
+              <p className="mt-0.5 text-[11px] text-neutral-500">{t(L("10M แรกฟรี", "first 10M free"))}</p>
+            </div>
+          ) : null}
+        </div>
+      </section>
     </div>
   );
 }

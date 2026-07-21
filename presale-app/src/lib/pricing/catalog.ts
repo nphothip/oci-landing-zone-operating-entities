@@ -20,7 +20,6 @@ export const CATALOG: Record<string, CatalogEntry> = Object.fromEntries(
       // --- compute -------------------------------------------------------
       { key: "compute_e5_ocpu", sku: "B97384", name: { th: "Compute VM.Standard.E5.Flex — OCPU", en: "Compute VM.Standard.E5.Flex — OCPU" } },
       { key: "compute_e5_mem", sku: "B97385", name: { th: "Compute VM.Standard.E5.Flex — Memory", en: "Compute VM.Standard.E5.Flex — Memory" } },
-      { key: "windows_ocpu", sku: "B88318", name: { th: "Windows Server license — ต่อ OCPU", en: "Windows Server license — per OCPU" } },
       { key: "block_storage_gb", sku: "B91961", name: { th: "Block/Boot Volume — ความจุ", en: "Block/Boot Volume — capacity" } },
       { key: "block_vpu", sku: "B91962", name: { th: "Block Volume Performance Units (Balanced 10 VPU/GB)", en: "Block Volume Performance Units (Balanced 10 VPU/GB)" } },
       // --- database ------------------------------------------------------
