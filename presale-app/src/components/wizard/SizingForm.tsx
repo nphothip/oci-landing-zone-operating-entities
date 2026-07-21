@@ -221,37 +221,45 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
                   <span>
                     {t(L("เปิด Autonomous DB autoscaling", "Enable Autonomous DB autoscaling"))}
                     <span className="block text-[11px] text-neutral-500">
-                      {t(L("base ECPU + burst เกิน baseline คิดตามใช้จริง", "base ECPUs + burst above baseline, billed per use"))}
+                      {t(L("ลด TCO โดยลด peak ECPU ได้ถึง 67% เมื่อไม่ได้ใช้งานเต็ม", "lowers TCO by reducing peak ECPUs up to 67% when idle"))}
                     </span>
                   </span>
                 </label>
                 {burst.dbAutoscaling ? (
-                  <div className="ml-6 grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("Peak ECPU (เท่าของ baseline)", "Peak ECPU (× baseline)"))}</label>
-                      <select
-                        className="w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-sm"
-                        value={String(burst.dbPeakFactor ?? 3)}
-                        onChange={(e) => onChange(setPath(spec, "burst.dbPeakFactor", Number(e.target.value)))}
-                      >
-                        {PEAK_FACTORS.map((f) => (
-                          <option key={f} value={f}>
-                            {f}×
-                          </option>
-                        ))}
-                      </select>
+                  <div className="ml-6 space-y-2">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("Peak ECPUs (เท่าของ ECPU Count)", "Peak ECPUs (× ECPU Count)"))}</label>
+                        <select
+                          className="w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-sm"
+                          value={String(burst.dbPeakFactor ?? 3)}
+                          onChange={(e) => onChange(setPath(spec, "burst.dbPeakFactor", Number(e.target.value)))}
+                        >
+                          {PEAK_FACTORS.map((f) => (
+                            <option key={f} value={f}>
+                              {f}×
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("% ของเดือนที่เกิน ECPU Count", "% of month above ECPU Count"))}</label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          className="w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-sm"
+                          value={Number(burst.dbPctMonthAbove ?? 5)}
+                          onChange={(e) => onChange(setPath(spec, "burst.dbPctMonthAbove", Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0)))))}
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("% ของเดือนที่เกิน baseline", "% of month above baseline"))}</label>
-                      <input
-                        type="number"
-                        min={0}
-                        max={100}
-                        className="w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-sm"
-                        value={Number(burst.dbPctMonthAbove ?? 5)}
-                        onChange={(e) => onChange(setPath(spec, "burst.dbPctMonthAbove", Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0)))))}
-                      />
-                    </div>
+                    <p className="text-[11px] text-neutral-500">
+                      {t(L(
+                        "ECPU Count (baseline) = จำนวน ECPU ที่ตั้งไว้ของ DB คิด 100% ของเดือน · ส่วนที่ burst เกิน baseline คิดเฉลี่ยตามช่วงที่ใช้จริง (ตรงกับ AIS calculator)",
+                        "ECPU Count (baseline) = the DB's provisioned ECPUs, billed 100% of the month · the burst above baseline is billed on an averaged ramp (matches the AIS calculator)",
+                      ))}
+                    </p>
                   </div>
                 ) : null}
               </div>

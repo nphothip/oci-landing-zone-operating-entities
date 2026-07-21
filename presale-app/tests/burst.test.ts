@@ -18,13 +18,14 @@ describe("applyBurst", () => {
     expect(applyBurst(specWith({}), baseItems)).toBe(baseItems);
   });
 
-  it("adds a DB burst line = base ECPU-hours × (factor-1) × pct, same SKU", () => {
+  it("adds a DB autoscaling line = base ECPU-hours × (factor-1) × pct / 2 (AIS ramp), same SKU", () => {
     const out = applyBurst(specWith({ dbAutoscaling: true, dbPeakFactor: 3, dbPctMonthAbove: 5 }), baseItems);
     expect(out).toHaveLength(3);
-    const burst = out.find((i) => i.label.en.includes("autoscaling burst"))!;
+    const burst = out.find((i) => i.label.en.includes("autoscaling"))!;
     expect(burst.catalogKey).toBe("adb_ecpu");
-    expect(burst.monthlyMetricQty).toBeCloseTo(4 * 744 * (3 - 1) * 0.05, 5); // 297.6 ECPU-hours
-    expect(burst.quantity).toBe(8); // 4 × (3−1) extra ECPUs on burst
+    expect(burst.monthlyMetricQty).toBeCloseTo((4 * 744 * (3 - 1) * 0.05) / 2, 5); // 74.4 ECPU-hours
+    expect(burst.quantity).toBe(8); // peak(12) − base(4) extra ECPUs
+    expect(burst.label.en).toContain("peak 12 ECPU");
   });
 
   it("VM burstable only tags the OCPU note — no extra line, no ADB change", () => {
@@ -47,5 +48,17 @@ describe("applyBurst", () => {
   it("emits assumption notes only when enabled", () => {
     expect(burstAssumptions(specWith(undefined))).toHaveLength(0);
     expect(burstAssumptions(specWith({ vmBurstable: true, dbAutoscaling: true }))).toHaveLength(2);
+  });
+
+  // Ground-truth parity with the AIS calculator: ATP Serverless, ECPU Count 16,
+  // Peak 48 (3×), 25% of month above baseline, 3000 GB storage → 252,691.19 THB.
+  it("reproduces the AIS calculator total to the satang", () => {
+    const aisItems: BomItem[] = [
+      { catalogKey: "adb_ecpu", label: { th: "ATP", en: "ATP" }, category: "database", quantity: 16, unit: "ECPU", monthlyMetricQty: 16 * 744, deployedByLz: false },
+      { catalogKey: "adb_storage_gb", label: { th: "storage", en: "storage" }, category: "database", quantity: 3000, unit: "GB", monthlyMetricQty: 3000, deployedByLz: false },
+    ];
+    const spec = { ...TEMPLATES.web_app.defaults(), burst: { dbAutoscaling: true, dbPeakFactor: 3, dbPctMonthAbove: 25 } } as SolutionSpec;
+    const bom = priceBom(finalizeBom(applyBurst(spec, aisItems)));
+    expect(bom.totals.monthlyThb).toBeCloseTo(252691.19, 2);
   });
 });
