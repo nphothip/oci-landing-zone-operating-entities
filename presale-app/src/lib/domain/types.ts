@@ -252,11 +252,28 @@ export type Sizing =
 // SolutionSpec
 // ---------------------------------------------------------------------------
 
+/** Optional burst / autoscaling knobs applied across VM + ADB lines. */
+export interface BurstConfig {
+  /**
+   * VM burstable. Matches AIS presale: selectable but billed at the full OCPU
+   * rate (OCI's baseline discount is NOT applied) — a label only.
+   */
+  vmBurstable?: boolean;
+  /** Enable ADB/ADW autoscaling (base ECPUs billed always + burst above baseline). */
+  dbAutoscaling?: boolean;
+  /** Peak ECPUs as a multiple of the base ECPUs; OCI autoscaling allows up to 3×. */
+  dbPeakFactor?: number;
+  /** % of the month running above the ECPU baseline (AIS calculator default 5). */
+  dbPctMonthAbove?: number;
+}
+
 export interface SolutionSpec {
   template: TemplateId;
   customerName?: string;
   region: RegionRef;
   cisLevel: CisLevel;
+  /** Burst / autoscaling options (undefined = off; existing totals unchanged). */
+  burst?: BurstConfig;
   hub: {
     kind: HubKind;
     connectivity: Connectivity;

@@ -1,9 +1,12 @@
 "use client";
 
+import { useMemo } from "react";
 import type { EnvName, HubKind, SolutionSpec } from "@/lib/domain/types";
 import { TEMPLATES } from "@/lib/templates";
 import { getPath, setPath } from "@/lib/domain/path";
 import { L, useLang } from "@/lib/i18n";
+
+const PEAK_FACTORS = [1.5, 2, 3];
 
 const HUBS: { value: HubKind; label: { th: string; en: string }; cost: { th: string; en: string } }[] = [
   { value: "hub_a", label: L("Hub A — NFW คู่ (HA)", "Hub A — dual NFW (HA)"), cost: L("~฿229,200/เดือน (FW)", "~฿229,200/mo (FW)") },
@@ -17,6 +20,16 @@ const ENVS: EnvName[] = ["prod", "preprod", "uat", "dev"];
 export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (s: SolutionSpec) => void }) {
   const { t } = useLang();
   const template = TEMPLATES[spec.template];
+
+  // Which burst options apply to this workload (from the template's own BOM).
+  const caps = useMemo(() => {
+    const items = template.buildBom(spec);
+    return {
+      hasVm: items.some((i) => i.catalogKey === "compute_e5_ocpu"),
+      hasDb: items.some((i) => i.catalogKey === "adb_ecpu" || i.catalogKey === "adw_ecpu"),
+    };
+  }, [template, spec]);
+  const burst = spec.burst ?? {};
 
   const toggleEnv = (env: EnvName) => {
     const has = spec.environments.includes(env);
@@ -174,6 +187,78 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
             })}
         </div>
       </section>
+
+      {/* burst / autoscaling (only for workloads that have VMs or Autonomous DB) */}
+      {caps.hasVm || caps.hasDb ? (
+        <section className="rounded-xl border border-neutral-200 bg-white p-4">
+          <h3 className="mb-3 text-sm font-semibold text-neutral-700">{t(L("Burst / Autoscaling", "Burst / Autoscaling"))}</h3>
+          <div className="space-y-3">
+            {caps.hasVm ? (
+              <label className="flex items-start gap-2 text-sm text-neutral-700">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={Boolean(burst.vmBurstable)}
+                  onChange={(e) => onChange(setPath(spec, "burst.vmBurstable", e.target.checked))}
+                />
+                <span>
+                  {t(L("อนุญาต burstable VM", "Allow burstable VM"))}
+                  <span className="block text-[11px] text-neutral-500">
+                    {t(L("คิดเต็ม OCPU ตาม AIS (burst ชั่วคราวไม่คิดเพิ่ม)", "billed at full OCPU per AIS (short bursts are free)"))}
+                  </span>
+                </span>
+              </label>
+            ) : null}
+            {caps.hasDb ? (
+              <div className="space-y-2">
+                <label className="flex items-start gap-2 text-sm text-neutral-700">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={Boolean(burst.dbAutoscaling)}
+                    onChange={(e) => onChange(setPath(spec, "burst.dbAutoscaling", e.target.checked))}
+                  />
+                  <span>
+                    {t(L("เปิด Autonomous DB autoscaling", "Enable Autonomous DB autoscaling"))}
+                    <span className="block text-[11px] text-neutral-500">
+                      {t(L("base ECPU + burst เกิน baseline คิดตามใช้จริง", "base ECPUs + burst above baseline, billed per use"))}
+                    </span>
+                  </span>
+                </label>
+                {burst.dbAutoscaling ? (
+                  <div className="ml-6 grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("Peak ECPU (เท่าของ baseline)", "Peak ECPU (× baseline)"))}</label>
+                      <select
+                        className="w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-sm"
+                        value={String(burst.dbPeakFactor ?? 3)}
+                        onChange={(e) => onChange(setPath(spec, "burst.dbPeakFactor", Number(e.target.value)))}
+                      >
+                        {PEAK_FACTORS.map((f) => (
+                          <option key={f} value={f}>
+                            {f}×
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("% ของเดือนที่เกิน baseline", "% of month above baseline"))}</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        className="w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-sm"
+                        value={Number(burst.dbPctMonthAbove ?? 5)}
+                        onChange={(e) => onChange(setPath(spec, "burst.dbPctMonthAbove", Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0)))))}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

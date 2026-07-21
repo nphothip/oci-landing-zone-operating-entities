@@ -13,6 +13,15 @@ const regionSchema = z.object({
   shortName: z.string().min(2).max(8),
 });
 
+const burstSchema = z
+  .object({
+    vmBurstable: z.boolean().optional(),
+    dbAutoscaling: z.boolean().optional(),
+    dbPeakFactor: z.number().min(1).max(3).optional(),
+    dbPctMonthAbove: z.number().int().min(0).max(100).optional(),
+  })
+  .optional();
+
 const webAppSizing = z.object({
   kind: z.literal("web_app"),
   appVmCount: z.number().int().min(1).max(50),
@@ -181,6 +190,7 @@ export const solutionSpecSchema = z.object({
   template: z.enum(["web_app", "chatbot", "dr", "backup", "erp", "migration", "analytics", "devtest", "oke_platform", "ecommerce", "fileserver", "vdi", "serverless", "streaming"]),
   customerName: z.string().max(120).optional(),
   region: regionSchema,
+  burst: burstSchema,
   cisLevel: z.union([z.literal(1), z.literal(2)]),
   hub: z.object({
     kind: z.enum(["hub_a", "hub_b", "hub_c", "hub_e"]),
