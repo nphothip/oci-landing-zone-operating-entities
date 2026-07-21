@@ -3,7 +3,7 @@ import { hours, tokensTo10k } from "@/lib/bom/formulas";
 import { OKE_SERVICES_CIDR, envBlocks, hubMgmtSubnet, orderEnvs } from "@/lib/domain/cidr";
 import { lzBaselineAssumptions, lzBaselineBom } from "./lz-baseline";
 import { baseFactoryConfig } from "./common";
-import { perEnv, scaled } from "@/lib/bom/env";
+import { perEnv, scaled, fleetScale } from "@/lib/bom/env";
 
 // AI chatbot: app tier (VMs or an OKE platform via the oke_simple extension)
 // + OCI Generative AI on-demand + optional RAG (vector ADB + doc storage).
@@ -174,26 +174,30 @@ export const chatbotTemplate: TemplateDefinition = {
     // --- runtime (per environment) -----------------------------------------
     const BOOT_GB = 100; // planning assumption per VM/worker node
     const runtime = perEnv(spec, (_env, scale) => {
-      const vms = scaled(s.appVmCount, scale);
-      const workers = scaled(s.okeWorkerCount, scale);
+      const { count: vms, perVmScale } = fleetScale(s.appVmCount, scale);
+      const ocpuPerVm = scaled(s.ocpusPerVm, perVmScale, 1);
+      const memPerVm = scaled(s.memGbPerVm, perVmScale, 1);
+      const { count: workers, perVmScale: workerScale } = fleetScale(s.okeWorkerCount, scale);
+      const workerOcpu = scaled(s.okeWorkerOcpus, workerScale, 1);
+      const workerMem = scaled(s.okeWorkerMemGb, workerScale, 1);
       if (s.runtime === "vm") {
         return [
           {
             catalogKey: "compute_e5_ocpu",
-            label: { th: `App VM ×${vms} — OCPU`, en: `App VMs ×${s.appVmCount} — OCPU` },
+            label: { th: `App VM ×${vms} (E5.Flex ${ocpuPerVm} OCPU) — OCPU`, en: `App VMs ×${vms} (E5.Flex ${ocpuPerVm} OCPU) — OCPU` },
             category: "compute",
-            quantity: vms * s.ocpusPerVm,
+            quantity: vms * ocpuPerVm,
             unit: "OCPU",
-            monthlyMetricQty: hours(vms * s.ocpusPerVm),
+            monthlyMetricQty: hours(vms * ocpuPerVm),
             deployedByLz: false,
           },
           {
             catalogKey: "compute_e5_mem",
             label: { th: "App VM — memory", en: "App VMs — memory" },
             category: "compute",
-            quantity: vms * s.memGbPerVm,
+            quantity: vms * memPerVm,
             unit: "GB",
-            monthlyMetricQty: hours(vms * s.memGbPerVm),
+            monthlyMetricQty: hours(vms * memPerVm),
             deployedByLz: false,
           },
           {
@@ -229,11 +233,11 @@ export const chatbotTemplate: TemplateDefinition = {
         },
         {
           catalogKey: "compute_e5_ocpu",
-          label: { th: `OKE workers ×${workers} (E5.Flex) — OCPU`, en: `OKE workers ×${workers} (E5.Flex) — OCPU` },
+          label: { th: `OKE workers ×${workers} (E5.Flex ${workerOcpu} OCPU) — OCPU`, en: `OKE workers ×${workers} (E5.Flex ${workerOcpu} OCPU) — OCPU` },
           category: "compute",
-          quantity: workers * s.okeWorkerOcpus,
+          quantity: workers * workerOcpu,
           unit: "OCPU",
-          monthlyMetricQty: hours(workers * s.okeWorkerOcpus),
+          monthlyMetricQty: hours(workers * workerOcpu),
           deployedByLz: true,
           notes: {
             th: "LaC สร้าง node pool เริ่มต้น 1 node (1 OCPU/8GB) — ปรับ size/shape เป็นตาม BOM หลัง deploy",
@@ -244,9 +248,9 @@ export const chatbotTemplate: TemplateDefinition = {
           catalogKey: "compute_e5_mem",
           label: { th: "OKE workers — memory", en: "OKE workers — memory" },
           category: "compute",
-          quantity: workers * s.okeWorkerMemGb,
+          quantity: workers * workerMem,
           unit: "GB",
-          monthlyMetricQty: hours(workers * s.okeWorkerMemGb),
+          monthlyMetricQty: hours(workers * workerMem),
           deployedByLz: true,
         },
         {

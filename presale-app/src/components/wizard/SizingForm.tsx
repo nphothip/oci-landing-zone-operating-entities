@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, type ChangeEvent } from "react";
-import type { EnvName, HubKind, SolutionSpec } from "@/lib/domain/types";
+import type { EnvName, HubKind, LocalizedText, SolutionSpec } from "@/lib/domain/types";
 import { TEMPLATES } from "@/lib/templates";
 import { getPath, setPath } from "@/lib/domain/path";
 import { envScale } from "@/lib/bom/env";
@@ -28,7 +28,18 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
   const caps = useMemo(() => {
     const items = template.buildBom(spec);
     const q = (key: string) => items.find((i) => i.catalogKey === key)?.quantity;
+    // Per-env workload lines (env-tagged, unique catalog key) for direct editing.
+    const byEnv = new Map<string, { catalogKey: string; label: LocalizedText; unit: string; quantity: number }[]>();
+    for (const i of items) {
+      if (!i.env) continue; // shared/hub lines are not per-env
+      const arr = byEnv.get(i.env) ?? [];
+      if (!arr.some((x) => x.catalogKey === i.catalogKey)) {
+        arr.push({ catalogKey: i.catalogKey, label: i.label, unit: i.unit, quantity: i.quantity });
+      }
+      byEnv.set(i.env, arr);
+    }
     return {
+      envWorkload: [...byEnv.entries()].map(([env, lines]) => ({ env, lines })),
       hasVm: items.some((i) => i.catalogKey === "compute_e5_ocpu"),
       hasDb: items.some((i) => i.catalogKey === "adb_ecpu" || i.catalogKey === "adw_ecpu"),
       hasLb: items.some((i) => i.catalogKey === "lb_base" || i.catalogKey === "lb_bandwidth"),
@@ -48,6 +59,9 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
   const traffic = spec.traffic ?? {};
   const numTraffic = (path: string, e: ChangeEvent<HTMLInputElement>) =>
     onChange(setPath(spec, path, Math.max(0, Math.round(Number(e.target.value) || 0))));
+  const setEnvOverride = (env: string, key: string, val: number) =>
+    onChange(setPath(spec, `envOverride.${env}.${key}`, Math.max(0, Math.round(val || 0))));
+  const stripEnv = (s: string) => s.replace(/\s*\[[a-z]+\]\s*$/, "");
 
   const toggleEnv = (env: EnvName) => {
     const has = spec.environments.includes(env);
@@ -406,6 +420,37 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
           ) : null}
         </div>
       </section>
+
+      {/* advanced: type exact per-environment values (overrides the % scale) */}
+      {spec.environments.length > 1 && caps.envWorkload.length > 0 ? (
+        <details className="rounded-xl border border-neutral-200 bg-white p-4">
+          <summary className="cursor-pointer text-sm font-semibold text-neutral-700">{t(L("ปรับตัวเลขต่อ environment เอง (ขั้นสูง)", "Custom per-environment values (advanced)"))}</summary>
+          <p className="mb-3 mt-1 text-[11px] text-neutral-500">{t(L("ใส่เลขจริงต่อ env — override ค่าที่ scale ให้ (เช่น storage ที่ไม่อยากลดตาม %)", "Type exact values per env — overrides the % scale (e.g. storage you don't want scaled down)"))}</p>
+          <div className="space-y-3">
+            {caps.envWorkload.map(({ env, lines }) => (
+              <div key={env}>
+                <div className="mb-1 text-xs font-medium text-neutral-600">{env}</div>
+                <div className="grid gap-x-4 gap-y-1.5 sm:grid-cols-2">
+                  {lines.map((line) => (
+                    <label key={line.catalogKey} className="flex items-center justify-between gap-2 text-xs">
+                      <span className="truncate text-neutral-500">
+                        {stripEnv(t(line.label))} <span className="text-neutral-400">({line.unit})</span>
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        className="w-20 shrink-0 rounded border border-neutral-300 px-1 py-0.5 text-right"
+                        value={Number(spec.envOverride?.[env as EnvName]?.[line.catalogKey] ?? line.quantity)}
+                        onChange={(e) => setEnvOverride(env, line.catalogKey, Number(e.target.value))}
+                      />
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </details>
+      ) : null}
     </div>
   );
 }

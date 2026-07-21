@@ -226,6 +226,7 @@ export const solutionSpecSchema = z.object({
       test: z.number().int().min(1).max(100).optional(),
     })
     .optional(),
+  envOverride: z.record(z.string(), z.record(z.string(), z.number().min(0).max(100000000))).optional(),
   sizing: z.discriminatedUnion("kind", [
     webAppSizing, chatbotSizing, drSizing, backupSizing,
     erpSizing, migrationSizing, analyticsSizing, devtestSizing, okePlatformSizing,

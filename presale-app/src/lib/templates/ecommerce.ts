@@ -1,6 +1,6 @@
 import type { BomItem, EcommerceSizing, SolutionSpec, TemplateDefinition } from "@/lib/domain/types";
 import { hours } from "@/lib/bom/formulas";
-import { perEnv, scaled } from "@/lib/bom/env";
+import { perEnv, scaled, fleetScale } from "@/lib/bom/env";
 import { lzBaselineAssumptions, lzBaselineBom } from "./lz-baseline";
 import { baseFactoryConfig } from "./common";
 
@@ -108,27 +108,29 @@ export const ecommerceTemplate: TemplateDefinition = {
     }
 
     const workload = perEnv(spec, (_env, scale) => {
-      const vms = scaled(s.appVmCount, scale);
+      const { count: vms, perVmScale } = fleetScale(s.appVmCount, scale);
+      const ocpuPerVm = scaled(s.ocpusPerVm, perVmScale, 1);
+      const memPerVm = scaled(s.memGbPerVm, perVmScale, 1);
       const dbEcpus = scaled(s.dbEcpus, scale, 2);
       const dbStorage = scaled(s.dbStorageGb, scale, 20);
       const cache = scaled(s.cacheGb, scale, 0);
       const list: BomItem[] = [
         {
           catalogKey: "compute_e5_ocpu",
-          label: { th: `Web/App VM ×${vms} — OCPU`, en: `Web/App VMs ×${vms} — OCPU` },
+          label: { th: `Web/App VM ×${vms} (E5.Flex ${ocpuPerVm} OCPU) — OCPU`, en: `Web/App VMs ×${vms} (E5.Flex ${ocpuPerVm} OCPU) — OCPU` },
           category: "compute",
-          quantity: vms * s.ocpusPerVm,
+          quantity: vms * ocpuPerVm,
           unit: "OCPU",
-          monthlyMetricQty: hours(vms * s.ocpusPerVm),
+          monthlyMetricQty: hours(vms * ocpuPerVm),
           deployedByLz: false,
         },
         {
           catalogKey: "compute_e5_mem",
           label: { th: "Web/App VM — memory", en: "Web/App VMs — memory" },
           category: "compute",
-          quantity: vms * s.memGbPerVm,
+          quantity: vms * memPerVm,
           unit: "GB",
-          monthlyMetricQty: hours(vms * s.memGbPerVm),
+          monthlyMetricQty: hours(vms * memPerVm),
           deployedByLz: false,
         },
         {

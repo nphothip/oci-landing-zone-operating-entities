@@ -309,6 +309,12 @@ export interface SolutionSpec {
    * An env not listed falls back to the rightsizeNonProd ratio (or 100%).
    */
   envScalePct?: Partial<Record<EnvName, number>>;
+  /**
+   * Absolute per-environment overrides of a workload line's human quantity,
+   * keyed by env then catalog key (e.g. { dev: { block_storage_gb: 200 } }).
+   * Wins over the % scale; the billing metric is scaled proportionally.
+   */
+  envOverride?: Partial<Record<EnvName, Record<string, number>>>;
   sizing: Sizing;
   /** Assumptions recorded by the LLM parser or the form defaults */
   assumptionNotes: string[];

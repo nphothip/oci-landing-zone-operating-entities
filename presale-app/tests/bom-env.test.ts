@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { TEMPLATES } from "@/lib/templates";
-import { finalizeBom, envScale } from "@/lib/bom/env";
+import { finalizeBom, envScale, fleetScale, applyEnvOverride } from "@/lib/bom/env";
 import { priceBom } from "@/lib/pricing/resolve";
-import type { EnvName } from "@/lib/domain/types";
+import type { BomItem, EnvName } from "@/lib/domain/types";
 
 // Per-environment BOM splitting must (a) tag every line with an env, and
 // (b) preserve the grand total exactly vs the pre-split aggregate.
@@ -59,6 +59,49 @@ describe("per-environment BOM tagging", () => {
     const prodMem = items.find((i) => i.catalogKey === "compute_e5_mem" && i.env === "prod")!;
     const devMem = items.find((i) => i.catalogKey === "compute_e5_mem" && i.env === "dev")!;
     expect(devMem.quantity).toBeLessThan(prodMem.quantity);
+  });
+
+  it("fleetScale shrinks node SIZE when the count floors at 1", () => {
+    // one big VM at 30% → still 1 node, but per-node size scaled to ~30%
+    const one = fleetScale(1, 0.3);
+    expect(one.count).toBe(1);
+    expect(one.perVmScale).toBeCloseTo(0.3, 5);
+    // a 10-node fleet at 30% → 3 nodes at full size (reduction via count)
+    const many = fleetScale(10, 0.3);
+    expect(many.count).toBe(3);
+    expect(many.perVmScale).toBeCloseTo(1, 1);
+    // prod (scale ≥ 1) untouched
+    expect(fleetScale(4, 1)).toEqual({ count: 4, perVmScale: 1 });
+  });
+
+  it("right-sizes a single large VM DOWN per env (size, not just count)", () => {
+    const spec = TEMPLATES.web_app.defaults();
+    spec.environments = ["prod", "dev"] as EnvName[];
+    Object.assign(spec.sizing, { appVmCount: 1, ocpusPerVm: 8, memGbPerVm: 64, ha: false });
+    const items = finalizeBom(TEMPLATES.web_app.buildBom(spec));
+    const prod = items.find((i) => i.catalogKey === "compute_e5_ocpu" && i.env === "prod")!;
+    const dev = items.find((i) => i.catalogKey === "compute_e5_ocpu" && i.env === "dev")!;
+    expect(prod.quantity).toBe(8); // prod = 1 VM × 8 OCPU
+    expect(dev.quantity).toBeLessThan(8); // dev VM is smaller — previously stayed at 8
+  });
+
+  it("applyEnvOverride sets an absolute per-env quantity and scales the metric proportionally", () => {
+    const items: BomItem[] = [
+      { catalogKey: "compute_e5_ocpu", env: "dev", label: { th: "o", en: "o" }, category: "compute", quantity: 4, unit: "OCPU", monthlyMetricQty: 4 * 744, deployedByLz: false },
+      { catalogKey: "block_storage_gb", env: "dev", label: { th: "s", en: "s" }, category: "storage", quantity: 500, unit: "GB", monthlyMetricQty: 500, deployedByLz: false },
+      { catalogKey: "compute_e5_ocpu", env: "prod", label: { th: "o", en: "o" }, category: "compute", quantity: 8, unit: "OCPU", monthlyMetricQty: 8 * 744, deployedByLz: false },
+    ];
+    const spec = { ...TEMPLATES.web_app.defaults(), envOverride: { dev: { compute_e5_ocpu: 2, block_storage_gb: 300 } } };
+    const out = applyEnvOverride(spec, items);
+    const devO = out.find((i) => i.env === "dev" && i.catalogKey === "compute_e5_ocpu")!;
+    expect(devO.quantity).toBe(2);
+    expect(devO.monthlyMetricQty).toBe(2 * 744); // OCPU metric stays ×744
+    const devS = out.find((i) => i.env === "dev" && i.catalogKey === "block_storage_gb")!;
+    expect(devS.quantity).toBe(300);
+    expect(devS.monthlyMetricQty).toBe(300); // storage ×1
+    // prod (no override) is untouched, and the input array is not mutated
+    expect(out.find((i) => i.env === "prod")!.quantity).toBe(8);
+    expect(items[0].quantity).toBe(4);
   });
 
   it("does not split single-site templates (migration stays shared)", () => {

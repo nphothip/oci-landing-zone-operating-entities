@@ -2,7 +2,7 @@ import type { BomItem, EnvironmentConfig, OkePlatformSizing, SolutionSpec, Templ
 import { hours } from "@/lib/bom/formulas";
 import { OKE_SERVICES_CIDR, envBlocks, hubMgmtSubnet, orderEnvs } from "@/lib/domain/cidr";
 import { lzBaselineAssumptions, lzBaselineBom } from "./lz-baseline";
-import { perEnv, scaled } from "@/lib/bom/env";
+import { perEnv, scaled, fleetScale } from "@/lib/bom/env";
 
 // Container platform (OKE) — for SMEs/mid-size teams standardizing on
 // Kubernetes. The one template where the LZ deploys the workload platform
@@ -95,7 +95,9 @@ export const okePlatformTemplate: TemplateDefinition = {
     }
 
     const workload = perEnv(spec, (_env, scale) => {
-      const workers = scaled(s.workerCount, scale);
+      const { count: workers, perVmScale: workerScale } = fleetScale(s.workerCount, scale);
+      const workerOcpu = scaled(s.workerOcpus, workerScale, 1);
+      const workerMem = scaled(s.workerMemGb, workerScale, 1);
       return [
       {
         catalogKey: "oke_cluster",
@@ -109,11 +111,11 @@ export const okePlatformTemplate: TemplateDefinition = {
       },
       {
         catalogKey: "compute_e5_ocpu",
-        label: { th: `Workers ×${workers} (E5.Flex) — OCPU`, en: `Workers ×${workers} (E5.Flex) — OCPU` },
+        label: { th: `Workers ×${workers} (E5.Flex ${workerOcpu} OCPU) — OCPU`, en: `Workers ×${workers} (E5.Flex ${workerOcpu} OCPU) — OCPU` },
         category: "compute",
-        quantity: workers * s.workerOcpus,
+        quantity: workers * workerOcpu,
         unit: "OCPU",
-        monthlyMetricQty: hours(workers * s.workerOcpus),
+        monthlyMetricQty: hours(workers * workerOcpu),
         deployedByLz: true,
         notes: {
           th: "LaC สร้าง node pool เริ่มต้น 1 node (1 OCPU/8GB) — ขยายเป็นตาม BOM หลัง deploy",
@@ -124,9 +126,9 @@ export const okePlatformTemplate: TemplateDefinition = {
         catalogKey: "compute_e5_mem",
         label: { th: "Workers — memory", en: "Workers — memory" },
         category: "compute",
-        quantity: workers * s.workerMemGb,
+        quantity: workers * workerMem,
         unit: "GB",
-        monthlyMetricQty: hours(workers * s.workerMemGb),
+        monthlyMetricQty: hours(workers * workerMem),
         deployedByLz: true,
       },
       {

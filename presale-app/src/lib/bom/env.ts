@@ -71,6 +71,24 @@ export function pinEnv(items: BomItem[], env: string): BomItem[] {
   return items.map((item) => ({ ...item, env }));
 }
 
+/**
+ * Apply absolute per-env quantity overrides (spec.envOverride). The user edits
+ * a workload line's human quantity for a specific env; the billing metric is
+ * scaled proportionally from the line's existing quantity→metric ratio (so an
+ * OCPU line stays ×744, storage ×1, VPU ×10, etc.). Off by default.
+ */
+export function applyEnvOverride(spec: SolutionSpec, items: BomItem[]): BomItem[] {
+  const ov = spec.envOverride;
+  if (!ov) return items;
+  return items.map((item) => {
+    if (!item.env) return item;
+    const val = ov[item.env as EnvName]?.[item.catalogKey];
+    if (val == null || val === item.quantity) return item;
+    const metric = item.quantity > 0 ? (item.monthlyMetricQty / item.quantity) * val : val;
+    return { ...item, quantity: val, monthlyMetricQty: metric };
+  });
+}
+
 /** Default any still-untagged item to the shared (hub/tenancy) scope. */
 export function finalizeBom(items: BomItem[]): BomItem[] {
   return items.map((item) => ({ ...item, env: item.env ?? "shared" }));
