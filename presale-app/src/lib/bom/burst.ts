@@ -19,7 +19,10 @@ import type { BomItem, LocalizedText, SolutionSpec } from "@/lib/domain/types";
 const ADB_ECPU_KEYS = new Set(["adb_ecpu", "adw_ecpu"]);
 const VM_OCPU_KEYS = new Set(["compute_e5_ocpu"]);
 
-const DEFAULT_PEAK_FACTOR = 3;
+// Default peak = baseline (factor 1 ⇒ NO burst) so enabling autoscaling never
+// adds a surprise cost line — the user raises Peak ECPUs above baseline to get
+// burst. Matches AIS, where autoscaling can be on with peak = the 2-ECPU floor.
+const DEFAULT_PEAK_FACTOR = 1;
 const DEFAULT_PCT_MONTH = 5;
 
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
@@ -95,10 +98,13 @@ export function burstAssumptions(spec: SolutionSpec): LocalizedText[] {
   if (b.dbAutoscaling) {
     const factor = clamp(b.dbPeakFactor ?? DEFAULT_PEAK_FACTOR, 1, 3);
     const pct = clamp(b.dbPctMonthAbove ?? DEFAULT_PCT_MONTH, 0, 100);
-    notes.push({
-      th: `Autonomous DB เปิด autoscaling — baseline ECPU + burst สูงสุด ${factor}× ที่ ${pct}% ของเดือน`,
-      en: `Autonomous DB autoscaling enabled — baseline ECPUs + burst up to ${factor}× for ${pct}% of the month`,
-    });
+    // Only note the autoscaling burst when there actually is one (peak > baseline).
+    if (factor > 1 && pct > 0) {
+      notes.push({
+        th: `Autonomous DB เปิด autoscaling — baseline ECPU + burst สูงสุด ${factor}× ที่ ${pct}% ของเดือน`,
+        en: `Autonomous DB autoscaling enabled — baseline ECPUs + burst up to ${factor}× for ${pct}% of the month`,
+      });
+    }
   }
   return notes;
 }

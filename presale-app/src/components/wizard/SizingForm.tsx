@@ -297,7 +297,7 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
                           min={caps.dbBaseEcpu}
                           max={caps.dbBaseEcpu * 3}
                           className="w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-sm"
-                          value={Math.round((burst.dbPeakFactor ?? 3) * caps.dbBaseEcpu)}
+                          value={Math.round((burst.dbPeakFactor ?? 1) * caps.dbBaseEcpu)}
                           onChange={(e) => {
                             const peak = Math.max(caps.dbBaseEcpu, Math.min(caps.dbBaseEcpu * 3, Math.round(Number(e.target.value) || 0)));
                             onChange(setPath(spec, "burst.dbPeakFactor", caps.dbBaseEcpu > 0 ? peak / caps.dbBaseEcpu : 1));

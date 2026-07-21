@@ -45,9 +45,20 @@ describe("applyBurst", () => {
     expect(withVm).toBe(base);
   });
 
-  it("emits assumption notes only when enabled", () => {
+  it("emits assumption notes only when the setting has an effect", () => {
     expect(burstAssumptions(specWith(undefined))).toHaveLength(0);
-    expect(burstAssumptions(specWith({ vmBurstable: true, dbAutoscaling: true }))).toHaveLength(2);
+    // vmBurstable + DB autoscaling WITH burst (peak > baseline) → 2 notes
+    expect(burstAssumptions(specWith({ vmBurstable: true, dbAutoscaling: true, dbPeakFactor: 3 }))).toHaveLength(2);
+    // autoscaling on but peak = baseline (factor 1, and the default) → no DB note
+    expect(burstAssumptions(specWith({ dbAutoscaling: true }))).toHaveLength(0);
+    expect(burstAssumptions(specWith({ dbAutoscaling: true, dbPeakFactor: 1 }))).toHaveLength(0);
+  });
+
+  it("adds NO autoscaling line when peak = baseline (factor 1, incl. the default)", () => {
+    // explicit factor 1
+    expect(applyBurst(specWith({ dbAutoscaling: true, dbPeakFactor: 1 }), baseItems).some((i) => i.label.en.includes("autoscaling"))).toBe(false);
+    // default (autoscaling enabled, peak untouched) also adds nothing
+    expect(applyBurst(specWith({ dbAutoscaling: true }), baseItems).some((i) => i.label.en.includes("autoscaling"))).toBe(false);
   });
 
   // Ground-truth parity with the AIS calculator: ATP Serverless, ECPU Count 16,
