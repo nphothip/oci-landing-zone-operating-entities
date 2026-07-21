@@ -48,7 +48,7 @@ function safeSheetName(name: string, fallback: string): string {
 
 const STYLES_XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-<numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;$&quot;#,##0.00"/></numFmts>
+<numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;฿&quot;#,##0.00"/></numFmts>
 <fonts count="3">
 <font><sz val="11"/><color theme="1"/><name val="Calibri"/></font>
 <font><b/><sz val="11"/><color theme="1"/><name val="Calibri"/></font>

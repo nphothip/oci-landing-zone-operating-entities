@@ -20,7 +20,7 @@ export function normalizeWire(wire: WireResult):
   | { ok: false; message: string } {
   const template = oneOf<TemplateId>(
     wire.template,
-    ["web_app", "chatbot", "dr", "backup", "erp", "migration", "analytics", "devtest", "oke_platform"],
+    ["web_app", "chatbot", "dr", "backup", "erp", "migration", "analytics", "devtest", "oke_platform", "ecommerce", "fileserver", "vdi", "serverless", "streaming"],
     "web_app",
   );
   const spec = TEMPLATES[template].defaults();
@@ -30,7 +30,7 @@ export function normalizeWire(wire: WireResult):
   }
   spec.hub.kind = oneOf(wire.hubKind, ["hub_a", "hub_b", "hub_c", "hub_e"], spec.hub.kind);
   spec.cisLevel = wire.cisLevel === 1 || wire.cisLevel === 2 ? wire.cisLevel : spec.cisLevel;
-  spec.hub.connectivity = oneOf(wire.connectivity, ["none", "vpn", "fastconnect_1g", "fastconnect_10g"], spec.hub.connectivity);
+  spec.hub.connectivity = oneOf(wire.connectivity, ["none", "vpn", "vpn_ha", "fastconnect_1g", "fastconnect_1g_ha", "fastconnect_10g", "fastconnect_10g_ha", "fastconnect_vpn_backup"], spec.hub.connectivity);
 
   const envs = Array.isArray(wire.environments)
     ? wire.environments.filter((e): e is SolutionSpec["environments"][number] =>

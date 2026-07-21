@@ -126,22 +126,78 @@ const okePlatformSizing = z.object({
   registryGb: z.number().int().min(0).max(100000),
 });
 
+const ecommerceSizing = z.object({
+  kind: z.literal("ecommerce"),
+  appVmCount: z.number().int().min(1).max(50),
+  ocpusPerVm: z.number().int().min(1).max(64),
+  memGbPerVm: z.number().int().min(4).max(512),
+  dbEcpus: z.number().int().min(2).max(256),
+  dbStorageGb: z.number().int().min(20).max(100000),
+  cacheGb: z.number().int().min(0).max(10000),
+  productMediaGb: z.number().int().min(0).max(1000000),
+  ordersPerMonth: z.number().int().min(0).max(100000000),
+  waf: z.boolean(),
+});
+
+const fileserverSizing = z.object({
+  kind: z.literal("fileserver"),
+  users: z.number().int().min(5).max(50000),
+  fssGb: z.number().int().min(10).max(1000000),
+  archiveGb: z.number().int().min(0).max(10000000),
+  gatewayVmCount: z.number().int().min(0).max(20),
+  gatewayOcpus: z.number().int().min(1).max(32),
+});
+
+const vdiSizing = z.object({
+  kind: z.literal("vdi"),
+  desktopCount: z.number().int().min(1).max(5000),
+  profileStorageGb: z.number().int().min(0).max(1000000),
+  appVmCount: z.number().int().min(0).max(50),
+  appOcpus: z.number().int().min(1).max(32),
+});
+
+const serverlessSizing = z.object({
+  kind: z.literal("serverless"),
+  apiCallsPerMonth: z.number().int().min(0).max(10000000000),
+  functionInvocationsPerMonth: z.number().int().min(0).max(10000000000),
+  avgFnMemMb: z.number().int().min(128).max(32768),
+  avgFnMs: z.number().int().min(10).max(300000),
+  adbEcpus: z.number().int().min(2).max(512),
+  adbStorageGb: z.number().int().min(20).max(100000),
+  objectStorageGb: z.number().int().min(0).max(1000000),
+});
+
+const streamingSizing = z.object({
+  kind: z.literal("streaming"),
+  throughputGbPerMonth: z.number().int().min(0).max(100000000),
+  retentionGb: z.number().int().min(0).max(1000000),
+  consumerVmCount: z.number().int().min(0).max(50),
+  consumerOcpus: z.number().int().min(1).max(64),
+  adwEcpus: z.number().int().min(2).max(512),
+  adwStorageGb: z.number().int().min(20).max(500000),
+});
+
 export const solutionSpecSchema = z.object({
-  template: z.enum(["web_app", "chatbot", "dr", "backup", "erp", "migration", "analytics", "devtest", "oke_platform"]),
+  template: z.enum(["web_app", "chatbot", "dr", "backup", "erp", "migration", "analytics", "devtest", "oke_platform", "ecommerce", "fileserver", "vdi", "serverless", "streaming"]),
   customerName: z.string().max(120).optional(),
   region: regionSchema,
   cisLevel: z.union([z.literal(1), z.literal(2)]),
   hub: z.object({
     kind: z.enum(["hub_a", "hub_b", "hub_c", "hub_e"]),
-    connectivity: z.enum(["none", "vpn", "fastconnect_1g", "fastconnect_10g"]),
+    connectivity: z.enum([
+      "none", "vpn", "vpn_ha", "fastconnect_1g", "fastconnect_1g_ha", "fastconnect_10g", "fastconnect_10g_ha", "fastconnect_vpn_backup",
+    ]),
+    inspection: z.enum(["standard", "ids_ips", "tls"]).optional(),
   }),
   environments: z
     .array(z.enum(["prod", "preprod", "staging", "uat", "dev", "test"]))
     .min(1)
     .max(4),
+  rightsizeNonProd: z.boolean().optional(),
   sizing: z.discriminatedUnion("kind", [
     webAppSizing, chatbotSizing, drSizing, backupSizing,
     erpSizing, migrationSizing, analyticsSizing, devtestSizing, okePlatformSizing,
+    ecommerceSizing, fileserverSizing, vdiSizing, serverlessSizing, streamingSizing,
   ]),
   assumptionNotes: z.array(z.string().max(500)).max(30),
 }).superRefine((spec, ctx) => {

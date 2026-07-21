@@ -10,8 +10,8 @@ describe("factory config per template", () => {
       const res = buildFactoryConfig(spec);
       expect(res.ok, tpl.id).toBe(true);
       if (!res.ok) continue;
-      expect(res.config.region).toBe("ap-singapore-1");
-      expect(res.config.region_short_name).toBe("sin");
+      expect(res.config.region).toBe("ap-bangkok-1");
+      expect(res.config.region_short_name).toBe("bkk");
       expect(res.config.realm).toBe("oc1");
       expect(res.config.hub.kind).toBe(spec.hub.kind);
       expect(Object.keys(res.config.environments).sort(), tpl.id).toEqual([...spec.environments].sort());

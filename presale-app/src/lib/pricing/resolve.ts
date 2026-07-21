@@ -14,27 +14,27 @@ export function priceBom(items: BomItem[]): BomResult {
     const entry = CATALOG[item.catalogKey];
     const sku = entry?.sku ?? null;
     if (!sku) {
-      return { ...item, sku: null, unitPriceUsd: null, metric: null, monthlyUsd: 0 };
+      return { ...item, sku: null, unitPriceThb: null, metric: null, monthlyThb: 0 };
     }
     const price = book.prices[sku];
     if (!price) {
       unpriced += 1;
-      return { ...item, sku, unitPriceUsd: null, metric: null, monthlyUsd: null };
+      return { ...item, sku, unitPriceThb: null, metric: null, monthlyThb: null };
     }
     const monthly = round2(tieredCost(price, item.monthlyMetricQty));
     total += monthly;
     return {
       ...item,
       sku,
-      unitPriceUsd: unitPriceAt(price, item.monthlyMetricQty),
+      unitPriceThb: unitPriceAt(price, item.monthlyMetricQty),
       metric: price.metric,
-      monthlyUsd: monthly,
+      monthlyThb: monthly,
     };
   });
 
   return {
     items: priced,
-    totals: { monthlyUsd: round2(total), unpricedCount: unpriced },
+    totals: { monthlyThb: round2(total), unpricedCount: unpriced },
     priceSource: book.source === "live" ? "live" : "fallback",
     priceFetchedAt: book.fetchedAt,
   };

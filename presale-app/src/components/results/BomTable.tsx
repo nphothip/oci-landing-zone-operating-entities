@@ -18,8 +18,8 @@ const CATEGORY_LABEL: Record<BomCategory, { th: string; en: string }> = {
   observability: L("Observability", "Observability"),
 };
 
-const usd = (n: number | null) =>
-  n === null ? "—" : n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });
+const thb = (n: number | null) =>
+  n === null ? "—" : n.toLocaleString("th-TH", { style: "currency", currency: "THB", maximumFractionDigits: 2 });
 
 type ScopeFilter = "all" | "lz" | "post";
 
@@ -42,7 +42,7 @@ export function BomTable({ result }: { result: GenerateResult }) {
     [bom.items, envFilter, scopeFilter],
   );
   const categories = useMemo(() => [...new Set(items.map((i) => i.category))], [items]);
-  const filteredTotal = useMemo(() => Math.round(items.reduce((a, i) => a + (i.monthlyUsd ?? 0), 0) * 100) / 100, [items]);
+  const filteredTotal = useMemo(() => Math.round(items.reduce((a, i) => a + (i.monthlyThb ?? 0), 0) * 100) / 100, [items]);
   const isFiltered = envFilter !== "all" || scopeFilter !== "all";
 
   const downloadExcel = async () => {
@@ -54,7 +54,7 @@ export function BomTable({ result }: { result: GenerateResult }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="text-sm text-neutral-600">
-          {t(L("ราคา OCI list price (USD) — region ap-singapore-1", "OCI list prices (USD) — region ap-singapore-1"))}{" "}
+          {t(L("ราคา AIS Cloud (THB) — region ap-bangkok-1", "AIS Cloud prices (THB) — region ap-bangkok-1"))}{" "}
           <span className={`ml-1 rounded-full px-2 py-0.5 text-xs ${bom.priceSource === "live" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}`}>
             {bom.priceSource === "live"
               ? t(L("ราคา live", "live prices"))
@@ -71,7 +71,7 @@ export function BomTable({ result }: { result: GenerateResult }) {
           </button>
           <div className="text-lg font-bold">
             {t(L("รวมต่อเดือน:", "Monthly total:"))}{" "}
-            <span className="text-[#C74634]">{usd(isFiltered ? filteredTotal : bom.totals.monthlyUsd)}</span>
+            <span className="text-[#C74634]">{thb(isFiltered ? filteredTotal : bom.totals.monthlyThb)}</span>
           </div>
         </div>
       </div>
@@ -114,7 +114,7 @@ export function BomTable({ result }: { result: GenerateResult }) {
               <th className="px-3 py-2 font-medium">SKU</th>
               <th className="px-3 py-2 text-right font-medium">{t(L("จำนวน", "Qty"))}</th>
               <th className="px-3 py-2 text-right font-medium">{t(L("ราคาต่อหน่วย", "Unit price"))}</th>
-              <th className="px-3 py-2 text-right font-medium">{t(L("ต่อเดือน (USD)", "Monthly (USD)"))}</th>
+              <th className="px-3 py-2 text-right font-medium">{t(L("ต่อเดือน (THB)", "Monthly (THB)"))}</th>
             </tr>
           </thead>
           <tbody>
@@ -133,7 +133,7 @@ export function BomTable({ result }: { result: GenerateResult }) {
               <td className="px-3 py-2" colSpan={6}>
                 {isFiltered ? t(L("รวม (ตามตัวกรอง)", "Total (filtered)")) : t(L("รวมทั้งหมดต่อเดือน", "Total per month"))}
               </td>
-              <td className="px-3 py-2 text-right text-[#C74634]">{usd(isFiltered ? filteredTotal : bom.totals.monthlyUsd)}</td>
+              <td className="px-3 py-2 text-right text-[#C74634]">{thb(isFiltered ? filteredTotal : bom.totals.monthlyThb)}</td>
             </tr>
           </tfoot>
         </table>
@@ -152,14 +152,14 @@ export function BomTable({ result }: { result: GenerateResult }) {
 
 function CategoryRows({ cat, items }: { cat: BomCategory; items: PricedBomItem[] }) {
   const { t } = useLang();
-  const subtotal = Math.round(items.reduce((acc, i) => acc + (i.monthlyUsd ?? 0), 0) * 100) / 100;
+  const subtotal = Math.round(items.reduce((acc, i) => acc + (i.monthlyThb ?? 0), 0) * 100) / 100;
   return (
     <>
       <tr className="border-b border-neutral-100 bg-neutral-50/60">
         <td className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500" colSpan={6}>
           {t(CATEGORY_LABEL[cat])}
         </td>
-        <td className="px-3 py-1.5 text-right text-xs font-semibold text-neutral-500">{usd(subtotal)}</td>
+        <td className="px-3 py-1.5 text-right text-xs font-semibold text-neutral-500">{thb(subtotal)}</td>
       </tr>
       {items.map((item, idx) => (
         <tr key={`${item.catalogKey}-${item.env ?? ""}-${idx}`} className="border-b border-neutral-100 last:border-0">
@@ -182,10 +182,10 @@ function CategoryRows({ cat, items }: { cat: BomCategory; items: PricedBomItem[]
             {item.quantity.toLocaleString()} <span className="text-xs text-neutral-500">{item.unit}</span>
           </td>
           <td className="px-3 py-2 text-right tabular-nums text-xs text-neutral-600">
-            {item.unitPriceUsd === null ? "—" : `$${item.unitPriceUsd}`}
+            {item.unitPriceThb === null ? "—" : `฿${item.unitPriceThb}`}
             {item.metric ? <div className="text-[10px] text-neutral-400">{item.metric.toLowerCase()}</div> : null}
           </td>
-          <td className="px-3 py-2 text-right font-medium tabular-nums">{usd(item.monthlyUsd)}</td>
+          <td className="px-3 py-2 text-right font-medium tabular-nums">{thb(item.monthlyThb)}</td>
         </tr>
       ))}
     </>

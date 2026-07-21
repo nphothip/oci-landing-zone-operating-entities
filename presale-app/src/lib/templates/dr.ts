@@ -3,7 +3,7 @@ import { hours } from "@/lib/bom/formulas";
 import { lzBaselineAssumptions, lzBaselineBom } from "./lz-baseline";
 import { baseFactoryConfig } from "./common";
 
-// DR site on OCI Singapore for on-prem / other-cloud / other-region primary.
+// DR site on AIS Cloud (Bangkok) for on-prem / other-cloud / other-region primary.
 // Landing zone hosts the DR spoke; Full Stack DR orchestrates (free service).
 // pilot_light: standby VMs stopped (storage billed only).
 // warm_standby: ~half the fleet running continuously.
@@ -26,7 +26,7 @@ export const drTemplate: TemplateDefinition = {
   defaults(): SolutionSpec {
     return {
       template: "dr",
-      region: { id: "ap-singapore-1", shortName: "sin" },
+      region: { id: "ap-bangkok-1", shortName: "bkk" },
       cisLevel: 1,
       hub: { kind: "hub_b", connectivity: "fastconnect_1g" },
       environments: ["prod"],
@@ -186,15 +186,6 @@ export const drTemplate: TemplateDefinition = {
         {
           catalogKey: "base_db_ecpu",
           label: { th: "Base DB standby (Data Guard) — ECPU", en: "Base DB standby (Data Guard) — ECPU" },
-          category: "database",
-          quantity: s.dbEcpus,
-          unit: "ECPU",
-          monthlyMetricQty: hours(s.dbEcpus),
-          deployedByLz: false,
-        },
-        {
-          catalogKey: "base_db_infra_ecpu",
-          label: { th: "Base DB standby — compute infrastructure", en: "Base DB standby — compute infrastructure" },
           category: "database",
           quantity: s.dbEcpus,
           unit: "ECPU",

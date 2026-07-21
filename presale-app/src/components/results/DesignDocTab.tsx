@@ -6,12 +6,13 @@ import { DiagramCanvas } from "@/components/diagrams/DiagramCanvas";
 import { buildDesignDocument } from "@/lib/design/document";
 import { buildDesignFacts } from "@/lib/design/facts";
 import { renderDesignHtml, type DesignHtmlInput } from "@/lib/design/html";
-import { downloadBlob, svgElementToString } from "@/lib/diagrams/export";
+import { buildDocx, type DocxImage } from "@/lib/design/docx";
+import { downloadBlob, svgElementToString, svgToPngBytes } from "@/lib/diagrams/export";
 import { L, useLang } from "@/lib/i18n";
 
 type NarrativeByLang = Record<string, Record<string, string[]>>; // lang -> sectionId -> paragraphs
 
-const money = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });
+const money = (n: number) => n.toLocaleString("th-TH", { style: "currency", currency: "THB", maximumFractionDigits: 2 });
 
 export function DesignDocTab({ result }: { result: GenerateResult }) {
   const { t, lang } = useLang();
@@ -66,7 +67,7 @@ export function DesignDocTab({ result }: { result: GenerateResult }) {
       env: i.env ?? "shared",
       scope: i.deployedByLz ? "Landing Zone" : t(L("หลัง LZ", "post-LZ")),
       qty: `${i.quantity.toLocaleString()} ${i.unit}`,
-      monthly: i.monthlyUsd === null ? "—" : money(i.monthlyUsd),
+      monthly: i.monthlyThb === null ? "—" : money(i.monthlyThb),
     }));
     const assumptions = [...result.assumptions.map((a) => t(a)), ...result.spec.assumptionNotes.map((n) => `${n} (AI)`)];
     return {
@@ -80,7 +81,7 @@ export function DesignDocTab({ result }: { result: GenerateResult }) {
         svg: s.view && svgRefs.current[s.view] ? svgElementToString(svgRefs.current[s.view]!) : undefined,
         kind: s.kind,
       })),
-      bom: { rows: bomRows, total: money(result.bom.totals.monthlyUsd), source: result.bom.priceSource },
+      bom: { rows: bomRows, total: money(result.bom.totals.monthlyThb), source: result.bom.priceSource },
       assumptions,
       deploymentFiles: doc.facts.lacFileNames,
       footer: t(L("เครื่องมือภายในสำหรับทีม presale — ตัวเลขเป็น list price ไม่ใช่ใบเสนอราคาอย่างเป็นทางการ", "Internal presale tool — figures are list prices, not an official quote")),
@@ -104,6 +105,56 @@ export function DesignDocTab({ result }: { result: GenerateResult }) {
     setTimeout(() => w.print(), 400);
   };
 
+  const [docxBusy, setDocxBusy] = useState(false);
+  const downloadWord = async () => {
+    setDocxBusy(true);
+    try {
+      const images: Record<string, DocxImage> = {};
+      for (const s of doc.sections) {
+        if (s.view && svgRefs.current[s.view]) {
+          try {
+            const png = await svgToPngBytes(svgRefs.current[s.view]!, 2);
+            images[s.view] = { png: png.bytes, width: png.width, height: png.height };
+          } catch {
+            // skip a diagram that fails to rasterize
+          }
+        }
+      }
+      const catLabel = (c: string) => t({ th: CAT_TH[c] ?? c, en: CAT_TH[c] ?? c });
+      const bomRows = result.bom.items.map((i) => [
+        catLabel(i.category),
+        t(i.label),
+        i.env ?? "shared",
+        i.deployedByLz ? "Landing Zone" : t(L("หลัง LZ", "post-LZ")),
+        `${i.quantity.toLocaleString()} ${i.unit}`,
+        i.monthlyThb === null ? "—" : money(i.monthlyThb),
+      ]);
+      const blob = await buildDocx({
+        title: t(doc.title),
+        subtitle: t(doc.subtitle),
+        meta: doc.meta.map((m) => ({ label: t(m.label), value: m.value })),
+        sections: doc.sections.map((s) => ({
+          heading: t(s.heading),
+          paragraphs: resolveParagraphs(s.id, s.paragraphs.map((p) => t(p))),
+          imageView: s.view,
+          kind: s.kind,
+        })),
+        bom: {
+          headers: ["Category", "Item", "Env", "Scope", "Qty", "Monthly (THB)"],
+          rows: bomRows,
+          total: money(result.bom.totals.monthlyThb),
+        },
+        assumptions: [...result.assumptions.map((a) => t(a)), ...result.spec.assumptionNotes.map((n) => `${n} (AI)`)],
+        deploymentFiles: doc.facts.lacFileNames,
+        images,
+        footer: t(L("เครื่องมือภายในสำหรับทีม presale — ตัวเลขเป็น list price ไม่ใช่ใบเสนอราคาอย่างเป็นทางการ", "Internal presale tool — figures are list prices, not an official quote")),
+      });
+      downloadBlob(blob, `${baseName}.docx`);
+    } finally {
+      setDocxBusy(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -120,6 +171,13 @@ export function DesignDocTab({ result }: { result: GenerateResult }) {
           </button>
           <button onClick={printDoc} className="rounded-lg border border-neutral-300 px-3 py-1.5 hover:bg-neutral-100">
             {t(L("พิมพ์ / PDF", "Print / PDF"))}
+          </button>
+          <button
+            onClick={() => void downloadWord()}
+            disabled={docxBusy}
+            className="rounded-lg border border-blue-800 px-3 py-1.5 font-medium text-blue-900 hover:bg-blue-50 disabled:opacity-50"
+          >
+            {docxBusy ? t(L("กำลังสร้าง…", "Building…")) : t(L("ดาวน์โหลด Word", "Download Word"))}
           </button>
           <button onClick={downloadHtml} className="rounded-lg bg-[#C74634] px-4 py-1.5 font-semibold text-white shadow">
             {t(L("ดาวน์โหลด HTML", "Download HTML"))}
@@ -195,7 +253,7 @@ function DocBomTable({ result }: { result: GenerateResult }) {
             <th className="px-2 py-1">Env</th>
             <th className="px-2 py-1">Scope</th>
             <th className="px-2 py-1 text-right">Qty</th>
-            <th className="px-2 py-1 text-right">Monthly (USD)</th>
+            <th className="px-2 py-1 text-right">Monthly (THB)</th>
           </tr>
         </thead>
         <tbody>
@@ -205,7 +263,7 @@ function DocBomTable({ result }: { result: GenerateResult }) {
               <td className="px-2 py-1">{i.env ?? "shared"}</td>
               <td className="px-2 py-1">{i.deployedByLz ? "Landing Zone" : t(L("หลัง LZ", "post-LZ"))}</td>
               <td className="px-2 py-1 text-right tabular-nums">{i.quantity.toLocaleString()} {i.unit}</td>
-              <td className="px-2 py-1 text-right tabular-nums">{i.monthlyUsd === null ? "—" : money(i.monthlyUsd)}</td>
+              <td className="px-2 py-1 text-right tabular-nums">{i.monthlyThb === null ? "—" : money(i.monthlyThb)}</td>
             </tr>
           ))}
         </tbody>
@@ -214,7 +272,7 @@ function DocBomTable({ result }: { result: GenerateResult }) {
             <td className="px-2 py-1" colSpan={4}>
               {t(L("รวมต่อเดือน", "Total per month"))}
             </td>
-            <td className="px-2 py-1 text-right text-[#C74634]">{money(result.bom.totals.monthlyUsd)}</td>
+            <td className="px-2 py-1 text-right text-[#C74634]">{money(result.bom.totals.monthlyThb)}</td>
           </tr>
         </tfoot>
       </table>

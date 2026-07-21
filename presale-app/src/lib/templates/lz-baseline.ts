@@ -38,8 +38,8 @@ export function lzBaselineBom(spec: SolutionSpec): BomItem[] {
         monthlyMetricQty: 2048,
         deployedByLz: true,
         notes: {
-          th: "10TB แรก/เดือนฟรี — เกินคิด $0.01/GB; ปรับตาม traffic ที่ผ่าน firewall จริง",
-          en: "First 10TB/month free — $0.01/GB beyond; adjust to real inspected traffic",
+          th: "10TB แรก/เดือนฟรี — เกินคิด ฿0.56/GB; ปรับตาม traffic ที่ผ่าน firewall จริง",
+          en: "First 10TB/month free — ฿0.56/GB beyond; adjust to real inspected traffic",
         },
       },
     );
@@ -83,31 +83,50 @@ export function lzBaselineBom(spec: SolutionSpec): BomItem[] {
   });
 
   // --- connectivity ---------------------------------------------------------
-  if (spec.hub.connectivity === "vpn") {
+  // Redundancy-aware: HA variants provision paired links across DRG for
+  // active/active or active/standby resilience (our connectivity strength).
+  const conn = spec.hub.connectivity;
+  const vpnTunnels = conn === "vpn" ? 2 : conn === "vpn_ha" ? 4 : conn === "fastconnect_vpn_backup" ? 2 : 0;
+  if (vpnTunnels > 0) {
     items.push({
       catalogKey: "vpn_ipsec",
-      label: { th: "Site-to-Site VPN (IPSec)", en: "Site-to-Site VPN (IPSec)" },
+      label: {
+        th: `Site-to-Site VPN (IPSec) — ${vpnTunnels} tunnels${conn === "vpn_ha" ? " (redundant, 2 CPE)" : conn === "fastconnect_vpn_backup" ? " (backup path)" : " (HA pair)"}`,
+        en: `Site-to-Site VPN (IPSec) — ${vpnTunnels} tunnels${conn === "vpn_ha" ? " (redundant, 2 CPE)" : conn === "fastconnect_vpn_backup" ? " (backup path)" : " (HA pair)"}`,
+      },
       category: "landing_zone",
-      quantity: 1,
-      unit: "connection",
+      quantity: vpnTunnels,
+      unit: "tunnel",
       monthlyMetricQty: 0,
       deployedByLz: false,
-      notes: { th: "บริการฟรี — ตั้งค่า CPE ฝั่งลูกค้าเพิ่มหลัง LZ", en: "Free service — customer CPE configured post-LZ" },
+      notes: { th: "บริการฟรี — CPE/BGP ฝั่งลูกค้าตั้งค่าหลัง LZ; แต่ละ IPSec มี 2 tunnel redundant ที่ OCI", en: "Free service — customer CPE/BGP configured post-LZ; each IPSec connection has 2 redundant OCI tunnels" },
     });
   }
-  if (spec.hub.connectivity === "fastconnect_1g" || spec.hub.connectivity === "fastconnect_10g") {
-    const is10g = spec.hub.connectivity === "fastconnect_10g";
+  const fcPorts = conn === "fastconnect_1g" || conn === "fastconnect_10g" || conn === "fastconnect_vpn_backup"
+    ? 1
+    : conn === "fastconnect_1g_ha" || conn === "fastconnect_10g_ha"
+      ? 2
+      : 0;
+  if (fcPorts > 0) {
+    const is10g = conn === "fastconnect_10g" || conn === "fastconnect_10g_ha";
     items.push({
       catalogKey: is10g ? "fastconnect_10g" : "fastconnect_1g",
-      label: { th: `FastConnect ${is10g ? "10" : "1"} Gbps port`, en: `FastConnect ${is10g ? "10" : "1"} Gbps port` },
+      label: {
+        th: `FastConnect ${is10g ? "10" : "1"} Gbps port ×${fcPorts}${fcPorts > 1 ? " (dual, HA)" : conn === "fastconnect_vpn_backup" ? " (primary)" : ""}`,
+        en: `FastConnect ${is10g ? "10" : "1"} Gbps port ×${fcPorts}${fcPorts > 1 ? " (dual, HA)" : conn === "fastconnect_vpn_backup" ? " (primary)" : ""}`,
+      },
       category: "landing_zone",
-      quantity: 1,
+      quantity: fcPorts,
       unit: "port",
-      monthlyMetricQty: hours(1),
+      monthlyMetricQty: hours(fcPorts),
       deployedByLz: false,
       notes: {
-        th: "ราคา port ฝั่ง OCI — ค่า provider/cross-connect คิดแยกโดยผู้ให้บริการ",
-        en: "OCI port charge only — provider/cross-connect fees billed separately",
+        th: fcPorts > 1
+          ? "2 ports ต่าง edge/router เพื่อ HA — ค่า provider/cross-connect (Equinix/Megaport ฯลฯ) คิดแยก"
+          : "ราคา port ฝั่ง OCI — ค่า provider/cross-connect คิดแยกโดยผู้ให้บริการ",
+        en: fcPorts > 1
+          ? "2 ports on separate edges/routers for HA — provider/cross-connect (Equinix/Megaport, etc.) billed separately"
+          : "OCI port charge only — provider/cross-connect fees billed separately",
       },
     });
   }
@@ -191,8 +210,8 @@ export function lzBaselineBom(spec: SolutionSpec): BomItem[] {
 export function lzBaselineAssumptions(spec: SolutionSpec): LocalizedText[] {
   const list: LocalizedText[] = [
     {
-      th: "ราคาเป็น OCI list price (USD, Pay-As-You-Go) ไม่รวมส่วนลดสัญญา — ใช้ได้กับ region ap-singapore-1 เพราะ OCI ตั้งราคา USD เท่ากันทั่วโลก",
-      en: "Prices are OCI list prices (USD, Pay-As-You-Go) with no contract discount — valid for ap-singapore-1 since OCI USD pricing is globally uniform",
+      th: "ราคาเป็น AIS Cloud list price (THB, Pay-As-You-Go) ไม่รวมส่วนลดสัญญา — อ้างอิง region ap-bangkok-1 (AIS Cloud powered by Oracle Alloy)",
+      en: "Prices are AIS Cloud list prices (THB, Pay-As-You-Go) with no contract discount — for region ap-bangkok-1 (AIS Cloud powered by Oracle Alloy)",
     },
     {
       th: "คำนวณรายเดือนที่ 744 ชั่วโมง/เดือน ตามมาตรฐาน OCI cost estimator",
@@ -207,6 +226,12 @@ export function lzBaselineAssumptions(spec: SolutionSpec): LocalizedText[] {
     list.push({
       th: "Hub E ไม่มี network firewall — เหมาะกับ PoC/งบจำกัด; อัปเกรดเป็น Hub B/A ได้ภายหลัง",
       en: "Hub E has no network firewall — fits PoC/tight budgets; upgrade to Hub B/A later",
+    });
+  }
+  if (spec.environments.length > 1 && spec.rightsizeNonProd !== false) {
+    list.push({
+      th: "สเปกของ workload ในแต่ละ environment ถูกลดตามความเหมาะสม (preprod~50% · uat~40% · dev/test~30% ของ prod) — ปิดได้ที่ตัวเลือก “ลดสเปก non-prod”",
+      en: "Per-environment workload specs are right-sized down (preprod~50% · uat~40% · dev/test~30% of prod) — toggle off via the “right-size non-prod” option",
     });
   }
   return list;

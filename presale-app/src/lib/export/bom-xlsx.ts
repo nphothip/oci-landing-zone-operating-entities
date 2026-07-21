@@ -60,8 +60,8 @@ export function buildBomWorkbook(result: GenerateResult, t: T): XlsxSheet[] {
     "SKU",
     t({ th: "จำนวน", en: "Qty" }),
     t({ th: "หน่วย", en: "Unit" }),
-    t({ th: "ราคาต่อหน่วย (USD)", en: "Unit price (USD)" }),
-    t({ th: "ต่อเดือน (USD)", en: "Monthly (USD)" }),
+    t({ th: "ราคาต่อหน่วย (THB)", en: "Unit price (THB)" }),
+    t({ th: "ต่อเดือน (THB)", en: "Monthly (THB)" }),
     t({ th: "หมายเหตุ", en: "Notes" }),
   ];
   const headerRow = rows.length + 1; // 1-based row index of the header
@@ -81,8 +81,8 @@ export function buildBomWorkbook(result: GenerateResult, t: T): XlsxSheet[] {
       txt(item.sku ?? ""),
       { v: item.quantity },
       txt(item.unit),
-      money(item.unitPriceUsd),
-      money(item.monthlyUsd),
+      money(item.unitPriceThb),
+      money(item.monthlyThb),
       txt(item.notes ? t(item.notes) : ""),
     ]);
   }
@@ -91,7 +91,7 @@ export function buildBomWorkbook(result: GenerateResult, t: T): XlsxSheet[] {
   rows.push([
     txt(t({ th: "รวมทั้งหมดต่อเดือน", en: "Total per month" }), XS.header),
     null, null, null, null, null, null, null,
-    money(bom.totals.monthlyUsd, XS.boldCurrency),
+    money(bom.totals.monthlyThb, XS.boldCurrency),
     null,
   ]);
   if (bom.totals.unpricedCount > 0) {
@@ -125,7 +125,7 @@ export function buildBomWorkbook(result: GenerateResult, t: T): XlsxSheet[] {
   pair({ th: "CIS profile", en: "CIS profile" }, `Level ${spec.cisLevel}`);
   pair({ th: "Environments", en: "Environments" }, spec.environments.join(", "));
   pair({ th: "การเชื่อมต่อ", en: "Connectivity" }, spec.hub.connectivity);
-  s.push([txt(t({ th: "รวมต่อเดือน (USD)", en: "Monthly total (USD)" }), XS.header), { v: bom.totals.monthlyUsd, s: XS.boldCurrency }]);
+  s.push([txt(t({ th: "รวมต่อเดือน (THB)", en: "Monthly total (THB)" }), XS.header), { v: bom.totals.monthlyThb, s: XS.boldCurrency }]);
   pair({ th: "แหล่งราคา", en: "Price source" }, priceSourceLabel);
   s.push([]);
   s.push([txt(t({ th: "สมมติฐานและขอบเขต", en: "Assumptions & scope" }), XS.header)]);

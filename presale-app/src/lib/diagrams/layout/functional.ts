@@ -52,13 +52,43 @@ const WORKLOAD_BLOCKS: Record<TemplateId, { label: string; sub?: string; icon: s
     { label: "Dev team", sub: "VPN access", icon: "user" },
     { label: "Dev spoke", sub: "VMs + ADB (scheduled)", icon: "compute" },
     { label: "Test spoke", sub: "VMs + ADB (scheduled)", icon: "compute" },
-    { label: "Auto-stop", sub: "off-hours = compute $0", icon: "gear" },
+    { label: "Auto-stop", sub: "off-hours = compute ฿0", icon: "gear" },
   ],
   oke_platform: [
     { label: "Dev team", sub: "CI/CD pipelines", icon: "git" },
     { label: "Registry", sub: "images & artifacts", icon: "archive" },
     { label: "OKE cluster", sub: "deployed by the LZ", icon: "k8s" },
     { label: "Ingress", sub: "int-lb subnet LBs", icon: "lb" },
+  ],
+  ecommerce: [
+    { label: "Storefront (WAF)", sub: "public ingress", icon: "lb" },
+    { label: "Web/App tier", sub: "E5.Flex VMs", icon: "compute" },
+    { label: "Cache", sub: "OCI Cache (Redis)", icon: "db" },
+    { label: "Catalog DB + media", sub: "ADB + Object Storage", icon: "db" },
+  ],
+  fileserver: [
+    { label: "Office users", sub: "VPN / private", icon: "onprem" },
+    { label: "Gateway", sub: "SMB/NFS / sync", icon: "compute" },
+    { label: "File Storage", sub: "FSS active share", icon: "archive" },
+    { label: "Archive", sub: "Object Storage cold", icon: "archive" },
+  ],
+  vdi: [
+    { label: "End users", sub: "private access", icon: "user" },
+    { label: "Secure Desktops", sub: "per-desktop VDI", icon: "compute" },
+    { label: "Profiles", sub: "FSS roaming", icon: "archive" },
+    { label: "Broker/apps", sub: "shared servers", icon: "compute" },
+  ],
+  serverless: [
+    { label: "API clients", sub: "apps / partners", icon: "chat" },
+    { label: "API Gateway", sub: "ingress + auth", icon: "lb" },
+    { label: "Functions", sub: "pay-per-use", icon: "gear" },
+    { label: "Data tier", sub: "ADB + Object Storage", icon: "db" },
+  ],
+  streaming: [
+    { label: "Producers", sub: "IoT / apps / logs", icon: "onprem" },
+    { label: "OCI Streaming", sub: "Kafka-compatible", icon: "events" },
+    { label: "Consumers", sub: "stream processing", icon: "compute" },
+    { label: "ADW sink", sub: "analytics warehouse", icon: "db" },
   ],
 };
 

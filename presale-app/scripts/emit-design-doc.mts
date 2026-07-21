@@ -40,7 +40,7 @@ const doc = buildDesignDocument(result);
 const svgByView: Partial<Record<ViewId, string>> = {};
 for (const d of result.diagrams) svgByView[d.view] = renderToStaticMarkup(React.createElement(DiagramCanvas, { doc: d }));
 
-const money = (n: number | null) => (n === null ? "—" : n.toLocaleString("en-US", { style: "currency", currency: "USD" }));
+const money = (n: number | null) => (n === null ? "—" : n.toLocaleString("th-TH", { style: "currency", currency: "THB" }));
 const CAT: Record<string, string> = { landing_zone: "Landing Zone", compute: "Compute", database: "Database", network: "Network", storage: "Storage", ai: "AI Services", security: "Security", observability: "Observability" };
 const rows: DocBomRow[] = result.bom.items.map((i) => ({
   category: CAT[i.category] ?? i.category,
@@ -48,7 +48,7 @@ const rows: DocBomRow[] = result.bom.items.map((i) => ({
   env: i.env ?? "shared",
   scope: i.deployedByLz ? "Landing Zone" : "post-LZ",
   qty: `${i.quantity.toLocaleString()} ${i.unit}`,
-  monthly: money(i.monthlyUsd),
+  monthly: money(i.monthlyThb),
 }));
 
 const html = renderDesignHtml({
@@ -62,7 +62,7 @@ const html = renderDesignHtml({
     svg: s.view ? svgByView[s.view] : undefined,
     kind: s.kind,
   })),
-  bom: { rows, total: money(result.bom.totals.monthlyUsd)!, source: result.bom.priceSource },
+  bom: { rows, total: money(result.bom.totals.monthlyThb)!, source: result.bom.priceSource },
   assumptions: result.assumptions.map(en),
   deploymentFiles: doc.facts.lacFileNames,
   footer: "Internal presale tool — list prices, not an official quote",
@@ -70,3 +70,32 @@ const html = renderDesignHtml({
 });
 fs.writeFileSync(out, html);
 console.log(`wrote ${out} (${html.length} bytes, ${result.diagrams.length} diagrams)`);
+
+// Also emit a .docx (rasterizing diagrams via sharp, since there is no canvas in Node)
+const { buildDocx } = await import("../src/lib/design/docx");
+const sharp = (await import("sharp")).default;
+const docxImages: Record<string, { png: Uint8Array; width: number; height: number }> = {};
+for (const d of result.diagrams) {
+  const svg = svgByView[d.view]!;
+  const png = await sharp(Buffer.from(svg), { density: 130 }).png().toBuffer();
+  docxImages[d.view] = { png: new Uint8Array(png), width: d.width, height: d.height };
+}
+const CATN: Record<string, string> = { landing_zone: "Landing Zone", compute: "Compute", database: "Database", network: "Network", storage: "Storage", ai: "AI Services", security: "Security", observability: "Observability" };
+const docxBlob = await buildDocx({
+  title: en(doc.title),
+  subtitle: en(doc.subtitle),
+  meta: doc.meta.map((m) => ({ label: en(m.label), value: m.value })),
+  sections: doc.sections.map((s) => ({ heading: en(s.heading), paragraphs: s.paragraphs.map(en), imageView: s.view, kind: s.kind })),
+  bom: {
+    headers: ["Category", "Item", "Env", "Scope", "Qty", "Monthly (THB)"],
+    rows: result.bom.items.map((i) => [CATN[i.category] ?? i.category, en(i.label), i.env ?? "shared", i.deployedByLz ? "Landing Zone" : "post-LZ", `${i.quantity.toLocaleString()} ${i.unit}`, money(i.monthlyThb)!]),
+    total: money(result.bom.totals.monthlyThb)!,
+  },
+  assumptions: result.assumptions.map(en),
+  deploymentFiles: doc.facts.lacFileNames,
+  images: docxImages,
+  footer: "Internal presale tool — list prices, not an official quote",
+});
+const docxPath = out.replace(/\.html$/, ".docx");
+fs.writeFileSync(docxPath, Buffer.from(await docxBlob.arrayBuffer()));
+console.log(`wrote ${docxPath} (${fs.statSync(docxPath).size} bytes)`);

@@ -71,6 +71,41 @@ const FLOWS: Record<TemplateId, { label: string; sub?: string; icon: string }[]>
     { label: "Worker nodes", sub: "E5.Flex pool", icon: "compute" },
     { label: "Ingress LB", sub: "int-lb subnet", icon: "lb" },
   ],
+  ecommerce: [
+    { label: "Shoppers", icon: "user" },
+    { label: "WAF + Hub LB", sub: "public ingress", icon: "lb" },
+    { label: "web/app subnet", sub: "E5.Flex VMs", icon: "compute" },
+    { label: "Redis cache", sub: "app subnet", icon: "db" },
+    { label: "ADB + media", sub: "db subnet + Object Storage", icon: "db" },
+  ],
+  fileserver: [
+    { label: "Office users", icon: "user" },
+    { label: "DRG", sub: "VPN / FastConnect", icon: "drg" },
+    { label: "Gateway", sub: "SMB/NFS", icon: "compute" },
+    { label: "File Storage", sub: "FSS mount targets", icon: "archive" },
+    { label: "Archive", sub: "lifecycle to Object Storage", icon: "archive" },
+  ],
+  vdi: [
+    { label: "End users", icon: "user" },
+    { label: "DRG", sub: "VPN / FastConnect", icon: "drg" },
+    { label: "Secure Desktops", sub: "per-desktop", icon: "compute" },
+    { label: "Broker/apps", sub: "app subnet", icon: "compute" },
+    { label: "Profiles (FSS)", sub: "home/roaming", icon: "archive" },
+  ],
+  serverless: [
+    { label: "API clients", icon: "chat" },
+    { label: "API Gateway", sub: "public ingress + auth", icon: "lb" },
+    { label: "Functions", sub: "private subnet", icon: "gear" },
+    { label: "ADB", sub: "db subnet", icon: "db" },
+    { label: "Object Storage", sub: "assets", icon: "archive" },
+  ],
+  streaming: [
+    { label: "Producers", icon: "onprem" },
+    { label: "DRG", sub: "VPN / FastConnect", icon: "drg" },
+    { label: "OCI Streaming", sub: "private endpoint", icon: "events" },
+    { label: "Consumers", sub: "app subnet", icon: "compute" },
+    { label: "ADW", sub: "db subnet", icon: "db" },
+  ],
 };
 
 export function layoutRuntimeView(spec: SolutionSpec, gen: ParsedGenerated): DiagramDoc {

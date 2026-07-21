@@ -18,7 +18,7 @@ describe("per-environment BOM tagging", () => {
     }
   });
 
-  it("splits web_app workload per environment and keeps the total identical", () => {
+  it("splits web_app workload per environment and right-sizes non-prod", () => {
     const spec = TEMPLATES.web_app.defaults();
     spec.environments = ["prod", "preprod"] as EnvName[];
     const items = finalizeBom(TEMPLATES.web_app.buildBom(spec));
@@ -26,16 +26,23 @@ describe("per-environment BOM tagging", () => {
     const computeEnvs = new Set(items.filter((i) => i.catalogKey === "compute_e5_ocpu").map((i) => i.env));
     expect(computeEnvs).toEqual(new Set(["prod", "preprod"]));
 
-    // one env vs two envs: per-env compute quantity is identical, total doubles
+    // adding preprod raises the total but by less than 2x (non-prod is scaled down)
     const oneEnv = { ...spec, environments: ["prod"] as EnvName[] };
-    const totalOne = priceBom(finalizeBom(TEMPLATES.web_app.buildBom(oneEnv))).totals.monthlyUsd;
-    const totalTwo = priceBom(finalizeBom(items)).totals.monthlyUsd;
-    // hub/shared infra is not doubled, so it's < 2x but strictly greater
+    const totalOne = priceBom(finalizeBom(TEMPLATES.web_app.buildBom(oneEnv))).totals.monthlyThb;
+    const totalTwo = priceBom(finalizeBom(items)).totals.monthlyThb;
     expect(totalTwo).toBeGreaterThan(totalOne);
+    expect(totalTwo).toBeLessThan(totalOne * 2);
 
+    // preprod compute is right-sized below prod (~50%)
     const prodOcpu = items.find((i) => i.catalogKey === "compute_e5_ocpu" && i.env === "prod")!;
     const preprodOcpu = items.find((i) => i.catalogKey === "compute_e5_ocpu" && i.env === "preprod")!;
-    expect(prodOcpu.quantity).toBe(preprodOcpu.quantity);
+    expect(preprodOcpu.quantity).toBeLessThan(prodOcpu.quantity);
+
+    // with right-sizing disabled the envs match
+    const noRightsize = finalizeBom(TEMPLATES.web_app.buildBom({ ...spec, rightsizeNonProd: false }));
+    const p1 = noRightsize.find((i) => i.catalogKey === "compute_e5_ocpu" && i.env === "prod")!;
+    const p2 = noRightsize.find((i) => i.catalogKey === "compute_e5_ocpu" && i.env === "preprod")!;
+    expect(p1.quantity).toBe(p2.quantity);
   });
 
   it("does not split single-site templates (migration stays shared)", () => {

@@ -59,7 +59,7 @@ function Studio() {
             <span className="text-[#C74634]">OCI</span> Presale Studio
           </h1>
           <p className="text-sm text-neutral-600">
-            {t(L("BOM · ราคา/เดือน (USD) · Diagram 5 views · LaC code — ตามแนวทาง OCI Open Landing Zone", "BOM · monthly USD · 5-view diagrams · LaC code — per the OCI Open Landing Zone"))}
+            {t(L("BOM · ราคา/เดือน (THB) · Diagram 5 views · LaC code — ตามแนวทาง OCI Open Landing Zone", "BOM · monthly THB · 5-view diagrams · LaC code — per the OCI Open Landing Zone"))}
           </p>
         </div>
         <button

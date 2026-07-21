@@ -25,4 +25,4 @@ const result: GenerateResult = {
 const t = (x: LocalizedText | string) => (typeof x === "string" ? x : x.en);
 const blob = await workbookToXlsx(buildBomWorkbook(result, t));
 fs.writeFileSync(out, Buffer.from(await blob.arrayBuffer()));
-console.log(`wrote ${out} (${fs.statSync(out).size} bytes) — total $${result.bom.totals.monthlyUsd}`);
+console.log(`wrote ${out} (${fs.statSync(out).size} bytes) — total ฿${result.bom.totals.monthlyThb}`);

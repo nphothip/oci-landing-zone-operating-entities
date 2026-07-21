@@ -25,7 +25,7 @@ export const analyticsTemplate: TemplateDefinition = {
   defaults(): SolutionSpec {
     return {
       template: "analytics",
-      region: { id: "ap-singapore-1", shortName: "sin" },
+      region: { id: "ap-bangkok-1", shortName: "bkk" },
       cisLevel: 1,
       hub: { kind: "hub_e", connectivity: "vpn" },
       environments: ["prod"],
@@ -51,8 +51,8 @@ export const analyticsTemplate: TemplateDefinition = {
       input: {
         type: "select",
         options: [
-          { value: "professional", label: { th: "Professional ($16/ผู้ใช้)", en: "Professional ($16/user)" } },
-          { value: "enterprise", label: { th: "Enterprise ($80/ผู้ใช้ — มี data flow/ML)", en: "Enterprise ($80/user — data flows/ML)" } },
+          { value: "professional", label: { th: "Professional (฿756/ผู้ใช้)", en: "Professional (฿756/user)" } },
+          { value: "enterprise", label: { th: "Enterprise (฿3,781/ผู้ใช้ — มี data flow/ML)", en: "Enterprise (฿3,781/user — data flows/ML)" } },
         ],
       },
     },

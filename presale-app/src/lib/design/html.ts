@@ -124,7 +124,7 @@ function bomTable(bom: { rows: DocBomRow[]; total: string; source: string }): st
       return `<tr><td>${esc(r.category)}</td><td>${esc(r.label)}</td><td><span class="badge ${envCls}">${esc(r.env)}</span></td><td><span class="badge ${scopeCls}">${esc(r.scope)}</span></td><td class="num">${esc(r.qty)}</td><td class="num">${esc(r.monthly)}</td></tr>`;
     })
     .join("");
-  return `<table class="bom"><thead><tr><th>Category</th><th>Item</th><th>Env</th><th>Scope</th><th>Qty</th><th>Monthly (USD)</th></tr></thead>
+  return `<table class="bom"><thead><tr><th>Category</th><th>Item</th><th>Env</th><th>Scope</th><th>Qty</th><th>Monthly (THB)</th></tr></thead>
 <tbody>${rows}</tbody>
 <tfoot><tr class="total"><td colspan="5">Total per month (${esc(bom.source)})</td><td class="num">${esc(bom.total)}</td></tr></tfoot></table>`;
 }

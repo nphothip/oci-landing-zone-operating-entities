@@ -3,7 +3,7 @@
 const BASE = process.env.SMOKE_URL || "http://localhost:3000";
 
 const base = {
-  region: { id: "ap-singapore-1", shortName: "sin" },
+  region: { id: "ap-bangkok-1", shortName: "bkk" },
   cisLevel: 1,
   environments: ["prod"],
   assumptionNotes: [],
@@ -19,6 +19,11 @@ const sizings = {
   analytics: { kind: "analytics", adwEcpus: 4, adwStorageGb: 1000, oacUsers: 20, oacTier: "professional", dataLakeGb: 500, etlHoursPerMonth: 80 },
   devtest: { kind: "devtest", vmPerEnv: 4, ocpusPerVm: 1, memGbPerVm: 8, bootGbPerVm: 100, dbEcpusPerEnv: 2, dbStorageGbPerEnv: 100, runningHoursPerMonth: 260 },
   oke_platform: { kind: "oke_platform", workerCount: 3, workerOcpus: 2, workerMemGb: 16, registryGb: 100 },
+  ecommerce: { kind: "ecommerce", appVmCount: 3, ocpusPerVm: 2, memGbPerVm: 16, dbEcpus: 4, dbStorageGb: 300, cacheGb: 8, productMediaGb: 200, ordersPerMonth: 20000, waf: true },
+  fileserver: { kind: "fileserver", users: 200, fssGb: 2000, archiveGb: 10000, gatewayVmCount: 1, gatewayOcpus: 2 },
+  vdi: { kind: "vdi", desktopCount: 50, profileStorageGb: 500, appVmCount: 1, appOcpus: 4 },
+  serverless: { kind: "serverless", apiCallsPerMonth: 20000000, functionInvocationsPerMonth: 20000000, avgFnMemMb: 256, avgFnMs: 200, adbEcpus: 2, adbStorageGb: 100, objectStorageGb: 100 },
+  streaming: { kind: "streaming", throughputGbPerMonth: 5000, retentionGb: 500, consumerVmCount: 2, consumerOcpus: 2, adwEcpus: 4, adwStorageGb: 2000 },
 };
 
 const cases = [
@@ -34,6 +39,11 @@ const cases = [
   { name: "analytics/hub_e", template: "analytics", hub: "hub_e", cis: 1, connectivity: "vpn" },
   { name: "devtest/hub_e/dev+test", template: "devtest", hub: "hub_e", cis: 1, connectivity: "vpn", environments: ["dev", "test"] },
   { name: "oke_platform/hub_b", template: "oke_platform", hub: "hub_b", cis: 1 },
+  { name: "ecommerce/hub_b+preprod", template: "ecommerce", hub: "hub_b", cis: 1, environments: ["prod", "preprod"] },
+  { name: "fileserver/hub_b+vpn_ha", template: "fileserver", hub: "hub_b", cis: 1, connectivity: "vpn_ha" },
+  { name: "vdi/hub_b+fc_ha", template: "vdi", hub: "hub_b", cis: 1, connectivity: "fastconnect_1g_ha" },
+  { name: "serverless/hub_b", template: "serverless", hub: "hub_b", cis: 1 },
+  { name: "streaming/hub_b+fc_vpn", template: "streaming", hub: "hub_b", cis: 1, connectivity: "fastconnect_vpn_backup" },
 ];
 
 let failed = 0;
@@ -64,7 +74,7 @@ for (const c of cases) {
     const data = await res.json();
     const ms = Date.now() - started;
     const files = data?.lac?.files?.length ?? 0;
-    const total = data?.bom?.totals?.monthlyUsd ?? -1;
+    const total = data?.bom?.totals?.monthlyThb ?? -1;
     const views = data?.diagrams?.length ?? 0;
     const ok = res.ok && files >= 5 && total >= 0 && views === 5 && (data?.bom?.totals?.unpricedCount ?? 99) === 0;
     console.log(`${ok ? "PASS" : "FAIL"}  ${c.name.padEnd(28)} ${String(ms).padStart(5)}ms  files=${files} total=$${total} views=${views}${res.ok ? "" : ` err=${data?.error}`}`);

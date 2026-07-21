@@ -1,9 +1,9 @@
 import type { LocalizedText } from "@/lib/domain/types";
 
-// Curated OCI SKU catalog. Part numbers verified against the public price
-// list API on 2026-07-20:
-//   https://apexapps.oracle.com/pls/apex/cetools/api/v1/products/
-// USD list prices are globally uniform, so they apply to ap-singapore-1.
+// Curated OCI SKU catalog. Part numbers are priced against the AIS Cloud
+// (Oracle Alloy, Thailand) price list API, which returns THB list prices:
+//   https://calculator.g-ais.co.th/api/skus
+// Prices apply to the AIS Cloud region (ap-bangkok-1).
 // sku: null => free/informational line (no price lookup).
 
 export interface CatalogEntry {
@@ -27,7 +27,6 @@ export const CATALOG: Record<string, CatalogEntry> = Object.fromEntries(
       { key: "adb_ecpu", sku: "B95702", name: { th: "Autonomous DB (ATP Serverless) — ECPU", en: "Autonomous DB (ATP Serverless) — ECPU" } },
       { key: "adb_storage_gb", sku: "B95706", name: { th: "Autonomous DB — storage (Transaction Processing)", en: "Autonomous DB — storage (Transaction Processing)" } },
       { key: "base_db_ecpu", sku: "B111586", name: { th: "Base Database (VM) Enterprise — ECPU (license-included)", en: "Base Database (VM) Enterprise — ECPU (license-included)" } },
-      { key: "base_db_infra_ecpu", sku: "B112724", name: { th: "Base Database — compute infrastructure ต่อ ECPU", en: "Base Database — compute infrastructure per ECPU" } },
       { key: "base_db_storage_gb", sku: "B111584", name: { th: "Base Database — DB storage", en: "Base Database — DB storage" } },
       // --- network -------------------------------------------------------
       { key: "lb_base", sku: "B93030", name: { th: "Flexible Load Balancer — base (ตัวแรกฟรี)", en: "Flexible Load Balancer — base (first LB free)" } },
@@ -54,11 +53,21 @@ export const CATALOG: Record<string, CatalogEntry> = Object.fromEntries(
       { key: "oac_user_ent", sku: "B92683", name: { th: "Oracle Analytics Cloud Enterprise — ต่อผู้ใช้", en: "Oracle Analytics Cloud Enterprise — per user" } },
       { key: "di_workspace_hr", sku: "B92598", name: { th: "OCI Data Integration — workspace", en: "OCI Data Integration — workspace" } },
       // --- AI ------------------------------------------------------------
-      { key: "genai_small_10k", sku: "B111035", name: { th: "OCI Generative AI — Meta Llama 4 Scout (on-demand)", en: "OCI Generative AI — Meta Llama 4 Scout (on-demand)" } },
-      { key: "genai_large_10k", sku: "B110517", name: { th: "OCI Generative AI — Meta Llama 3.1 405B (on-demand)", en: "OCI Generative AI — Meta Llama 3.1 405B (on-demand)" } },
+      { key: "genai_small_10k", sku: "B108078", name: { th: "OCI Generative AI — Small Cohere (on-demand)", en: "OCI Generative AI — Small Cohere (on-demand)" } },
+      { key: "genai_large_10k", sku: "B108077", name: { th: "OCI Generative AI — Large Cohere (on-demand)", en: "OCI Generative AI — Large Cohere (on-demand)" } },
       { key: "genai_embed_10k", sku: "B108079", name: { th: "OCI Generative AI — Embed Cohere (RAG)", en: "OCI Generative AI — Embed Cohere (RAG)" } },
+      // --- app services --------------------------------------------------
+      { key: "redis_gb", sku: "B98217", name: { th: "OCI Cache with Redis — memory", en: "OCI Cache with Redis — memory" } },
+      { key: "functions_gbsec", sku: "B90617", name: { th: "Oracle Functions — execution (GB-seconds)", en: "Oracle Functions — execution (GB-seconds)" } },
+      { key: "functions_inv", sku: "B90618", name: { th: "Oracle Functions — invocations", en: "Oracle Functions — invocations" } },
+      { key: "apigw_calls", sku: "B92072", name: { th: "API Gateway — API calls", en: "API Gateway — API calls" } },
+      { key: "streaming_gb", sku: "B90938", name: { th: "Streaming — data (PUT/GET)", en: "Streaming — data (PUT/GET)" } },
+      { key: "streaming_storage_gb", sku: "B90939", name: { th: "Streaming — retention storage", en: "Streaming — retention storage" } },
+      { key: "vdi_desktop", sku: "B95518", name: { th: "Secure Desktop (VDI) — ต่อ desktop", en: "Secure Desktop (VDI) — per desktop" } },
+      { key: "email_1k", sku: "B88523", name: { th: "Email Delivery — ต่อ 1,000 อีเมล", en: "Email Delivery — per 1,000 emails" } },
       // --- security ------------------------------------------------------
       { key: "waf_requests_m", sku: "B94277", name: { th: "Web Application Firewall — requests (10M แรกฟรี)", en: "Web Application Firewall — requests (first 10M free)" } },
+      { key: "waf_instance", sku: "B94579", name: { th: "Web Application Firewall — instance", en: "Web Application Firewall — instance" } },
       { key: "vault_free", sku: null, name: { th: "OCI Vault (default vault + software keys) — ฟรี", en: "OCI Vault (default vault + software keys) — free" } },
       { key: "cloud_guard", sku: null, name: { th: "Cloud Guard — ฟรี", en: "Cloud Guard — free" } },
       { key: "security_zones", sku: null, name: { th: "Security Zones — ฟรี", en: "Security Zones — free" } },

@@ -37,7 +37,7 @@ describe("design document", () => {
     expect(facts.vcns.some((v) => v.role === "hub")).toBe(true);
     expect(facts.vcns.filter((v) => v.role === "spoke").length).toBeGreaterThanOrEqual(2);
     expect(facts.groups.length).toBeGreaterThan(3);
-    expect(facts.cost.monthlyUsd).toBeGreaterThan(0);
+    expect(facts.cost.monthlyThb).toBeGreaterThan(0);
     expect(facts.cost.byEnv.some((e) => e.env === "prod")).toBe(true);
   });
 
@@ -62,7 +62,7 @@ describe("design document", () => {
         svg: s.view ? '<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>' : undefined,
         kind: s.kind,
       })),
-      bom: { rows: [{ category: "Compute", label: "App VM", env: "prod", scope: "post-LZ", qty: "4 OCPU", monthly: "$89.28" }], total: "$3,238.10", source: "fallback" },
+      bom: { rows: [{ category: "Compute", label: "App VM", env: "prod", scope: "post-LZ", qty: "4 OCPU", monthly: "฿89.28" }], total: "฿3,238.10", source: "fallback" },
       assumptions: ["prices are list prices"],
       deploymentFiles: ["network.json", "iam.json"],
       footer: "internal tool",

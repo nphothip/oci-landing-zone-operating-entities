@@ -6,8 +6,8 @@ import { getPath, setPath } from "@/lib/domain/path";
 import { L, useLang } from "@/lib/i18n";
 
 const HUBS: { value: HubKind; label: { th: string; en: string }; cost: { th: string; en: string } }[] = [
-  { value: "hub_a", label: L("Hub A — NFW คู่ (HA)", "Hub A — dual NFW (HA)"), cost: L("~$4,092/เดือน (FW)", "~$4,092/mo (FW)") },
-  { value: "hub_b", label: L("Hub B — NFW เดี่ยว", "Hub B — single NFW"), cost: L("~$2,046/เดือน (FW)", "~$2,046/mo (FW)") },
+  { value: "hub_a", label: L("Hub A — NFW คู่ (HA)", "Hub A — dual NFW (HA)"), cost: L("~฿229,200/เดือน (FW)", "~฿229,200/mo (FW)") },
+  { value: "hub_b", label: L("Hub B — NFW เดี่ยว", "Hub B — single NFW"), cost: L("~฿114,600/เดือน (FW)", "~฿114,600/mo (FW)") },
   { value: "hub_c", label: L("Hub C — NLB สำหรับ FW 3rd-party", "Hub C — NLB for 3rd-party FW"), cost: L("NLB ฟรี + ค่า FW เอง", "free NLB + own FW cost") },
   { value: "hub_e", label: L("Hub E — ไม่มี firewall", "Hub E — no firewall"), cost: L("ฟรี (เหมาะ PoC)", "free (PoC-friendly)") },
 ];
@@ -67,6 +67,20 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
                 ))}
               </div>
             </div>
+            {spec.hub.kind === "hub_a" || spec.hub.kind === "hub_b" ? (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("การตรวจของ Network Firewall", "Network Firewall inspection"))}</label>
+                <select
+                  className="w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-sm"
+                  value={spec.hub.inspection ?? "standard"}
+                  onChange={(e) => onChange({ ...spec, hub: { ...spec.hub, inspection: e.target.value as NonNullable<SolutionSpec["hub"]["inspection"]> } })}
+                >
+                  <option value="standard">{t(L("มาตรฐาน (L3/L4 + URL/app-id)", "Standard (L3/L4 + URL/app-id)"))}</option>
+                  <option value="ids_ips">{t(L("IDS/IPS (ตรวจจับ/ป้องกันภัยคุกคาม)", "IDS/IPS (threat detection/prevention)"))}</option>
+                  <option value="tls">{t(L("TLS inspection (ถอดรหัสตรวจ)", "TLS inspection (decrypt & inspect)"))}</option>
+                </select>
+              </div>
+            ) : null}
             <div>
               <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("CIS profile", "CIS profile"))}</label>
               <select
@@ -87,10 +101,25 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
               >
                 <option value="none">{t(L("ไม่ต้องเชื่อม", "None"))}</option>
                 <option value="vpn">{t(L("Site-to-Site VPN (ฟรี)", "Site-to-Site VPN (free)"))}</option>
+                <option value="vpn_ha">{t(L("Site-to-Site VPN — redundant (2 CPE, ฟรี)", "Site-to-Site VPN — redundant (2 CPE, free)"))}</option>
                 <option value="fastconnect_1g">FastConnect 1 Gbps</option>
+                <option value="fastconnect_1g_ha">{t(L("FastConnect 1 Gbps — dual (HA)", "FastConnect 1 Gbps — dual (HA)"))}</option>
                 <option value="fastconnect_10g">FastConnect 10 Gbps</option>
+                <option value="fastconnect_10g_ha">{t(L("FastConnect 10 Gbps — dual (HA)", "FastConnect 10 Gbps — dual (HA)"))}</option>
+                <option value="fastconnect_vpn_backup">{t(L("FastConnect 1G + VPN สำรอง", "FastConnect 1G + VPN backup"))}</option>
               </select>
             </div>
+            {spec.environments.length > 1 ? (
+              <label className="flex items-start gap-2 text-xs text-neutral-600">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={spec.rightsizeNonProd !== false}
+                  onChange={(e) => onChange({ ...spec, rightsizeNonProd: e.target.checked })}
+                />
+                {t(L("ลดสเปก non-prod อัตโนมัติ (preprod~50% · uat~40% · dev/test~30% ของ prod)", "Auto right-size non-prod (preprod~50% · uat~40% · dev/test~30% of prod)"))}
+              </label>
+            ) : null}
           </div>
         </div>
       </section>

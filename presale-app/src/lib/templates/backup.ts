@@ -23,7 +23,7 @@ export const backupTemplate: TemplateDefinition = {
   defaults(): SolutionSpec {
     return {
       template: "backup",
-      region: { id: "ap-singapore-1", shortName: "sin" },
+      region: { id: "ap-bangkok-1", shortName: "bkk" },
       cisLevel: 1,
       hub: { kind: "hub_e", connectivity: "vpn" },
       environments: ["prod"],

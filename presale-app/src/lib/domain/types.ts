@@ -16,12 +16,25 @@ export type TemplateId =
   | "migration"
   | "analytics"
   | "devtest"
-  | "oke_platform";
+  | "oke_platform"
+  | "ecommerce"
+  | "fileserver"
+  | "vdi"
+  | "serverless"
+  | "streaming";
 export type HubKind = "hub_a" | "hub_b" | "hub_c" | "hub_e";
 export type CisLevel = 1 | 2;
 // Environment names the generator orders canonically (gen/topology.libsonnet).
 export type EnvName = "prod" | "preprod" | "staging" | "uat" | "dev" | "test";
-export type Connectivity = "none" | "vpn" | "fastconnect_1g" | "fastconnect_10g";
+export type Connectivity =
+  | "none"
+  | "vpn"
+  | "vpn_ha"
+  | "fastconnect_1g"
+  | "fastconnect_1g_ha"
+  | "fastconnect_10g"
+  | "fastconnect_10g_ha"
+  | "fastconnect_vpn_backup";
 
 export interface LocalizedText {
   th: string;
@@ -29,9 +42,9 @@ export interface LocalizedText {
 }
 
 export interface RegionRef {
-  /** OCI region identifier, e.g. "ap-singapore-1" */
+  /** OCI region identifier, e.g. "ap-bangkok-1" */
   id: string;
-  /** Short name used by the LZ naming convention, e.g. "sin" */
+  /** Short name used by the LZ naming convention, e.g. "bkk" */
   shortName: string;
 }
 
@@ -168,6 +181,57 @@ export interface OkePlatformSizing {
   registryGb: number;
 }
 
+export interface EcommerceSizing {
+  kind: "ecommerce";
+  appVmCount: number;
+  ocpusPerVm: number;
+  memGbPerVm: number;
+  dbEcpus: number;
+  dbStorageGb: number;
+  cacheGb: number;
+  productMediaGb: number;
+  ordersPerMonth: number;
+  waf: boolean;
+}
+
+export interface FileserverSizing {
+  kind: "fileserver";
+  users: number;
+  fssGb: number;
+  archiveGb: number;
+  gatewayVmCount: number;
+  gatewayOcpus: number;
+}
+
+export interface VdiSizing {
+  kind: "vdi";
+  desktopCount: number;
+  profileStorageGb: number;
+  appVmCount: number;
+  appOcpus: number;
+}
+
+export interface ServerlessSizing {
+  kind: "serverless";
+  apiCallsPerMonth: number;
+  functionInvocationsPerMonth: number;
+  avgFnMemMb: number;
+  avgFnMs: number;
+  adbEcpus: number;
+  adbStorageGb: number;
+  objectStorageGb: number;
+}
+
+export interface StreamingSizing {
+  kind: "streaming";
+  throughputGbPerMonth: number;
+  retentionGb: number;
+  consumerVmCount: number;
+  consumerOcpus: number;
+  adwEcpus: number;
+  adwStorageGb: number;
+}
+
 export type Sizing =
   | WebAppSizing
   | ChatbotSizing
@@ -177,7 +241,12 @@ export type Sizing =
   | MigrationSizing
   | AnalyticsSizing
   | DevtestSizing
-  | OkePlatformSizing;
+  | OkePlatformSizing
+  | EcommerceSizing
+  | FileserverSizing
+  | VdiSizing
+  | ServerlessSizing
+  | StreamingSizing;
 
 // ---------------------------------------------------------------------------
 // SolutionSpec
@@ -191,9 +260,13 @@ export interface SolutionSpec {
   hub: {
     kind: HubKind;
     connectivity: Connectivity;
+    /** Network Firewall inspection depth (hub_a/hub_b only). */
+    inspection?: "standard" | "ids_ips" | "tls";
   };
   /** Environments to create (each becomes a spoke VCN + compartment tree) */
   environments: EnvName[];
+  /** Right-size non-production environments down from prod (default true). */
+  rightsizeNonProd?: boolean;
   sizing: Sizing;
   /** Assumptions recorded by the LLM parser or the form defaults */
   assumptionNotes: string[];
@@ -305,17 +378,17 @@ export interface BomItem {
 export interface PricedBomItem extends BomItem {
   /** OCI part number (from catalog), null for free/informational lines */
   sku: string | null;
-  /** USD per pricing metric unit; null when the SKU has no price (free) */
-  unitPriceUsd: number | null;
+  /** THB per pricing metric unit; null when the SKU has no price (free) */
+  unitPriceThb: number | null;
   /** Pricing metric name, e.g. "OCPU PER HOUR" */
   metric: string | null;
-  monthlyUsd: number | null;
+  monthlyThb: number | null;
 }
 
 export interface BomResult {
   items: PricedBomItem[];
   totals: {
-    monthlyUsd: number;
+    monthlyThb: number;
     /** Items with a catalog SKU that could not be priced */
     unpricedCount: number;
   };

@@ -30,15 +30,15 @@ describe("BOM pricing end-to-end (fallback snapshot)", () => {
   it("prices every default template with a positive total", () => {
     for (const tpl of TEMPLATE_LIST) {
       const bom = priceBom(tpl.buildBom(tpl.defaults()));
-      expect(bom.totals.monthlyUsd, tpl.id).toBeGreaterThan(0);
+      expect(bom.totals.monthlyThb, tpl.id).toBeGreaterThan(0);
       expect(bom.totals.unpricedCount, tpl.id).toBe(0);
     }
   });
 
   it("fallback snapshot covers key SKUs with expected unit prices", () => {
     const prices = (fallback as { prices: Record<string, { tiers: { value: number }[] }> }).prices;
-    expect(prices.B97384.tiers[0].value).toBe(0.03); // E5 OCPU
-    expect(prices.B95403.tiers[0].value).toBe(2.75); // NFW instance
-    expect(prices.B95702.tiers[0].value).toBe(0.336); // ADB ECPU
+    expect(prices.B97384.tiers[0].value).toBe(1.41789285); // E5 OCPU (THB)
+    expect(prices.B95403.tiers[0].value).toBe(154.04268); // NFW instance (THB)
+    expect(prices.B95702.tiers[0].value).toBe(15.88039992); // ADB ECPU (THB)
   });
 });

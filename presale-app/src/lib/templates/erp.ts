@@ -2,7 +2,7 @@ import type { BomItem, ErpSizing, SolutionSpec, TemplateDefinition } from "@/lib
 import { hours } from "@/lib/bom/formulas";
 import { lzBaselineAssumptions, lzBaselineBom } from "./lz-baseline";
 import { baseFactoryConfig } from "./common";
-import { perEnv } from "@/lib/bom/env";
+import { perEnv, scaled } from "@/lib/bom/env";
 
 // ERP / business application hosting — the classic Thai SME deal: SAP
 // Business One, Dynamics, payroll/accounting or a custom ERP moved onto OCI
@@ -26,7 +26,7 @@ export const erpTemplate: TemplateDefinition = {
   defaults(): SolutionSpec {
     return {
       template: "erp",
-      region: { id: "ap-singapore-1", shortName: "sin" },
+      region: { id: "ap-bangkok-1", shortName: "bkk" },
       cisLevel: 1,
       hub: { kind: "hub_b", connectivity: "vpn" },
       environments: ["prod"],
@@ -84,14 +84,15 @@ export const erpTemplate: TemplateDefinition = {
   buildBom(spec): BomItem[] {
     const s = sizing(spec);
     const items = lzBaselineBom(spec);
-    const ocpu = s.appVmCount * s.ocpusPerVm;
 
-    // per-environment app tier
-    const workload = perEnv(spec, () => {
+    // per-environment app tier (right-sized per env)
+    const workload = perEnv(spec, (_env, scale) => {
+      const vms = scaled(s.appVmCount, scale);
+      const ocpu = vms * s.ocpusPerVm;
       const list: BomItem[] = [
         {
           catalogKey: "compute_e5_ocpu",
-          label: { th: `ERP App VM ×${s.appVmCount} (E5.Flex) — OCPU`, en: `ERP app VMs ×${s.appVmCount} (E5.Flex) — OCPU` },
+          label: { th: `ERP App VM ×${vms} (E5.Flex) — OCPU`, en: `ERP app VMs ×${vms} (E5.Flex) — OCPU` },
           category: "compute",
           quantity: ocpu,
           unit: "OCPU",
@@ -102,27 +103,27 @@ export const erpTemplate: TemplateDefinition = {
           catalogKey: "compute_e5_mem",
           label: { th: "ERP App VM — memory", en: "ERP app VMs — memory" },
           category: "compute",
-          quantity: s.appVmCount * s.memGbPerVm,
+          quantity: vms * s.memGbPerVm,
           unit: "GB",
-          monthlyMetricQty: hours(s.appVmCount * s.memGbPerVm),
+          monthlyMetricQty: hours(vms * s.memGbPerVm),
           deployedByLz: false,
         },
         {
           catalogKey: "block_storage_gb",
           label: { th: "Boot/data volumes", en: "Boot/data volumes" },
           category: "storage",
-          quantity: s.appVmCount * s.bootGbPerVm,
+          quantity: vms * s.bootGbPerVm,
           unit: "GB",
-          monthlyMetricQty: s.appVmCount * s.bootGbPerVm,
+          monthlyMetricQty: vms * s.bootGbPerVm,
           deployedByLz: false,
         },
         {
           catalogKey: "block_vpu",
           label: { th: "Volume performance (Balanced)", en: "Volume performance (Balanced)" },
           category: "storage",
-          quantity: s.appVmCount * s.bootGbPerVm,
+          quantity: vms * s.bootGbPerVm,
           unit: "GB",
-          monthlyMetricQty: s.appVmCount * s.bootGbPerVm * 10,
+          monthlyMetricQty: vms * s.bootGbPerVm * 10,
           deployedByLz: false,
         },
       ];
@@ -148,15 +149,6 @@ export const erpTemplate: TemplateDefinition = {
         {
           catalogKey: "base_db_ecpu",
           label: { th: "Base Database Enterprise — ECPU", en: "Base Database Enterprise — ECPU" },
-          category: "database",
-          quantity: s.db.ecpus,
-          unit: "ECPU",
-          monthlyMetricQty: hours(s.db.ecpus),
-          deployedByLz: false,
-        },
-        {
-          catalogKey: "base_db_infra_ecpu",
-          label: { th: "Base Database — compute infrastructure", en: "Base Database — compute infrastructure" },
           category: "database",
           quantity: s.db.ecpus,
           unit: "ECPU",

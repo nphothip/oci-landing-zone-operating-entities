@@ -7,11 +7,11 @@ export const WIRE_SCHEMA = {
   type: "object",
   additionalProperties: false,
   properties: {
-    template: { type: ["string", "null"], enum: ["web_app", "chatbot", "dr", "backup", "erp", "migration", "analytics", "devtest", "oke_platform", null] },
+    template: { type: ["string", "null"], enum: ["web_app", "chatbot", "dr", "backup", "erp", "migration", "analytics", "devtest", "oke_platform", "ecommerce", "fileserver", "vdi", "serverless", "streaming", null] },
     customerName: { type: ["string", "null"] },
     hubKind: { type: ["string", "null"], enum: ["hub_a", "hub_b", "hub_c", "hub_e", null] },
     cisLevel: { type: ["integer", "null"], enum: [1, 2, null] },
-    connectivity: { type: ["string", "null"], enum: ["none", "vpn", "fastconnect_1g", "fastconnect_10g", null] },
+    connectivity: { type: ["string", "null"], enum: ["none", "vpn", "vpn_ha", "fastconnect_1g", "fastconnect_1g_ha", "fastconnect_10g", "fastconnect_10g_ha", "fastconnect_vpn_backup", null] },
     environments: { type: ["array", "null"], items: { type: "string", enum: ["prod", "preprod", "staging", "uat", "dev", "test"] } },
     webAppSizing: {
       type: ["object", "null"],
@@ -153,11 +153,11 @@ export const WIRE_SCHEMA = {
 } as const;
 
 export interface WireResult {
-  template: "web_app" | "chatbot" | "dr" | "backup" | "erp" | "migration" | "analytics" | "devtest" | "oke_platform" | null;
+  template: "web_app" | "chatbot" | "dr" | "backup" | "erp" | "migration" | "analytics" | "devtest" | "oke_platform" | "ecommerce" | "fileserver" | "vdi" | "serverless" | "streaming" | null;
   customerName: string | null;
   hubKind: "hub_a" | "hub_b" | "hub_c" | "hub_e" | null;
   cisLevel: 1 | 2 | null;
-  connectivity: "none" | "vpn" | "fastconnect_1g" | "fastconnect_10g" | null;
+  connectivity: "none" | "vpn" | "vpn_ha" | "fastconnect_1g" | "fastconnect_1g_ha" | "fastconnect_10g" | "fastconnect_10g_ha" | "fastconnect_vpn_backup" | null;
   environments: string[] | null;
   webAppSizing: Record<string, unknown> | null;
   chatbotSizing: Record<string, unknown> | null;
@@ -197,12 +197,24 @@ Templates:
                 warm_standby = ~half fleet running; block replicas, object
                 backups, optional DB standby)
 - backup      : backup-to-OCI (Object Storage Standard/IA/Archive tiers)
+- ecommerce   : online store (web/app VMs + Autonomous DB + Redis cache + WAF +
+                product media on Object Storage + order-confirmation email)
+- fileserver  : corporate file server / EFSS (File Storage NFS/SMB + Object
+                Storage archive + optional gateway VMs, private access)
+- vdi         : virtual desktops (OCI Secure Desktops per-desktop + FSS profiles
+                + optional broker/app servers)
+- serverless  : serverless API backend (API Gateway + Oracle Functions +
+                Autonomous DB + Object Storage, pay-per-use)
+- streaming   : streaming/event platform (OCI Streaming Kafka-compatible +
+                consumer compute + Autonomous Data Warehouse sink; IoT/logs)
 
-Thai keyword hints: เว็บแอป/เว็บไซต์/ระบบเว็บ -> web_app; อีอาร์พี/ERP/ระบบบัญชี/เงินเดือน/payroll/SAP -> erp;
-ย้ายเซิร์ฟเวอร์/ย้ายขึ้นคลาวด์/migrate/ยกระบบเดิม/VMware -> migration; แชทบอท/บอทตอบลูกค้า/AI ตอบแชท -> chatbot;
-คลังข้อมูล/รายงานผู้บริหาร/BI/dashboard/data warehouse -> analytics; คูเบอร์เนเตส/kubernetes/container/microservices -> oke_platform;
-เครื่องทดสอบ/สภาพแวดล้อมพัฒนา/dev/test/UAT -> devtest; ดีอาร์/กู้คืนระบบ/ศูนย์สำรอง/แผนฉุกเฉิน -> dr;
-สำรองข้อมูล/แบ็คอัพ/backup -> backup.
+Thai keyword hints: เว็บแอป/เว็บไซต์/ระบบเว็บ -> web_app; อีคอมเมิร์ซ/ร้านค้าออนไลน์/ขายของออนไลน์/e-commerce/shop -> ecommerce;
+อีอาร์พี/ERP/ระบบบัญชี/เงินเดือน/payroll/SAP -> erp; ย้ายเซิร์ฟเวอร์/ย้ายขึ้นคลาวด์/migrate/ยกระบบเดิม/VMware -> migration;
+แชทบอท/บอทตอบลูกค้า/AI ตอบแชท -> chatbot; คลังข้อมูล/รายงานผู้บริหาร/BI/dashboard/data warehouse -> analytics;
+สตรีมมิ่ง/เรียลไทม์/IoT/kafka/event/ข้อมูลไหลเข้า -> streaming; serverless/API/ฟังก์ชัน/functions/API gateway -> serverless;
+คูเบอร์เนเตส/kubernetes/container/microservices -> oke_platform; ไฟล์เซิร์ฟเวอร์/แชร์ไฟล์/file share/NAS/EFSS -> fileserver;
+เดสก์ท็อปเสมือน/VDI/virtual desktop/remote desktop -> vdi; เครื่องทดสอบ/สภาพแวดล้อมพัฒนา/dev/test/UAT -> devtest;
+ดีอาร์/กู้คืนระบบ/ศูนย์สำรอง/แผนฉุกเฉิน -> dr; สำรองข้อมูล/แบ็คอัพ/backup -> backup.
 
 Landing zone options:
 - hubKind: hub_a (2x OCI Network Firewall, HA, expensive), hub_b (1x NFW,
@@ -225,7 +237,7 @@ the user) in clarifyingQuestions and leave the uncertain fields null. If you
 can proceed with assumptions, do so and keep clarifyingQuestions empty.
 
 Set the sizing object that matches the chosen template; leave the other three
-sizing objects null. Region is fixed by the app (ap-singapore-1) — ignore
+sizing objects null. Region is fixed by the app (ap-bangkok-1) — ignore
 region requests but note them in assumptionNotes.`;
 
 export function schemaAsText(): string {

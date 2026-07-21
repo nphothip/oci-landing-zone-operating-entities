@@ -35,11 +35,11 @@ export interface DesignFacts {
   observability: { logGroups: number; topics: number; events: number; alarms: number; serviceConnector: boolean };
   workload: { title: string; components: { label: string; detail: string; deployedByLz: boolean }[] };
   cost: {
-    monthlyUsd: number;
+    monthlyThb: number;
     priceSource: string;
     fetchedAt: string;
-    topDrivers: { label: string; monthlyUsd: number; env: string }[];
-    byEnv: { env: string; monthlyUsd: number }[];
+    topDrivers: { label: string; monthlyThb: number; env: string }[];
+    byEnv: { env: string; monthlyThb: number }[];
   };
   lacFileNames: string[];
   staged: boolean;
@@ -86,7 +86,7 @@ export function buildDesignFacts(result: GenerateResult): DesignFacts {
   const byEnvMap = new Map<string, number>();
   for (const i of bom.items) {
     const env = i.env ?? "shared";
-    byEnvMap.set(env, (byEnvMap.get(env) ?? 0) + (i.monthlyUsd ?? 0));
+    byEnvMap.set(env, (byEnvMap.get(env) ?? 0) + (i.monthlyThb ?? 0));
   }
   const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -124,11 +124,11 @@ export function buildDesignFacts(result: GenerateResult): DesignFacts {
     },
     workload: { title: result.spec.template, components: workloadComponents },
     cost: {
-      monthlyUsd: bom.totals.monthlyUsd,
+      monthlyThb: bom.totals.monthlyThb,
       priceSource: bom.priceSource,
       fetchedAt: bom.priceFetchedAt,
       topDrivers: topDrivers(bom.items),
-      byEnv: [...byEnvMap.entries()].map(([env, v]) => ({ env, monthlyUsd: round2(v) })).sort((a, b) => b.monthlyUsd - a.monthlyUsd),
+      byEnv: [...byEnvMap.entries()].map(([env, v]) => ({ env, monthlyThb: round2(v) })).sort((a, b) => b.monthlyThb - a.monthlyThb),
     },
     lacFileNames: gen.fileNames,
     staged: gen.fileNames.some((f) => f.includes("_pre")),
@@ -139,10 +139,10 @@ function stripEnvSuffix(label: string): string {
   return label.replace(/\s*\[[a-z]+\]\s*$/, "");
 }
 
-function topDrivers(items: PricedBomItem[]): { label: string; monthlyUsd: number; env: string }[] {
+function topDrivers(items: PricedBomItem[]): { label: string; monthlyThb: number; env: string }[] {
   return [...items]
-    .filter((i) => (i.monthlyUsd ?? 0) > 0)
-    .sort((a, b) => (b.monthlyUsd ?? 0) - (a.monthlyUsd ?? 0))
+    .filter((i) => (i.monthlyThb ?? 0) > 0)
+    .sort((a, b) => (b.monthlyThb ?? 0) - (a.monthlyThb ?? 0))
     .slice(0, 6)
-    .map((i) => ({ label: i.label.en, monthlyUsd: i.monthlyUsd ?? 0, env: i.env ?? "shared" }));
+    .map((i) => ({ label: i.label.en, monthlyThb: i.monthlyThb ?? 0, env: i.env ?? "shared" }));
 }

@@ -53,7 +53,7 @@ export function ResultView({ result }: { result: GenerateResult }) {
             <SummaryCard title={t(L("โซลูชัน", "Solution"))} value={`${template.icon} ${t(template.name)}`} />
             <SummaryCard
               title={t(L("ราคาต่อเดือน (list price)", "Monthly (list price)"))}
-              value={result.bom.totals.monthlyUsd.toLocaleString("en-US", { style: "currency", currency: "USD" })}
+              value={result.bom.totals.monthlyThb.toLocaleString("th-TH", { style: "currency", currency: "THB" })}
               accent
             />
             <SummaryCard title="Landing Zone" value={`${result.spec.hub.kind.replace("_", " ").toUpperCase()} · CIS L${result.spec.cisLevel}`} />

@@ -62,8 +62,8 @@ export function buildDesignDocument(result: GenerateResult): DesignDocument {
           `This document describes the design of a ${t.name.en} on Oracle Cloud Infrastructure (OCI) in region ${facts.region}, built on a standard landing zone following the OCI Open LZ (Operating Entities) blueprint across ${spec.environments.length} environment(s) (${envList}).`,
         ),
         L(
-          `ค่าใช้จ่ายโดยประมาณอยู่ที่ ${money(facts.cost.monthlyUsd)} ต่อเดือน (OCI list price, USD) — โครงสร้าง landing zone (เครือข่าย/IAM/ความปลอดภัย/observability/governance) deploy ได้จริงจากไฟล์ Infrastructure-as-Code ที่แนบ ส่วนทรัพยากร workload คิดราคาไว้และ provision หลังวาง landing zone`,
-          `The estimated cost is ${money(facts.cost.monthlyUsd)} per month (OCI list price, USD). The landing zone (network/IAM/security/observability/governance) is deployable directly from the attached Infrastructure-as-Code; workload resources are priced here and provisioned after the landing zone.`,
+          `ค่าใช้จ่ายโดยประมาณอยู่ที่ ${money(facts.cost.monthlyThb)} ต่อเดือน (AIS Cloud list price, THB) — โครงสร้าง landing zone (เครือข่าย/IAM/ความปลอดภัย/observability/governance) deploy ได้จริงจากไฟล์ Infrastructure-as-Code ที่แนบ ส่วนทรัพยากร workload คิดราคาไว้และ provision หลังวาง landing zone`,
+          `The estimated cost is ${money(facts.cost.monthlyThb)} per month (AIS Cloud list price, THB). The landing zone (network/IAM/security/observability/governance) is deployable directly from the attached Infrastructure-as-Code; workload resources are priced here and provisioned after the landing zone.`,
         ),
       ],
     },
@@ -126,10 +126,8 @@ export function buildDesignDocument(result: GenerateResult): DesignDocument {
           `The network is hub-and-spoke via a central DRG using ${facts.hub.model}; ${fwText.en}.`,
         ),
         networkParagraph(facts),
-        L(
-          `การเชื่อมต่อภายนอก: ${connectivityText(facts.connectivity).th}`,
-          `External connectivity: ${connectivityText(facts.connectivity).en}.`,
-        ),
+        firewallDetail(spec, facts),
+        connectivityDetail(spec),
       ],
     },
     {
@@ -170,8 +168,8 @@ export function buildDesignDocument(result: GenerateResult): DesignDocument {
       kind: "bom",
       paragraphs: [
         L(
-          `ค่าใช้จ่ายรวมประมาณ ${money(facts.cost.monthlyUsd)}/เดือน (${facts.cost.priceSource === "live" ? "ราคา live" : "ราคา snapshot"} ${facts.cost.fetchedAt.slice(0, 10)}) ตัวขับต้นทุนหลัก: ${facts.cost.topDrivers.map((d) => `${stripEnv(d.label)} (${money(d.monthlyUsd)})`).slice(0, 4).join(", ")}`,
-          `Total cost is approximately ${money(facts.cost.monthlyUsd)}/month (${facts.cost.priceSource === "live" ? "live prices" : "snapshot"} ${facts.cost.fetchedAt.slice(0, 10)}). Top cost drivers: ${facts.cost.topDrivers.map((d) => `${stripEnv(d.label)} (${money(d.monthlyUsd)})`).slice(0, 4).join(", ")}.`,
+          `ค่าใช้จ่ายรวมประมาณ ${money(facts.cost.monthlyThb)}/เดือน (${facts.cost.priceSource === "live" ? "ราคา live" : "ราคา snapshot"} ${facts.cost.fetchedAt.slice(0, 10)}) ตัวขับต้นทุนหลัก: ${facts.cost.topDrivers.map((d) => `${stripEnv(d.label)} (${money(d.monthlyThb)})`).slice(0, 4).join(", ")}`,
+          `Total cost is approximately ${money(facts.cost.monthlyThb)}/month (${facts.cost.priceSource === "live" ? "live prices" : "snapshot"} ${facts.cost.fetchedAt.slice(0, 10)}). Top cost drivers: ${facts.cost.topDrivers.map((d) => `${stripEnv(d.label)} (${money(d.monthlyThb)})`).slice(0, 4).join(", ")}.`,
         ),
       ],
     },
@@ -203,7 +201,7 @@ export function buildDesignDocument(result: GenerateResult): DesignDocument {
       { label: L("Hub model", "Hub model"), value: facts.hub.model },
       { label: L("CIS profile", "CIS profile"), value: `Level ${spec.cisLevel}` },
       { label: L("Environments", "Environments"), value: envList },
-      { label: L("ค่าใช้จ่าย/เดือน", "Monthly cost"), value: money(facts.cost.monthlyUsd) },
+      { label: L("ค่าใช้จ่าย/เดือน", "Monthly cost"), value: money(facts.cost.monthlyThb) },
     ],
     sections,
     facts,
@@ -229,18 +227,82 @@ function networkParagraph(facts: DesignFacts): LocalizedText {
   );
 }
 
-function connectivityText(c: string): LocalizedText {
-  switch (c) {
-    case "vpn":
-      return L("Site-to-Site VPN (IPSec) เข้าที่ hub DRG", "Site-to-Site VPN (IPSec) terminating at the hub DRG");
-    case "fastconnect_1g":
-      return L("FastConnect 1 Gbps เข้าที่ hub DRG", "FastConnect 1 Gbps terminating at the hub DRG");
-    case "fastconnect_10g":
-      return L("FastConnect 10 Gbps เข้าที่ hub DRG", "FastConnect 10 Gbps terminating at the hub DRG");
-    default:
-      return L("ไม่มีการเชื่อมต่อ on-premises (เข้าถึงผ่านอินเทอร์เน็ต/บริการสาธารณะ)", "no on-premises connectivity (access via internet/public services)");
+function firewallDetail(spec: GenerateResult["spec"], facts: DesignFacts): LocalizedText {
+  if (!facts.hub.firewall) {
+    if (spec.hub.kind === "hub_c") {
+      return L(
+        "การตรวจสอบทราฟฟิก: Hub C วาง Network Load Balancer คู่เพื่อส่งทราฟฟิกไปยัง third-party firewall (BYOL/marketplace) แบบ HA — นโยบายและการ inspect อยู่ที่ firewall ของลูกค้า",
+        "Traffic inspection: Hub C places a pair of Network Load Balancers to steer traffic to a third-party firewall (BYOL/marketplace) in HA — policy and inspection live on the customer's firewall.",
+      );
+    }
+    return L(
+      "การตรวจสอบทราฟฟิก: hub นี้ไม่มี firewall (เหมาะกับ PoC/งบจำกัด) — ควบคุมด้วย Security List/NSG และ route ผ่าน gateway; อัปเกรดเป็น Hub B/A ได้ภายหลังโดยไม่ต้องรื้อ",
+      "Traffic inspection: this hub has no firewall (PoC/budget) — controlled via Security Lists/NSGs and gateway routing; upgradeable to Hub B/A later without redesign.",
+    );
   }
+  const inspection = spec.hub.inspection ?? "standard";
+  const depthTh =
+    inspection === "tls"
+      ? "TLS forward-proxy inspection (ถอดรหัส HTTPS ตรวจ payload) + IDS/IPS + application-ID + URL filtering"
+      : inspection === "ids_ips"
+        ? "IDS/IPS (threat signatures ตรวจจับ/ป้องกัน) + application-ID + URL filtering (L3–L7)"
+        : "stateful L3/L4 + application-ID + URL filtering";
+  const depthEn =
+    inspection === "tls"
+      ? "TLS forward-proxy inspection (decrypt HTTPS to inspect payload) + IDS/IPS + application-ID + URL filtering"
+      : inspection === "ids_ips"
+        ? "IDS/IPS (threat signatures for detection/prevention) + application-ID + URL filtering (L3–L7)"
+        : "stateful L3/L4 + application-ID + URL filtering";
+  const ha = spec.hub.kind === "hub_a"
+    ? "ทำงานแบบ active/active 2 instance (subnet fw-dmz + fw-int) รองรับ failover"
+    : "1 instance ในซับเน็ต fw ของ hub";
+  const haEn = spec.hub.kind === "hub_a"
+    ? "runs active/active across 2 instances (fw-dmz + fw-int subnets) for failover"
+    : "a single instance in the hub fw subnet";
+  return L(
+    `การปรับแต่ง Network Firewall: ${ha} ทำ ${depthTh} — บังคับให้ทราฟฟิก north-south (internet ingress/egress) และ east-west (spoke-to-spoke) วิ่งผ่าน firewall ผ่าน route table ที่ DRG/hub; นโยบายเป็นแบบ default-deny + allowlist ต่อ application; log ส่งเข้า Logging (flow logs + firewall logs). ค่า data processing คิด 10TB แรก/เดือนฟรี แล้ว ฿0.56/GB — ปรับ policy/threat feed เพิ่มได้หลัง deploy`,
+    `Network Firewall tuning: ${haEn}, performing ${depthEn} — north-south (internet ingress/egress) and east-west (spoke-to-spoke) traffic is forced through the firewall via DRG/hub route tables; policy is default-deny with per-application allowlists; logs stream to Logging (flow + firewall logs). Data processing is free for the first 10TB/month then ฿0.56/GB — policies/threat feeds can be extended after deployment.`,
+  );
 }
 
-const money = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+function connectivityDetail(spec: GenerateResult["spec"]): LocalizedText {
+  const c = spec.hub.connectivity;
+  const map: Record<string, LocalizedText> = {
+    none: L(
+      "การเชื่อมต่อ: เข้าถึงผ่านอินเทอร์เน็ต (IGW สำหรับ public ingress, NAT สำหรับ egress) — ไม่มีลิงก์ส่วนตัว",
+      "Connectivity: internet access only (IGW for public ingress, NAT for egress) — no private link.",
+    ),
+    vpn: L(
+      "การปรับแต่งการเชื่อมต่อ: Site-to-Site VPN (IPSec) เข้าที่ DRG ของ hub — OCI สร้าง 2 tunnel redundant ต่อ 1 connection พร้อม BGP dynamic routing (throughput รวม ~1.25 Gbps ต่อ connection); route ถูก propagate ไปยัง spoke ทุกตัวผ่าน DRG",
+      "Connectivity tuning: Site-to-Site VPN (IPSec) terminating at the hub DRG — OCI provisions 2 redundant tunnels per connection with BGP dynamic routing (~1.25 Gbps aggregate per connection); routes propagate to every spoke via the DRG.",
+    ),
+    vpn_ha: L(
+      "การปรับแต่งการเชื่อมต่อ (HA): VPN สำรองแบบ device-redundant — 2 IPSec connection จาก CPE คนละตัว (รวม 4 tunnel) เข้าที่ DRG เดียว ป้องกันทั้ง tunnel และ CPE ล้ม; BGP เลือกเส้นทางอัตโนมัติ เหมาะเป็น backup ที่คุ้มค่าให้ FastConnect",
+      "Connectivity tuning (HA): device-redundant VPN — 2 IPSec connections from separate CPEs (4 tunnels total) into one DRG, protecting against both tunnel and CPE failure; BGP handles path selection. A cost-effective backup to FastConnect.",
+    ),
+    fastconnect_1g: L(
+      "การปรับแต่งการเชื่อมต่อ: FastConnect 1 Gbps เป็นลิงก์ส่วนตัวเฉพาะ (private, ไม่ผ่านอินเทอร์เน็ต) ผ่าน partner (Equinix/Megaport/Colt ฯลฯ) เข้าที่ DRG พร้อม BGP — latency คงที่ ปลอดภัยกว่า เหมาะกับ workload production",
+      "Connectivity tuning: FastConnect 1 Gbps is a dedicated private link (never traverses the internet) via a partner (Equinix/Megaport/Colt, etc.) to the DRG with BGP — consistent latency and stronger security, suited to production workloads.",
+    ),
+    fastconnect_10g: L(
+      "การปรับแต่งการเชื่อมต่อ: FastConnect 10 Gbps ลิงก์ส่วนตัวความจุสูงผ่าน partner เข้าที่ DRG พร้อม BGP — รองรับปริมาณข้อมูลสูง (เช่น replication/DR, data warehouse) โดยไม่แชร์กับอินเทอร์เน็ต",
+      "Connectivity tuning: FastConnect 10 Gbps — a high-capacity private link via a partner to the DRG with BGP, supporting heavy data volumes (e.g. replication/DR, data warehouse) with no internet sharing.",
+    ),
+    fastconnect_1g_ha: L(
+      "การปรับแต่งการเชื่อมต่อ (carrier-grade HA): FastConnect 1 Gbps 2 ports บน OCI edge router คนละตัว + virtual circuit แยกผู้ให้บริการ/เส้นทาง — ป้องกัน edge/carrier ล้ม, BGP active/active load-share, เป้าหมาย availability ≥99.95%",
+      "Connectivity tuning (carrier-grade HA): FastConnect 1 Gbps across 2 ports on separate OCI edge routers + diverse provider/paths — protects against edge/carrier failure, BGP active/active load-sharing, targeting ≥99.95% availability.",
+    ),
+    fastconnect_10g_ha: L(
+      "การปรับแต่งการเชื่อมต่อ (carrier-grade HA): FastConnect 10 Gbps 2 ports บน edge router คนละตัว + เส้นทางแยก — ความจุสูง + resilient เหมาะกับ production/DR ที่ต้องการ SLA สูงสุด",
+      "Connectivity tuning (carrier-grade HA): FastConnect 10 Gbps across 2 ports on separate edge routers + diverse paths — high capacity and resilient, for production/DR needing the strongest SLA.",
+    ),
+    fastconnect_vpn_backup: L(
+      "การปรับแต่งการเชื่อมต่อ (hybrid resilient): FastConnect 1 Gbps เป็นเส้นหลัก + Site-to-Site VPN เป็น backup อัตโนมัติ — BGP failover ไปใช้ VPN เมื่อ FastConnect ล้ม ได้ทั้ง performance ของ private link และความคุ้มค่าของ VPN สำรอง",
+      "Connectivity tuning (hybrid resilient): FastConnect 1 Gbps primary + Site-to-Site VPN automatic backup — BGP fails over to the VPN if FastConnect drops, combining private-link performance with cost-effective backup.",
+    ),
+  };
+  return map[c] ?? map.none;
+}
+
+const money = (n: number) => n.toLocaleString("th-TH", { style: "currency", currency: "THB", maximumFractionDigits: 0 });
 const stripEnv = (label: string) => label.replace(/\s*\[[a-z]+\]\s*$/, "");

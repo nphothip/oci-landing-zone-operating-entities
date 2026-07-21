@@ -52,7 +52,7 @@ describe("BOM Excel export", () => {
     const sheet1 = await zip.file("xl/worksheets/sheet1.xml")!.async("string");
     expect(sheet1).toContain("OCI Presale BOM");
     // the grand total appears as a numeric cell value
-    expect(sheet1).toContain(`<v>${result.bom.totals.monthlyUsd}</v>`);
+    expect(sheet1).toContain(`<v>${result.bom.totals.monthlyThb}</v>`);
     // Windows license line (erp default is Windows) is present
     expect(sheet1).toContain("Windows Server license");
     // Environment + Scope columns and an AutoFilter for easy filtering

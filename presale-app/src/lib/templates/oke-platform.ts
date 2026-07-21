@@ -2,7 +2,7 @@ import type { BomItem, EnvironmentConfig, OkePlatformSizing, SolutionSpec, Templ
 import { hours } from "@/lib/bom/formulas";
 import { OKE_SERVICES_CIDR, envBlocks, hubMgmtSubnet, orderEnvs } from "@/lib/domain/cidr";
 import { lzBaselineAssumptions, lzBaselineBom } from "./lz-baseline";
-import { perEnv } from "@/lib/bom/env";
+import { perEnv, scaled } from "@/lib/bom/env";
 
 // Container platform (OKE) — for SMEs/mid-size teams standardizing on
 // Kubernetes. The one template where the LZ deploys the workload platform
@@ -29,7 +29,7 @@ export const okePlatformTemplate: TemplateDefinition = {
   defaults(): SolutionSpec {
     return {
       template: "oke_platform",
-      region: { id: "ap-singapore-1", shortName: "sin" },
+      region: { id: "ap-bangkok-1", shortName: "bkk" },
       cisLevel: 1,
       hub: { kind: "hub_b", connectivity: "none" },
       environments: ["prod"],
@@ -94,7 +94,9 @@ export const okePlatformTemplate: TemplateDefinition = {
       });
     }
 
-    const workload = perEnv(spec, () => [
+    const workload = perEnv(spec, (_env, scale) => {
+      const workers = scaled(s.workerCount, scale);
+      return [
       {
         catalogKey: "oke_cluster",
         label: { th: "OKE Enhanced Cluster", en: "OKE Enhanced Cluster" },
@@ -107,11 +109,11 @@ export const okePlatformTemplate: TemplateDefinition = {
       },
       {
         catalogKey: "compute_e5_ocpu",
-        label: { th: `Workers ×${s.workerCount} (E5.Flex) — OCPU`, en: `Workers ×${s.workerCount} (E5.Flex) — OCPU` },
+        label: { th: `Workers ×${workers} (E5.Flex) — OCPU`, en: `Workers ×${workers} (E5.Flex) — OCPU` },
         category: "compute",
-        quantity: s.workerCount * s.workerOcpus,
+        quantity: workers * s.workerOcpus,
         unit: "OCPU",
-        monthlyMetricQty: hours(s.workerCount * s.workerOcpus),
+        monthlyMetricQty: hours(workers * s.workerOcpus),
         deployedByLz: true,
         notes: {
           th: "LaC สร้าง node pool เริ่มต้น 1 node (1 OCPU/8GB) — ขยายเป็นตาม BOM หลัง deploy",
@@ -122,30 +124,31 @@ export const okePlatformTemplate: TemplateDefinition = {
         catalogKey: "compute_e5_mem",
         label: { th: "Workers — memory", en: "Workers — memory" },
         category: "compute",
-        quantity: s.workerCount * s.workerMemGb,
+        quantity: workers * s.workerMemGb,
         unit: "GB",
-        monthlyMetricQty: hours(s.workerCount * s.workerMemGb),
+        monthlyMetricQty: hours(workers * s.workerMemGb),
         deployedByLz: true,
       },
       {
         catalogKey: "block_storage_gb",
         label: { th: `Worker boot volumes (${BOOT_GB}GB/node)`, en: `Worker boot volumes (${BOOT_GB}GB/node)` },
         category: "storage",
-        quantity: s.workerCount * BOOT_GB,
+        quantity: workers * BOOT_GB,
         unit: "GB",
-        monthlyMetricQty: s.workerCount * BOOT_GB,
+        monthlyMetricQty: workers * BOOT_GB,
         deployedByLz: true,
       },
       {
         catalogKey: "block_vpu",
         label: { th: "Worker boot performance (Balanced)", en: "Worker boot performance (Balanced)" },
         category: "storage",
-        quantity: s.workerCount * BOOT_GB,
+        quantity: workers * BOOT_GB,
         unit: "GB",
-        monthlyMetricQty: s.workerCount * BOOT_GB * 10,
+        monthlyMetricQty: workers * BOOT_GB * 10,
         deployedByLz: true,
       },
-    ]);
+    ];
+    });
 
     return [...shared, ...workload];
   },
