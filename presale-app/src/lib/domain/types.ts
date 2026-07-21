@@ -278,6 +278,10 @@ export interface TrafficConfig {
   egressGbPerMonth?: number;
   /** WAF incoming requests per month, in millions. First 10 M free. */
   wafRequestsM?: number;
+  /** Object Storage API requests per month, in millions (billed per 10k). */
+  objectRequestsMPerMonth?: number;
+  /** Streaming data throughput per month (GB, PUT/GET). Overrides the line. */
+  streamingGbPerMonth?: number;
 }
 
 export interface SolutionSpec {
@@ -299,6 +303,12 @@ export interface SolutionSpec {
   environments: EnvName[];
   /** Right-size non-production environments down from prod (default true). */
   rightsizeNonProd?: boolean;
+  /**
+   * Custom sizing per environment, as a percentage of the prod (base) sizing.
+   * Overrides rightsizeNonProd for the envs set here (e.g. { dev: 20, uat: 60 }).
+   * An env not listed falls back to the rightsizeNonProd ratio (or 100%).
+   */
+  envScalePct?: Partial<Record<EnvName, number>>;
   sizing: Sizing;
   /** Assumptions recorded by the LLM parser or the form defaults */
   assumptionNotes: string[];

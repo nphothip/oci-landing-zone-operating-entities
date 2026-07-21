@@ -10,10 +10,19 @@ import type { BomItem, LocalizedText, SolutionSpec } from "@/lib/domain/types";
 //   - wafRequestsM     → waf_requests_m (only meaningful when WAF is on)
 
 const HOURS = 744;
+const OBJECT_STORAGE_KEYS = ["os_standard_gb", "os_ia_gb", "os_archive_gb"];
 
 export function applyTraffic(spec: SolutionSpec, items: BomItem[]): BomItem[] {
   const t = spec.traffic;
-  if (!t || (t.lbBandwidthMbps == null && t.nfwDataGbPerMonth == null && t.egressGbPerMonth == null && t.wafRequestsM == null)) {
+  if (
+    !t ||
+    (t.lbBandwidthMbps == null &&
+      t.nfwDataGbPerMonth == null &&
+      t.egressGbPerMonth == null &&
+      t.wafRequestsM == null &&
+      t.objectRequestsMPerMonth == null &&
+      t.streamingGbPerMonth == null)
+  ) {
     return items;
   }
   const out = items.map((i) => ({ ...i }));
@@ -79,6 +88,38 @@ export function applyTraffic(spec: SolutionSpec, items: BomItem[]): BomItem[] {
       waf.quantity = t.wafRequestsM;
       waf.monthlyMetricQty = t.wafRequestsM;
       waf.label = label(`WAF — requests ${t.wafRequestsM}M/month`);
+    }
+  }
+
+  // Object Storage API requests (millions/month) — add only where object
+  // storage exists. Metric is per 10,000 requests → M × 1e6 / 1e4 = M × 100.
+  if (t.objectRequestsMPerMonth != null && OBJECT_STORAGE_KEYS.some((k) => find(k))) {
+    const m = t.objectRequestsMPerMonth;
+    const metricQty = (m * 1_000_000) / 10_000;
+    const existing = find("os_requests_10k");
+    if (existing) {
+      existing.quantity = m;
+      existing.monthlyMetricQty = metricQty;
+    } else {
+      out.push({
+        catalogKey: "os_requests_10k",
+        label: label(`Object Storage — requests ${m}M/month`),
+        category: "storage",
+        quantity: m,
+        unit: "M requests",
+        monthlyMetricQty: metricQty,
+        deployedByLz: false,
+      });
+    }
+  }
+
+  // Streaming data throughput (GB/month, PUT/GET) — override only.
+  if (t.streamingGbPerMonth != null) {
+    const st = find("streaming_gb");
+    if (st) {
+      st.quantity = t.streamingGbPerMonth;
+      st.monthlyMetricQty = t.streamingGbPerMonth;
+      st.label = label(`Streaming — data ${fmtGb(t.streamingGbPerMonth)} (PUT/GET)`);
     }
   }
 

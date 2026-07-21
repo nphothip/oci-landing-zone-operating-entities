@@ -2,7 +2,7 @@ import type { BomItem, ErpSizing, SolutionSpec, TemplateDefinition } from "@/lib
 import { hours } from "@/lib/bom/formulas";
 import { lzBaselineAssumptions, lzBaselineBom } from "./lz-baseline";
 import { baseFactoryConfig } from "./common";
-import { perEnv, scaled } from "@/lib/bom/env";
+import { perEnv, scaled, fleetScale } from "@/lib/bom/env";
 
 // ERP / business application hosting — the classic Thai SME deal: SAP
 // Business One, Dynamics, payroll/accounting or a custom ERP moved onto OCI
@@ -87,12 +87,14 @@ export const erpTemplate: TemplateDefinition = {
 
     // per-environment app tier (right-sized per env)
     const workload = perEnv(spec, (_env, scale) => {
-      const vms = scaled(s.appVmCount, scale);
-      const ocpu = vms * s.ocpusPerVm;
+      const { count: vms, perVmScale } = fleetScale(s.appVmCount, scale);
+      const ocpuPerVm = scaled(s.ocpusPerVm, perVmScale, 1);
+      const memPerVm = scaled(s.memGbPerVm, perVmScale, 1);
+      const ocpu = vms * ocpuPerVm;
       const list: BomItem[] = [
         {
           catalogKey: "compute_e5_ocpu",
-          label: { th: `ERP App VM ×${vms} (E5.Flex) — OCPU`, en: `ERP app VMs ×${vms} (E5.Flex) — OCPU` },
+          label: { th: `ERP App VM ×${vms} (E5.Flex ${ocpuPerVm} OCPU) — OCPU`, en: `ERP app VMs ×${vms} (E5.Flex ${ocpuPerVm} OCPU) — OCPU` },
           category: "compute",
           quantity: ocpu,
           unit: "OCPU",
@@ -103,9 +105,9 @@ export const erpTemplate: TemplateDefinition = {
           catalogKey: "compute_e5_mem",
           label: { th: "ERP App VM — memory", en: "ERP app VMs — memory" },
           category: "compute",
-          quantity: vms * s.memGbPerVm,
+          quantity: vms * memPerVm,
           unit: "GB",
-          monthlyMetricQty: hours(vms * s.memGbPerVm),
+          monthlyMetricQty: hours(vms * memPerVm),
           deployedByLz: false,
         },
         {

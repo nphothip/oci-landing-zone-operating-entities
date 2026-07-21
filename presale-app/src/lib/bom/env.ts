@@ -24,7 +24,25 @@ export function scaled(base: number, scale: number, min = 1): number {
   return Math.max(min, Math.round(base * scale));
 }
 
+/**
+ * Scale a VM / worker fleet for a non-prod environment. Returns the reduced
+ * node `count` plus a `perVmScale` factor to apply to each node's OCPU/memory,
+ * so the TOTAL capacity ≈ prod × scale even when the count floors at 1 — a
+ * single large VM then shrinks in *size* instead of staying full (the whole
+ * point: non-prod VMs get smaller, not just fewer). Feed `perVmScale` into
+ * `scaled(ocpusPerVm, perVmScale, 1)` etc. Prod (scale ≥ 1) is unchanged.
+ */
+export function fleetScale(prodCount: number, scale: number): { count: number; perVmScale: number } {
+  if (scale >= 1 || prodCount <= 0) return { count: Math.max(prodCount, 0), perVmScale: 1 };
+  const count = Math.max(1, Math.round(prodCount * scale));
+  const perVmScale = (prodCount * scale) / count; // remaining scale spread onto node size
+  return { count, perVmScale };
+}
+
 export function envScale(spec: SolutionSpec, env: string): number {
+  // A custom per-env percentage wins over the rightsize default.
+  const custom = spec.envScalePct?.[env as EnvName];
+  if (custom != null) return Math.min(Math.max(custom, 1), 100) / 100;
   if (spec.rightsizeNonProd === false) return 1;
   return ENV_SCALE[env] ?? 0.5;
 }

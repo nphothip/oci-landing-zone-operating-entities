@@ -47,4 +47,18 @@ describe("applyTraffic", () => {
     applyTraffic(spec({ nfwDataGbPerMonth: 9999 }), b);
     expect(b.find((i) => i.catalogKey === "nfw_data_gb")!.monthlyMetricQty).toBe(2048);
   });
+
+  it("adds an object-storage requests line only when object storage exists", () => {
+    const withOs: BomItem[] = [...base(), { catalogKey: "os_standard_gb", label: { th: "os", en: "os" }, category: "storage", quantity: 1000, unit: "GB", monthlyMetricQty: 1000, deployedByLz: false }];
+    const out = applyTraffic(spec({ objectRequestsMPerMonth: 5 }), withOs);
+    expect(out.find((i) => i.catalogKey === "os_requests_10k")!.monthlyMetricQty).toBe(5 * 100); // 5M / 10k = 500
+    // no object storage → no request line
+    expect(applyTraffic(spec({ objectRequestsMPerMonth: 5 }), base()).some((i) => i.catalogKey === "os_requests_10k")).toBe(false);
+  });
+
+  it("overrides streaming throughput when a streaming line exists", () => {
+    const withStream: BomItem[] = [...base(), { catalogKey: "streaming_gb", label: { th: "s", en: "s" }, category: "network", quantity: 5000, unit: "GB", monthlyMetricQty: 5000, deployedByLz: false }];
+    const out = applyTraffic(spec({ streamingGbPerMonth: 12000 }), withStream);
+    expect(out.find((i) => i.catalogKey === "streaming_gb")!.monthlyMetricQty).toBe(12000);
+  });
 });

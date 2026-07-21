@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TEMPLATES } from "@/lib/templates";
-import { finalizeBom } from "@/lib/bom/env";
+import { finalizeBom, envScale } from "@/lib/bom/env";
 import { priceBom } from "@/lib/pricing/resolve";
 import type { EnvName } from "@/lib/domain/types";
 
@@ -43,6 +43,22 @@ describe("per-environment BOM tagging", () => {
     const p1 = noRightsize.find((i) => i.catalogKey === "compute_e5_ocpu" && i.env === "prod")!;
     const p2 = noRightsize.find((i) => i.catalogKey === "compute_e5_ocpu" && i.env === "preprod")!;
     expect(p1.quantity).toBe(p2.quantity);
+  });
+
+  it("honors a custom per-env scale percentage over the rightsize default", () => {
+    const spec = { ...TEMPLATES.web_app.defaults(), environments: ["prod", "dev"] as EnvName[], envScalePct: { dev: 20 } };
+    expect(envScale(spec, "dev")).toBeCloseTo(0.2, 5); // custom 20% wins
+    expect(envScale(spec, "prod")).toBe(1); // prod is always the 100% base
+    // no custom → dev falls back to the 30% rightsize ratio
+    expect(envScale({ ...spec, envScalePct: undefined }, "dev")).toBeCloseTo(0.3, 5);
+    // rightsize off → 100% unless a custom pct is set (custom still wins)
+    expect(envScale({ ...spec, envScalePct: undefined, rightsizeNonProd: false }, "dev")).toBe(1);
+    expect(envScale({ ...spec, rightsizeNonProd: false }, "dev")).toBeCloseTo(0.2, 5);
+    // BOM: dev workload is scaled below prod
+    const items = finalizeBom(TEMPLATES.web_app.buildBom(spec));
+    const prodMem = items.find((i) => i.catalogKey === "compute_e5_mem" && i.env === "prod")!;
+    const devMem = items.find((i) => i.catalogKey === "compute_e5_mem" && i.env === "dev")!;
+    expect(devMem.quantity).toBeLessThan(prodMem.quantity);
   });
 
   it("does not split single-site templates (migration stays shared)", () => {

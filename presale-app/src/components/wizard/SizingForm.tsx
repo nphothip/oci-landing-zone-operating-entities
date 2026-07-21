@@ -4,6 +4,8 @@ import { useMemo, type ChangeEvent } from "react";
 import type { EnvName, HubKind, SolutionSpec } from "@/lib/domain/types";
 import { TEMPLATES } from "@/lib/templates";
 import { getPath, setPath } from "@/lib/domain/path";
+import { envScale } from "@/lib/bom/env";
+import { orderEnvs } from "@/lib/domain/cidr";
 import { L, useLang } from "@/lib/i18n";
 
 const PEAK_FACTORS = [1.5, 2, 3];
@@ -32,10 +34,14 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
       hasLb: items.some((i) => i.catalogKey === "lb_base" || i.catalogKey === "lb_bandwidth"),
       hasNfw: items.some((i) => i.catalogKey === "nfw_data_gb"),
       hasWaf: items.some((i) => i.catalogKey === "waf_requests_m"),
+      hasObjectStorage: items.some((i) => ["os_standard_gb", "os_ia_gb", "os_archive_gb"].includes(i.catalogKey)),
+      hasStreaming: items.some((i) => i.catalogKey === "streaming_gb"),
       lbMbps: q("lb_bandwidth") ?? 100,
       nfwGb: q("nfw_data_gb") ?? 2048,
       wafM: q("waf_requests_m") ?? 30,
       egressGb: q("egress_apac_gb") ?? 0,
+      objReqM: q("os_requests_10k") ?? 0,
+      streamGb: q("streaming_gb") ?? 5000,
     };
   }, [template, spec]);
   const burst = spec.burst ?? {};
@@ -135,15 +141,46 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
               </select>
             </div>
             {spec.environments.length > 1 ? (
-              <label className="flex items-start gap-2 text-xs text-neutral-600">
-                <input
-                  type="checkbox"
-                  className="mt-0.5"
-                  checked={spec.rightsizeNonProd !== false}
-                  onChange={(e) => onChange({ ...spec, rightsizeNonProd: e.target.checked })}
-                />
-                {t(L("ลดสเปก non-prod อัตโนมัติ (preprod~50% · uat~40% · dev/test~30% ของ prod)", "Auto right-size non-prod (preprod~50% · uat~40% · dev/test~30% of prod)"))}
-              </label>
+              <div className="space-y-2">
+                <label className="flex items-start gap-2 text-xs text-neutral-600">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={spec.rightsizeNonProd !== false}
+                    onChange={(e) => onChange({ ...spec, rightsizeNonProd: e.target.checked })}
+                  />
+                  {t(L("ลดสเปก non-prod อัตโนมัติ (แนะนำ: preprod 50% · uat 40% · dev/test 30%)", "Auto right-size non-prod (preprod 50% · uat 40% · dev/test 30%)"))}
+                </label>
+                <div>
+                  <div className="mb-1 text-xs font-medium text-neutral-600">{t(L("ปรับ scale ต่อ environment (% ของ prod)", "Custom scale per environment (% of prod)"))}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {orderEnvs(spec.environments).map((env) => {
+                      const isProd = env === "prod";
+                      const pct = Math.round(envScale(spec, env) * 100);
+                      return (
+                        <label key={env} className="flex items-center gap-1 rounded-lg border border-neutral-200 px-2 py-1 text-xs">
+                          <span className="text-neutral-500">{env}</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={100}
+                            disabled={isProd}
+                            className="w-12 rounded border border-neutral-300 px-1 py-0.5 text-right disabled:bg-neutral-100 disabled:text-neutral-400"
+                            value={isProd ? 100 : pct}
+                            onChange={(e) =>
+                              onChange({
+                                ...spec,
+                                envScalePct: { ...spec.envScalePct, [env]: Math.max(1, Math.min(100, Math.round(Number(e.target.value) || 0))) },
+                              })
+                            }
+                          />
+                          <span className="text-neutral-400">%</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
             ) : null}
           </div>
         </div>
@@ -337,6 +374,34 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
                 onChange={(e) => numTraffic("traffic.wafRequestsM", e)}
               />
               <p className="mt-0.5 text-[11px] text-neutral-500">{t(L("10M แรกฟรี", "first 10M free"))}</p>
+            </div>
+          ) : null}
+          {caps.hasObjectStorage ? (
+            <div>
+              <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("Object Storage requests (ล้าน/เดือน)", "Object Storage requests (M/month)"))}</label>
+              <input
+                type="number"
+                min={0}
+                max={1000000}
+                className="w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-sm"
+                value={Number(traffic.objectRequestsMPerMonth ?? caps.objReqM)}
+                onChange={(e) => numTraffic("traffic.objectRequestsMPerMonth", e)}
+              />
+              <p className="mt-0.5 text-[11px] text-neutral-500">{t(L("คิดต่อ 10,000 requests", "billed per 10,000 requests"))}</p>
+            </div>
+          ) : null}
+          {caps.hasStreaming ? (
+            <div>
+              <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("Streaming throughput (GB/เดือน)", "Streaming throughput (GB/month)"))}</label>
+              <input
+                type="number"
+                min={0}
+                max={100000000}
+                className="w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-sm"
+                value={Number(traffic.streamingGbPerMonth ?? caps.streamGb)}
+                onChange={(e) => numTraffic("traffic.streamingGbPerMonth", e)}
+              />
+              <p className="mt-0.5 text-[11px] text-neutral-500">{t(L("PUT/GET data", "PUT/GET data"))}</p>
             </div>
           ) : null}
         </div>

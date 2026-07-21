@@ -40,6 +40,7 @@ export const CATALOG: Record<string, CatalogEntry> = Object.fromEntries(
       // --- storage -------------------------------------------------------
       { key: "fss_gb", sku: "B89057", name: { th: "File Storage Service — ความจุ", en: "File Storage Service — capacity" } },
       { key: "os_standard_gb", sku: "B91628", name: { th: "Object Storage — Standard", en: "Object Storage — Standard" } },
+      { key: "os_requests_10k", sku: "B91627", name: { th: "Object Storage — API requests (ต่อ 10,000)", en: "Object Storage — API requests (per 10,000)" } },
       { key: "os_ia_gb", sku: "B93000", name: { th: "Object Storage — Infrequent Access", en: "Object Storage — Infrequent Access" } },
       { key: "os_archive_gb", sku: "B91633", name: { th: "Object Storage — Archive", en: "Object Storage — Archive" } },
       { key: "os_ia_retrieval_gb", sku: "B93001", name: { th: "Infrequent Access — data retrieval", en: "Infrequent Access — data retrieval" } },

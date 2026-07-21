@@ -28,6 +28,8 @@ const trafficSchema = z
     nfwDataGbPerMonth: z.number().int().min(0).max(10000000).optional(),
     egressGbPerMonth: z.number().int().min(0).max(10000000).optional(),
     wafRequestsM: z.number().int().min(0).max(100000).optional(),
+    objectRequestsMPerMonth: z.number().int().min(0).max(1000000).optional(),
+    streamingGbPerMonth: z.number().int().min(0).max(100000000).optional(),
   })
   .optional();
 
@@ -214,6 +216,16 @@ export const solutionSpecSchema = z.object({
     .min(1)
     .max(4),
   rightsizeNonProd: z.boolean().optional(),
+  envScalePct: z
+    .object({
+      prod: z.number().int().min(1).max(100).optional(),
+      preprod: z.number().int().min(1).max(100).optional(),
+      staging: z.number().int().min(1).max(100).optional(),
+      uat: z.number().int().min(1).max(100).optional(),
+      dev: z.number().int().min(1).max(100).optional(),
+      test: z.number().int().min(1).max(100).optional(),
+    })
+    .optional(),
   sizing: z.discriminatedUnion("kind", [
     webAppSizing, chatbotSizing, drSizing, backupSizing,
     erpSizing, migrationSizing, analyticsSizing, devtestSizing, okePlatformSizing,

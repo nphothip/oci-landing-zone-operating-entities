@@ -42,7 +42,6 @@ export const streamingTemplate: TemplateDefinition = {
     };
   },
   knobs: [
-    { path: "sizing.throughputGbPerMonth", label: { th: "ปริมาณข้อมูลต่อเดือน (GB)", en: "Data throughput per month (GB)" }, input: { type: "number", min: 0, max: 10000000, step: 100, unit: "GB" } },
     { path: "sizing.retentionGb", label: { th: "Retention storage (GB)", en: "Retention storage (GB)" }, input: { type: "number", min: 0, max: 500000, step: 50, unit: "GB" } },
     { path: "sizing.consumerVmCount", label: { th: "Consumer/processing VM", en: "Consumer/processing VMs" }, input: { type: "number", min: 0, max: 30, unit: "VM" } },
     { path: "sizing.consumerOcpus", label: { th: "OCPU ต่อ consumer", en: "OCPUs per consumer" }, input: { type: "number", min: 1, max: 32, unit: "OCPU" }, visibleIf: (s) => sizing(s).consumerVmCount > 0 },
