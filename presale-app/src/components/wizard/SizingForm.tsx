@@ -8,8 +8,6 @@ import { envScale } from "@/lib/bom/env";
 import { orderEnvs } from "@/lib/domain/cidr";
 import { L, useLang } from "@/lib/i18n";
 
-const PEAK_FACTORS = [1.5, 2, 3];
-
 const HUBS: { value: HubKind; label: { th: string; en: string }; cost: { th: string; en: string } }[] = [
   { value: "hub_a", label: L("Hub A — NFW คู่ (HA)", "Hub A — dual NFW (HA)"), cost: L("~฿229,200/เดือน (FW)", "~฿229,200/mo (FW)") },
   { value: "hub_b", label: L("Hub B — NFW เดี่ยว", "Hub B — single NFW"), cost: L("~฿114,600/เดือน (FW)", "~฿114,600/mo (FW)") },
@@ -53,6 +51,7 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
       egressGb: q("egress_apac_gb") ?? 0,
       objReqM: q("os_requests_10k") ?? 0,
       streamGb: q("streaming_gb") ?? 5000,
+      dbBaseEcpu: q("adb_ecpu") ?? q("adw_ecpu") ?? 0,
     };
   }, [template, spec]);
   const burst = spec.burst ?? {};
@@ -292,18 +291,19 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
                   <div className="ml-6 space-y-2">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("Peak ECPUs (เท่าของ ECPU Count)", "Peak ECPUs (× ECPU Count)"))}</label>
-                        <select
+                        <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("Peak ECPUs", "Peak ECPUs"))}</label>
+                        <input
+                          type="number"
+                          min={caps.dbBaseEcpu}
+                          max={caps.dbBaseEcpu * 3}
                           className="w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-sm"
-                          value={String(burst.dbPeakFactor ?? 3)}
-                          onChange={(e) => onChange(setPath(spec, "burst.dbPeakFactor", Number(e.target.value)))}
-                        >
-                          {PEAK_FACTORS.map((f) => (
-                            <option key={f} value={f}>
-                              {f}×
-                            </option>
-                          ))}
-                        </select>
+                          value={Math.round((burst.dbPeakFactor ?? 3) * caps.dbBaseEcpu)}
+                          onChange={(e) => {
+                            const peak = Math.max(caps.dbBaseEcpu, Math.min(caps.dbBaseEcpu * 3, Math.round(Number(e.target.value) || 0)));
+                            onChange(setPath(spec, "burst.dbPeakFactor", caps.dbBaseEcpu > 0 ? peak / caps.dbBaseEcpu : 1));
+                          }}
+                        />
+                        <p className="mt-0.5 text-[11px] text-neutral-500">{t(L(`ECPU Count (baseline) = ${caps.dbBaseEcpu} · สูงสุด 3× = ${caps.dbBaseEcpu * 3}`, `ECPU Count (baseline) = ${caps.dbBaseEcpu} · max 3× = ${caps.dbBaseEcpu * 3}`))}</p>
                       </div>
                       <div>
                         <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("% ของเดือนที่เกิน ECPU Count", "% of month above ECPU Count"))}</label>

@@ -61,4 +61,17 @@ describe("applyBurst", () => {
     const bom = priceBom(finalizeBom(applyBurst(spec, aisItems)));
     expect(bom.totals.monthlyThb).toBeCloseTo(252691.19, 2);
   });
+
+  // At the ECPU floor the AIS calculator bills 2 ECPUs for 100% of the month
+  // (peak = baseline = the 2-ECPU minimum ⇒ autoscaling adds nothing). ATP
+  // Serverless, 1000 GB storage → 29,093.65 THB.
+  it("reproduces the AIS calculator total at the ECPU floor (peak = baseline = 2)", () => {
+    const aisItems: BomItem[] = [
+      { catalogKey: "adb_ecpu", label: { th: "ATP", en: "ATP" }, category: "database", quantity: 2, unit: "ECPU", monthlyMetricQty: 2 * 744, deployedByLz: false },
+      { catalogKey: "adb_storage_gb", label: { th: "storage", en: "storage" }, category: "database", quantity: 1000, unit: "GB", monthlyMetricQty: 1000, deployedByLz: false },
+    ];
+    // peak = baseline ⇒ no burst (equivalent to autoscaling off)
+    const bom = priceBom(finalizeBom(applyBurst(TEMPLATES.web_app.defaults(), aisItems)));
+    expect(bom.totals.monthlyThb).toBeCloseTo(29093.65, 2);
+  });
 });
