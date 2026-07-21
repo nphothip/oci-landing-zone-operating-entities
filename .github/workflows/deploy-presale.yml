@@ -1,0 +1,75 @@
+name: Deploy presale-app to Cloud Run
+
+# Auto-deploy presale-app to Cloud Run (project pkru-vocab-quiz, region asia-southeast3/Bangkok).
+# Auth = Workload Identity Federation (keyless, locked to this repo) — no secrets stored in GitHub.
+# NOTE: this builds the COMMITTED code from git, not your local working tree.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "presale-app/**"
+      - "gen/**"
+      - ".github/workflows/deploy-presale.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  id-token: write # required to mint the OIDC token for WIF
+
+env:
+  PROJECT_ID: pkru-vocab-quiz
+  REGION: asia-southeast3
+  SERVICE: presale-app
+  AR_HOST: asia-southeast3-docker.pkg.dev
+  AR_REPO: presale
+  IMAGE_NAME: oci-presale-app
+  RUNTIME_SA: presale-run@pkru-vocab-quiz.iam.gserviceaccount.com
+  DEPLOYER_SA: gh-deployer@pkru-vocab-quiz.iam.gserviceaccount.com
+  WIF_PROVIDER: projects/750158050943/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOYER_SA }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "$AR_HOST" --quiet
+
+      - name: Build and push image
+        run: |
+          IMAGE="${AR_HOST}/${PROJECT_ID}/${AR_REPO}/${IMAGE_NAME}:${GITHUB_SHA::12}"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          # The Dockerfile COPYs both gen/ and presale-app/, so the build context is the repo root.
+          docker build -f presale-app/Dockerfile -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy "$SERVICE" \
+            --image="$IMAGE" \
+            --region="$REGION" \
+            --service-account="$RUNTIME_SA" \
+            --allow-unauthenticated \
+            --port=3000 \
+            --cpu=1 --memory=1Gi \
+            --min-instances=0 --max-instances=3 \
+            --timeout=600 \
+            --set-env-vars="^@^LLM_PROVIDER=openai@GEMINI_PROJECT_ID=pkru-vocab-quiz@GEMINI_LOCATION=us-central1@GEMINI_MODEL=gemini-3.1-pro-preview@OPENAI_MODEL=gpt-5.6-sol@PRICE_TTL_HOURS=24@GOOGLE_APPLICATION_CREDENTIALS=/secrets/gcp-service-account.json" \
+            --set-secrets="OPENAI_API_KEY=openai-api-key:latest,/secrets/gcp-service-account.json=gcp-service-account:latest" \
+            --quiet
+
+      - name: Show service URL
+        run: gcloud run services describe "$SERVICE" --region="$REGION" --format="value(status.url)"
