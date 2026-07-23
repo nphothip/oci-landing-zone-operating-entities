@@ -20,7 +20,7 @@ export function normalizeWire(wire: WireResult):
   | { ok: false; message: string } {
   const template = oneOf<TemplateId>(
     wire.template,
-    ["web_app", "chatbot", "dr", "backup", "erp", "migration", "analytics", "devtest", "oke_platform", "ecommerce", "fileserver", "vdi", "serverless", "streaming"],
+    ["web_app", "chatbot", "dr", "backup", "erp", "migration", "analytics", "devtest", "oke_platform", "ecommerce", "fileserver", "vdi", "serverless", "streaming", "enterprise_lz"],
     "web_app",
   );
   const spec = TEMPLATES[template].defaults();

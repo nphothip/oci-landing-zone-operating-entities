@@ -187,6 +187,46 @@ const serverlessSizing = z.object({
   objectStorageGb: z.number().int().min(0).max(1000000),
 });
 
+const envNameEnum = z.enum(["prod", "preprod", "staging", "uat", "dev", "test"]);
+
+const enterpriseProject = z.object({
+  // lowercase alphanumeric, starts with a letter, <= 10 chars (generator
+  // dns_label budget; see gen/ naming asserts)
+  name: z.string().regex(/^[a-z][a-z0-9]{0,9}$/),
+  vmCount: z.number().int().min(0).max(100),
+  ocpusPerVm: z.number().int().min(1).max(64),
+  memGbPerVm: z.number().int().min(1).max(1024),
+  bootGbPerVm: z.number().int().min(50).max(2000),
+  dbEngine: z.enum(["adb", "base_db", "none"]),
+  dbEcpus: z.number().int().min(2).max(512),
+  dbStorageGb: z.number().int().min(20).max(100000),
+  objectStorageGb: z.number().int().min(0).max(10000000),
+});
+
+const enterpriseEnvPlan = z.object({
+  projects: z.array(enterpriseProject).min(1).max(8),
+  oke: z.boolean(),
+  okeWorkerCount: z.number().int().min(1).max(100),
+  okeWorkerOcpus: z.number().int().min(1).max(64),
+  okeWorkerMemGb: z.number().int().min(4).max(1024),
+});
+
+const enterpriseLzSizing = z.object({
+  kind: z.literal("enterprise_lz"),
+  plans: z
+    .object({
+      prod: enterpriseEnvPlan.optional(),
+      preprod: enterpriseEnvPlan.optional(),
+      staging: enterpriseEnvPlan.optional(),
+      uat: enterpriseEnvPlan.optional(),
+      dev: enterpriseEnvPlan.optional(),
+      test: enterpriseEnvPlan.optional(),
+    }),
+  securityTargetEnvs: z.array(envNameEnum).max(6),
+  fssGb: z.number().int().min(0).max(1000000),
+  lbBandwidthMbps: z.number().int().min(10).max(8000),
+});
+
 const streamingSizing = z.object({
   kind: z.literal("streaming"),
   throughputGbPerMonth: z.number().int().min(0).max(100000000),
@@ -198,7 +238,7 @@ const streamingSizing = z.object({
 });
 
 export const solutionSpecSchema = z.object({
-  template: z.enum(["web_app", "chatbot", "dr", "backup", "erp", "migration", "analytics", "devtest", "oke_platform", "ecommerce", "fileserver", "vdi", "serverless", "streaming"]),
+  template: z.enum(["web_app", "chatbot", "dr", "backup", "erp", "migration", "analytics", "devtest", "oke_platform", "ecommerce", "fileserver", "vdi", "serverless", "streaming", "enterprise_lz"]),
   customerName: z.string().max(120).optional(),
   region: regionSchema,
   burst: burstSchema,
@@ -231,6 +271,7 @@ export const solutionSpecSchema = z.object({
     webAppSizing, chatbotSizing, drSizing, backupSizing,
     erpSizing, migrationSizing, analyticsSizing, devtestSizing, okePlatformSizing,
     ecommerceSizing, fileserverSizing, vdiSizing, serverlessSizing, streamingSizing,
+    enterpriseLzSizing,
   ]),
   assumptionNotes: z.array(z.string().max(500)).max(30),
 }).superRefine((spec, ctx) => {

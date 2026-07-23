@@ -9,7 +9,7 @@ import { FreeTextPanel } from "@/components/wizard/FreeTextPanel";
 import { ResultView } from "@/components/results/ResultView";
 import { L, LangProvider, useLang } from "@/lib/i18n";
 
-type Mode = "template" | "freetext";
+type Mode = "template" | "freetext" | "enterprise";
 
 function Studio() {
   const { lang, setLang, t } = useLang();
@@ -76,6 +76,7 @@ function Studio() {
           [
             { id: "template", label: L("เลือกจาก Template", "Pick a template") },
             { id: "freetext", label: L("พิมพ์อธิบาย (AI)", "Describe it (AI)") },
+            { id: "enterprise", label: L("Advanced (Enterprise)", "Advanced (Enterprise)") },
           ] as { id: Mode; label: { th: string; en: string } }[]
         ).map((m) => (
           <button
@@ -91,7 +92,7 @@ function Studio() {
       <div className="space-y-5">
         {mode === "template" ? (
           <TemplateGallery selected={spec?.template ?? null} onSelect={pickTemplate} />
-        ) : (
+        ) : mode === "freetext" ? (
           <FreeTextPanel
             onSpec={(s, note) => {
               setSpec(s);
@@ -99,6 +100,26 @@ function Studio() {
               setResult(null);
             }}
           />
+        ) : (
+          <div className="rounded-xl border border-neutral-200 bg-white p-4">
+            <h3 className="text-sm font-semibold text-neutral-700">{t(L("Enterprise Landing Zone — professional service", "Enterprise Landing Zone — professional service"))}</h3>
+            <p className="mt-1 text-sm text-neutral-600">
+              {t(
+                L(
+                  "ออกแบบ landing zone เต็มรูปแบบตาม OCI Open LZ best practice — หลาย environment · หลาย project ต่อ env (compartment + NSG แยก) · OKE platform · Security Zones · เอกสารออกแบบครบ 5 views · แพ็กเกจ IaC พร้อม deploy",
+                  "Design a full landing zone per OCI Open LZ best practice — multiple environments · multiple projects per env (isolated compartments + NSGs) · OKE platforms · Security Zones · complete 5-view design doc · deploy-ready IaC package",
+                ),
+              )}
+            </p>
+            {spec?.template !== "enterprise_lz" ? (
+              <button
+                onClick={() => pickTemplate("enterprise_lz")}
+                className="mt-3 rounded-lg bg-[#C74634] px-4 py-2 text-sm font-semibold text-white shadow"
+              >
+                {t(L("เริ่มออกแบบ Enterprise LZ", "Start the Enterprise LZ design"))}
+              </button>
+            ) : null}
+          </div>
         )}
 
         {aiNote && spec ? (

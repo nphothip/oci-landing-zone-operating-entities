@@ -4,6 +4,7 @@ import { parseSolutionSpec } from "@/lib/domain/spec-schema";
 import { buildFactoryConfig } from "@/lib/factory/config-builder";
 import { runGenerator } from "@/lib/factory/run-generator";
 import { buildLacReadme } from "@/lib/factory/readme-template";
+import { buildDeployBundle } from "@/lib/factory/deploy-bundle";
 import { TEMPLATES } from "@/lib/templates";
 import { finalizeBom, applyEnvOverride } from "@/lib/bom/env";
 import { applyBurst, burstAssumptions } from "@/lib/bom/burst";
@@ -54,6 +55,9 @@ export async function POST(req: Request): Promise<NextResponse> {
     ...gen.files,
   ];
   files.push({ path: "README.md", content: buildLacReadme(spec, gen.files, assumptions) });
+  // Deploy-ready bundle (orchestrator scripts + runbook) — names stripped of generated/ prefix
+  const genNames = gen.files.map((f) => f.path.replace(/^generated\//, ""));
+  files.push(...buildDeployBundle(spec, genNames));
 
   const result: GenerateResult = {
     spec,

@@ -7,6 +7,13 @@ import { Doc, addLegend } from "../model";
 // in workload-environment green, and «guillemet» labels on the connectors.
 
 const WORKLOAD_BLOCKS: Record<TemplateId, { label: string; sub?: string; icon: string }[]> = {
+  enterprise_lz: [
+    { label: "Public ingress", sub: "hub LB (+NFW inspection)", icon: "lb" },
+    { label: "Project workloads", sub: "per-project compartments + NSGs", icon: "compute" },
+    { label: "Databases", sub: "ADB / Base DB per project", icon: "db" },
+    { label: "OKE platform", sub: "container platform per env", icon: "k8s" },
+    { label: "Shared storage", sub: "FSS · Object Storage", icon: "archive" },
+  ],
   web_app: [
     { label: "Public ingress", sub: "hub LB (+WAF)", icon: "lb" },
     { label: "Web / App tier", sub: "VM.Standard.E5.Flex", icon: "compute" },

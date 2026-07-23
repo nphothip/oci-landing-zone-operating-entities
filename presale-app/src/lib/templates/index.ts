@@ -13,8 +13,10 @@ import { fileserverTemplate } from "./fileserver";
 import { vdiTemplate } from "./vdi";
 import { serverlessTemplate } from "./serverless";
 import { streamingTemplate } from "./streaming";
+import { enterpriseLzTemplate } from "./enterprise-lz";
 
 export const TEMPLATES: Record<TemplateId, TemplateDefinition> = {
+  enterprise_lz: enterpriseLzTemplate,
   web_app: webAppTemplate,
   ecommerce: ecommerceTemplate,
   erp: erpTemplate,
@@ -31,7 +33,8 @@ export const TEMPLATES: Record<TemplateId, TemplateDefinition> = {
   backup: backupTemplate,
 };
 
-/** Display order for the template gallery (most common SME deals first). */
+/** Display order for the template gallery (most common SME deals first).
+ *  enterprise_lz is NOT in the gallery — it has its own Advanced mode tab. */
 export const TEMPLATE_LIST: TemplateDefinition[] = [
   webAppTemplate,
   ecommerceTemplate,

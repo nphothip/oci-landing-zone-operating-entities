@@ -8,6 +8,13 @@ import type { ParsedGenerated } from "../generated-parse";
 // flow as white icon tiles with orthogonal arrows.
 
 const FLOWS: Record<TemplateId, { label: string; sub?: string; icon: string }[]> = {
+  enterprise_lz: [
+    { label: "Users / branches", icon: "user" },
+    { label: "Hub", sub: "LB + NFW inspection", icon: "lb" },
+    { label: "Project web NSG", sub: "env spoke VCN", icon: "shield" },
+    { label: "App tier", sub: "VMs / OKE pods", icon: "compute" },
+    { label: "Data tier", sub: "ADB / Base DB per project", icon: "db" },
+  ],
   web_app: [
     { label: "Users", icon: "user" },
     { label: "Hub LB", sub: "public ingress", icon: "lb" },

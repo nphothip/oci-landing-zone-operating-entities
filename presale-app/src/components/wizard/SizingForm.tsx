@@ -6,6 +6,7 @@ import { TEMPLATES } from "@/lib/templates";
 import { getPath, setPath } from "@/lib/domain/path";
 import { envScale } from "@/lib/bom/env";
 import { orderEnvs } from "@/lib/domain/cidr";
+import { EnterprisePlanEditor } from "./EnterprisePlanEditor";
 import { L, useLang } from "@/lib/i18n";
 
 const HUBS: { value: HubKind; label: { th: string; en: string }; cost: { th: string; en: string } }[] = [
@@ -199,11 +200,12 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
         </div>
       </section>
 
-      {/* template knobs */}
+      {/* template knobs (enterprise gets its dedicated plan editor) */}
       <section className="rounded-xl border border-neutral-200 bg-white p-4">
         <h3 className="mb-3 text-sm font-semibold text-neutral-700">
           {t(L("ขนาดของ workload", "Workload sizing"))} — {t(template.name)}
         </h3>
+        {spec.sizing.kind === "enterprise_lz" ? <EnterprisePlanEditor spec={spec} onChange={onChange} /> : null}
         <div className="grid gap-x-6 gap-y-3 md:grid-cols-2">
           {template.knobs
             .filter((k) => !k.visibleIf || k.visibleIf(spec))

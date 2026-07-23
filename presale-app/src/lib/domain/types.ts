@@ -21,7 +21,8 @@ export type TemplateId =
   | "fileserver"
   | "vdi"
   | "serverless"
-  | "streaming";
+  | "streaming"
+  | "enterprise_lz";
 export type HubKind = "hub_a" | "hub_b" | "hub_c" | "hub_e";
 export type CisLevel = 1 | 2;
 // Environment names the generator orders canonically (gen/topology.libsonnet).
@@ -232,6 +233,44 @@ export interface StreamingSizing {
   adwStorageGb: number;
 }
 
+// --- Advanced mode (enterprise landing zone, professional-service sale) ----
+
+export interface EnterpriseProjectPlan {
+  /** Project/compartment name — lowercase alphanumeric, <= 10 chars (generator
+   *  dns_label budget). Becomes cmp-lz-<env>-<name> + per-project web/app/db NSGs. */
+  name: string;
+  vmCount: number;
+  ocpusPerVm: number;
+  memGbPerVm: number;
+  bootGbPerVm: number;
+  dbEngine: "adb" | "base_db" | "none";
+  dbEcpus: number;
+  dbStorageGb: number;
+  objectStorageGb: number;
+}
+
+export interface EnterpriseEnvPlan {
+  /** Projects sharing this env's spoke VCN (isolated by compartment + NSGs). */
+  projects: EnterpriseProjectPlan[];
+  /** Add an OKE platform VCN (/20, oke_simple) to this environment. */
+  oke: boolean;
+  okeWorkerCount: number;
+  okeWorkerOcpus: number;
+  okeWorkerMemGb: number;
+}
+
+export interface EnterpriseLzSizing {
+  kind: "enterprise_lz";
+  /** Per-environment plan, keyed by env; an env without a plan gets a default. */
+  plans: Partial<Record<EnvName, EnterpriseEnvPlan>>;
+  /** Environments that get a Security Zone target (empty = ALL environments). */
+  securityTargetEnvs: EnvName[];
+  /** Shared file storage (FSS) capacity in GB (0 = none). */
+  fssGb: number;
+  /** Hub load-balancer bandwidth (Mbps). */
+  lbBandwidthMbps: number;
+}
+
 export type Sizing =
   | WebAppSizing
   | ChatbotSizing
@@ -246,7 +285,8 @@ export type Sizing =
   | FileserverSizing
   | VdiSizing
   | ServerlessSizing
-  | StreamingSizing;
+  | StreamingSizing
+  | EnterpriseLzSizing;
 
 // ---------------------------------------------------------------------------
 // SolutionSpec

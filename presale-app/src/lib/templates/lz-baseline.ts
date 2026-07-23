@@ -63,9 +63,12 @@ export function lzBaselineBom(spec: SolutionSpec): BomItem[] {
   // --- hub public load balancer --------------------------------------------
   // The generator ships a sample hub LB only for spoke-based designs; when an
   // OKE platform is present it omits it (ingress via the OKE int-lb subnet).
+  const sz = spec.sizing;
+  const enterpriseOke = sz.kind === "enterprise_lz" && spec.environments.some((env) => sz.plans[env]?.oke);
   const lzShipsHubLb =
     spec.template !== "oke_platform" &&
-    !(spec.template === "chatbot" && spec.sizing.kind === "chatbot" && spec.sizing.runtime === "oke");
+    !(spec.template === "chatbot" && spec.sizing.kind === "chatbot" && spec.sizing.runtime === "oke") &&
+    !enterpriseOke;
   items.push({
     catalogKey: "lb_base",
     label: { th: "Flexible Load Balancer (hub public ingress)", en: "Flexible Load Balancer (hub public ingress)" },
