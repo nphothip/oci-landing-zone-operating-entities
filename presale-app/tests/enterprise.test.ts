@@ -99,6 +99,52 @@ describe("enterprise_lz template", () => {
     expect(files[3].content).toContain("ap-bangkok-1");
   });
 
+  it("uniquifies duplicate project names — config keeps BOTH projects, BOM labels match", () => {
+    const spec = tpl.defaults();
+    if (spec.sizing.kind === "enterprise_lz") {
+      spec.sizing.plans.prod!.projects = [
+        { name: "core", vmCount: 2, ocpusPerVm: 2, memGbPerVm: 16, bootGbPerVm: 100, dbEngine: "adb", dbEcpus: 4, dbStorageGb: 100, objectStorageGb: 0 },
+        { name: "core", vmCount: 1, ocpusPerVm: 1, memGbPerVm: 8, bootGbPerVm: 100, dbEngine: "none", dbEcpus: 2, dbStorageGb: 20, objectStorageGb: 0 },
+      ];
+    }
+    const res = buildFactoryConfig(spec);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(Object.keys(res.config.environments.prod.projects ?? {})).toEqual(["core", "core2"]);
+    const labels = tpl.buildBom(spec).map((i) => i.label.en);
+    expect(labels.some((l) => l.includes("«core»"))).toBe(true);
+    expect(labels.some((l) => l.includes("«core2»"))).toBe(true);
+  });
+
+  it("applyEnvOverride touches only the FIRST line per (env, catalogKey)", async () => {
+    const { applyEnvOverride, finalizeBom: fin } = await import("@/lib/bom/env");
+    const spec = { ...tpl.defaults(), envOverride: { prod: { compute_e5_ocpu: 20 } } };
+    const items = fin(tpl.buildBom(spec));
+    const out = applyEnvOverride(spec, items);
+    const prodOcpu = out.filter((i) => i.env === "prod" && i.catalogKey === "compute_e5_ocpu");
+    expect(prodOcpu.length).toBeGreaterThan(1); // multi-project + OKE workers
+    expect(prodOcpu[0].quantity).toBe(20); // first line overridden
+    const before = items.filter((i) => i.env === "prod" && i.catalogKey === "compute_e5_ocpu");
+    for (let i = 1; i < prodOcpu.length; i++) expect(prodOcpu[i].quantity).toBe(before[i].quantity); // rest untouched
+  });
+
+  it("excludes network_backends.json (Hub C) from stage 1", () => {
+    const spec = tpl.defaults();
+    spec.hub.kind = "hub_c";
+    const gen = ["iam.json", "governance.json", "network.json", "network_pre.json", "network_backends.json", "security_cis2.json", "security_cis2_pre.json"];
+    const files = buildDeployBundle(spec, gen);
+    const md = files[0].content;
+    expect(md).toContain("**Step 1 applies:** iam.json, governance.json, network_pre.json, security_cis2_pre.json");
+    expect(md).toContain("**Step 2 applies:** iam.json, governance.json, network.json, network_backends.json, security_cis2.json");
+    expect(files[1].content).toContain('network_backends.json" ] && continue');
+    expect(files[2].content).toContain('"network_backends.json"');
+  });
+
+  it("does not claim %-based right-sizing in the enterprise assumptions", () => {
+    const texts = tpl.assumptions(tpl.defaults()).map((a) => a.en);
+    expect(texts.some((x) => x.includes("right-sized down"))).toBe(false);
+  });
+
   it("deploy bundle single-run when no *_pre files (hub_e style)", () => {
     const spec = tpl.defaults();
     spec.hub.kind = "hub_e";

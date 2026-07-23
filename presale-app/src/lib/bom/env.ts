@@ -80,10 +80,18 @@ export function pinEnv(items: BomItem[], env: string): BomItem[] {
 export function applyEnvOverride(spec: SolutionSpec, items: BomItem[]): BomItem[] {
   const ov = spec.envOverride;
   if (!ov) return items;
+  // Only the FIRST line per (env, catalogKey) is overridden: multi-project
+  // BOMs (enterprise) and burst-generated sibling lines share catalog keys,
+  // and rewriting every match would silently multiply the override.
+  const seen = new Set<string>();
   return items.map((item) => {
     if (!item.env) return item;
     const val = ov[item.env as EnvName]?.[item.catalogKey];
-    if (val == null || val === item.quantity) return item;
+    if (val == null) return item;
+    const key = `${item.env}|${item.catalogKey}`;
+    if (seen.has(key)) return item;
+    seen.add(key);
+    if (val === item.quantity) return item;
     const metric = item.quantity > 0 ? (item.monthlyMetricQty / item.quantity) * val : val;
     return { ...item, quantity: val, monthlyMetricQty: metric };
   });

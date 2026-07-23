@@ -75,7 +75,12 @@ export function buildDesignFacts(result: GenerateResult): DesignFacts {
 
   const workloadComponents = bom.items
     .filter((i) => i.category !== "landing_zone" && i.category !== "security" && i.category !== "observability")
-    .filter((i, idx, arr) => arr.findIndex((x) => x.catalogKey === i.catalogKey) === idx)
+    // Dedupe by catalogKey + label (env suffix stripped) so multi-project
+    // BOMs («core» vs «digital» lines share catalog keys) keep every project.
+    .filter(
+      (i, idx, arr) =>
+        arr.findIndex((x) => x.catalogKey === i.catalogKey && stripEnvSuffix(x.label.en) === stripEnvSuffix(i.label.en)) === idx,
+    )
     .slice(0, 8)
     .map((i) => ({ label: stripEnvSuffix(i.label.en), detail: `${i.quantity.toLocaleString()} ${i.unit}`, deployedByLz: i.deployedByLz }));
 

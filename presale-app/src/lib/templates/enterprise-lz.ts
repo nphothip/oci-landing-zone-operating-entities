@@ -63,6 +63,27 @@ function safeName(raw: string, idx: number): string {
   return /^[a-z]/.test(cleaned) ? cleaned : `app${idx + 1}`;
 }
 
+/**
+ * Unique generator-safe names for a plan's projects (order-preserving).
+ * Duplicate names would silently collapse in the config's project MAP while
+ * the BOM (an array) still priced both — so both buildFactoryConfig and
+ * buildBom MUST use this same list to stay in agreement.
+ */
+function uniqueProjectNames(projects: { name: string }[]): string[] {
+  const used = new Set<string>();
+  return projects.map((p, i) => {
+    const base = safeName(p.name, i);
+    let name = base;
+    let n = 2;
+    while (used.has(name)) {
+      const suffix = String(n++);
+      name = base.slice(0, 10 - suffix.length) + suffix;
+    }
+    used.add(name);
+    return name;
+  });
+}
+
 /** True when any selected environment has an OKE platform. */
 export function enterpriseHasOke(spec: SolutionSpec): boolean {
   if (spec.sizing.kind !== "enterprise_lz") return false;
@@ -141,7 +162,7 @@ export const enterpriseLzTemplate: TemplateDefinition = {
         // Every env gets a spoke VCN with auto web/app/db/infra subnets shared
         // by its projects (per-project isolation = compartments + NSGs).
         shared_project_network: { network: { vcn: envBlocks(env).spoke } },
-        projects: Object.fromEntries(plan.projects.map((p, i) => [safeName(p.name, i), {}])),
+        projects: Object.fromEntries(uniqueProjectNames(plan.projects).map((n) => [n, {}])),
       };
       if (plan.oke) {
         cfg.platforms = {
@@ -206,8 +227,9 @@ export const enterpriseLzTemplate: TemplateDefinition = {
       const plan = planFor(s, env);
       const envItems: BomItem[] = [];
 
+      const projectNames = uniqueProjectNames(plan.projects);
       for (const [i, p] of plan.projects.entries()) {
-        const name = safeName(p.name, i);
+        const name = projectNames[i];
         if (p.vmCount > 0) {
           envItems.push(
             {

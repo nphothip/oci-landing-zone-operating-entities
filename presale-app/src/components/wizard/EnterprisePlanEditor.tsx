@@ -27,9 +27,30 @@ export function EnterprisePlanEditor({ spec, onChange }: { spec: SolutionSpec; o
     setPlan(env, { ...plan, projects });
   };
   const num = (v: string, min: number, max: number) => Math.max(min, Math.min(max, Math.round(Number(v) || 0)));
-  const safeProjectName = (raw: string, idx: number) => {
-    const cleaned = raw.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 10);
-    return /^[a-z]/.test(cleaned) ? cleaned : `app${idx + 1}`;
+  // While typing: only strip invalid characters. Invalid/empty/duplicate names
+  // are fixed on blur so keystrokes are never hijacked mid-edit.
+  const cleanName = (raw: string) => raw.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 10);
+  const fixupName = (env: EnvName, idx: number) => {
+    const plan = planOf(env);
+    const p = plan.projects[idx];
+    const taken = plan.projects.filter((_, j) => j !== idx).map((x) => x.name);
+    let name = /^[a-z]/.test(p.name) ? p.name : "";
+    if (!name) {
+      let n = idx + 1;
+      while (taken.includes(`app${n}`)) n++;
+      name = `app${n}`;
+    } else if (taken.includes(name)) {
+      let n = 2;
+      while (taken.includes(`${name.slice(0, 10 - String(n).length)}${n}`)) n++;
+      name = `${name.slice(0, 10 - String(n).length)}${n}`;
+    }
+    if (name !== p.name) setProject(env, idx, { name });
+  };
+  const nextProjectName = (env: EnvName) => {
+    const taken = planOf(env).projects.map((p) => p.name);
+    let n = 1;
+    while (taken.includes(`app${n}`)) n++;
+    return `app${n}`;
   };
 
   return (
@@ -53,8 +74,9 @@ export function EnterprisePlanEditor({ spec, onChange }: { spec: SolutionSpec; o
                       <input
                         className="w-32 rounded-lg border border-neutral-300 px-2 py-1 font-mono text-sm"
                         value={p.name}
-                        onChange={(e) => setProject(env, i, { name: safeProjectName(e.target.value, i) })}
-                        title={t(L("a-z, 0-9 สูงสุด 10 ตัวอักษร (ข้อจำกัด DNS label ของ generator)", "a-z, 0-9, max 10 chars (generator DNS-label limit)"))}
+                        onChange={(e) => setProject(env, i, { name: cleanName(e.target.value) })}
+                        onBlur={() => fixupName(env, i)}
+                        title={t(L("a-z, 0-9 สูงสุด 10 ตัวอักษร ห้ามซ้ำใน env (ข้อจำกัด DNS label ของ generator)", "a-z, 0-9, max 10 chars, unique per env (generator DNS-label limit)"))}
                       />
                     </label>
                     {plan.projects.length > 1 ? (
@@ -94,7 +116,7 @@ export function EnterprisePlanEditor({ spec, onChange }: { spec: SolutionSpec; o
                   onClick={() =>
                     setPlan(env, {
                       ...plan,
-                      projects: [...plan.projects, { ...defaultEnvPlan(env).projects[0], name: `app${plan.projects.length + 1}` }],
+                      projects: [...plan.projects, { ...defaultEnvPlan(env).projects[0], name: nextProjectName(env) }],
                     })
                   }
                   className="rounded-lg border border-dashed border-neutral-300 px-3 py-1.5 text-xs text-neutral-600 hover:border-[#C74634] hover:text-[#C74634]"
@@ -144,9 +166,12 @@ export function EnterprisePlanEditor({ spec, onChange }: { spec: SolutionSpec; o
           </div>
           <p className="mt-1 text-[11px] text-neutral-500">{t(L("ไม่เลือกเลย = บังคับทุก environment", "none selected = enforced on ALL environments"))}</p>
         </div>
-        <div className="grid grid-cols-2 gap-3 rounded-xl border border-neutral-200 bg-white p-3">
-          <div><span className={LBL}>{t(L("Shared FSS (GB)", "Shared FSS (GB)"))}</span><input type="number" className={NUM} min={0} max={1000000} value={s.fssGb} onChange={(e) => setSizing({ fssGb: num(e.target.value, 0, 1000000) })} /></div>
-          <div><span className={LBL}>LB bandwidth (Mbps)</span><input type="number" className={NUM} min={10} max={8000} value={s.lbBandwidthMbps} onChange={(e) => setSizing({ lbBandwidthMbps: num(e.target.value, 10, 8000) })} /></div>
+        <div className="rounded-xl border border-neutral-200 bg-white p-3">
+          <span className={LBL}>{t(L("Shared FSS (GB)", "Shared FSS (GB)"))}</span>
+          <input type="number" className={NUM} min={0} max={1000000} value={s.fssGb} onChange={(e) => setSizing({ fssGb: num(e.target.value, 0, 1000000) })} />
+          <p className="mt-1 text-[11px] text-neutral-500">
+            {t(L("LB bandwidth / NFW data / egress ปรับได้ที่ส่วน Traffic / Data transfer ด้านล่าง", "LB bandwidth / NFW data / egress are set in the Traffic / Data transfer section below"))}
+          </p>
         </div>
       </div>
     </div>

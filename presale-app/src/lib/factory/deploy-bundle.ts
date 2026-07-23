@@ -11,9 +11,13 @@ import type { LacFile, SolutionSpec } from "@/lib/domain/types";
 const ORCH_REF = "v2.1.3";
 const NFW_PLACEHOLDER = "OCI NFW PRIVATE IP OCID";
 
-/** Stage-1 file set: X_pre.json where it exists, else X.json. */
+/** Stage-1 file set: X_pre.json where it exists, else X.json.
+ *  network_backends.json (Hub C) is stage-2 content — its third-party firewall
+ *  backends are registered BETWEEN the stages. */
 function stage1Files(names: string[]): string[] {
-  return names.filter((n) => n.endsWith("_pre.json") || !names.includes(n.replace(/\.json$/, "_pre.json")));
+  return names.filter(
+    (n) => n !== "network_backends.json" && (n.endsWith("_pre.json") || !names.includes(n.replace(/\.json$/, "_pre.json"))),
+  );
 }
 function stage2Files(names: string[]): string[] {
   return names.filter((n) => !n.endsWith("_pre.json"));
@@ -143,12 +147,14 @@ die() { echo "ERROR: $*" >&2; exit 1; }
 command -v terraform >/dev/null || die "terraform not found on PATH (use >= 1.5.x)"
 
 # Select var-files for a stage: stage1 = X_pre.json where present, else X.json;
-# stage2 = only final (non *_pre) files.
+# stage2 = only final (non *_pre) files. network_backends.json (Hub C) is
+# stage-2 content — its backends are registered between the stages.
 collect() { # $1 = 1|2
   local f base pre
   for f in "$GEN_DIR"/*.json; do
     base="$(basename "$f")"
     if [ "$1" = "1" ]; then
+      [ "$base" = "network_backends.json" ] && continue
       if [[ "$base" == *_pre.json ]]; then echo "$f"
       else
         pre="\${f%.json}_pre.json"
@@ -261,6 +267,7 @@ function Get-VarFiles([int]$s) {
   foreach ($f in $all) {
     $isPre = $f.Name -like "*_pre.json"
     if ($s -eq 1) {
+      if ($f.Name -eq "network_backends.json") { continue }  # Hub C: stage-2 content
       if ($isPre) { $out += $f.FullName }
       else {
         $pre = Join-Path $GenDir ($f.Name -replace "\\.json$", "_pre.json")

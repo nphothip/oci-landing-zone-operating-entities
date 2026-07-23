@@ -154,7 +154,7 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
                 <option value="fastconnect_vpn_backup">{t(L("FastConnect 1G + VPN สำรอง", "FastConnect 1G + VPN backup"))}</option>
               </select>
             </div>
-            {spec.environments.length > 1 ? (
+            {spec.environments.length > 1 && spec.sizing.kind !== "enterprise_lz" ? (
               <div className="space-y-2">
                 <label className="flex items-start gap-2 text-xs text-neutral-600">
                   <input
@@ -292,6 +292,22 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
                 {burst.dbAutoscaling ? (
                   <div className="ml-6 space-y-2">
                     <div className="grid gap-3 sm:grid-cols-2">
+                      {spec.sizing.kind === "enterprise_lz" ? (
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("Peak (เท่าของ baseline แต่ละ DB)", "Peak (× each DB's baseline)"))}</label>
+                          <select
+                            className="w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-sm"
+                            value={String(burst.dbPeakFactor ?? 1)}
+                            onChange={(e) => onChange(setPath(spec, "burst.dbPeakFactor", Number(e.target.value)))}
+                          >
+                            <option value={1}>{t(L("ไม่ burst (= baseline)", "no burst (= baseline)"))}</option>
+                            <option value={1.5}>1.5×</option>
+                            <option value={2}>2×</option>
+                            <option value={3}>3×</option>
+                          </select>
+                          <p className="mt-0.5 text-[11px] text-neutral-500">{t(L("ใช้กับ Autonomous DB ทุกตัวในทุก project", "applies to every project's Autonomous DB"))}</p>
+                        </div>
+                      ) : (
                       <div>
                         <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("Peak ECPUs", "Peak ECPUs"))}</label>
                         <input
@@ -307,6 +323,7 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
                         />
                         <p className="mt-0.5 text-[11px] text-neutral-500">{t(L(`ECPU Count (baseline) = ${caps.dbBaseEcpu} · สูงสุด 3× = ${caps.dbBaseEcpu * 3}`, `ECPU Count (baseline) = ${caps.dbBaseEcpu} · max 3× = ${caps.dbBaseEcpu * 3}`))}</p>
                       </div>
+                      )}
                       <div>
                         <label className="mb-1 block text-xs font-medium text-neutral-600">{t(L("% ของเดือนที่เกิน ECPU Count", "% of month above ECPU Count"))}</label>
                         <input
@@ -424,7 +441,9 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
       </section>
 
       {/* advanced: type exact per-environment values (overrides the % scale) */}
-      {spec.environments.length > 1 && caps.envWorkload.length > 0 ? (
+      {/* enterprise plans are already absolute per-project values — the
+          per-env override panel would collide with multi-project catalog keys */}
+      {spec.environments.length > 1 && caps.envWorkload.length > 0 && spec.sizing.kind !== "enterprise_lz" ? (
         <details className="rounded-xl border border-neutral-200 bg-white p-4">
           <summary className="cursor-pointer text-sm font-semibold text-neutral-700">{t(L("ปรับตัวเลขต่อ environment เอง (ขั้นสูง)", "Custom per-environment values (advanced)"))}</summary>
           <p className="mb-3 mt-1 text-[11px] text-neutral-500">{t(L("ใส่เลขจริงต่อ env — override ค่าที่ scale ให้ (เช่น storage ที่ไม่อยากลดตาม %)", "Type exact values per env — overrides the % scale (e.g. storage you don't want scaled down)"))}</p>

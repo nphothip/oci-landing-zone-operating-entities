@@ -231,7 +231,9 @@ export function lzBaselineAssumptions(spec: SolutionSpec): LocalizedText[] {
       en: "Hub E has no network firewall — fits PoC/tight budgets; upgrade to Hub B/A later",
     });
   }
-  if (spec.environments.length > 1 && spec.rightsizeNonProd !== false) {
+  // enterprise_lz sizes every environment with absolute per-project values —
+  // the %-based right-sizing note would be false for it.
+  if (spec.environments.length > 1 && spec.rightsizeNonProd !== false && spec.sizing.kind !== "enterprise_lz") {
     list.push({
       th: "สเปกของ workload ในแต่ละ environment ถูกลดตามความเหมาะสม (preprod~50% · uat~40% · dev/test~30% ของ prod) — ปิดได้ที่ตัวเลือก “ลดสเปก non-prod”",
       en: "Per-environment workload specs are right-sized down (preprod~50% · uat~40% · dev/test~30% of prod) — toggle off via the “right-size non-prod” option",
