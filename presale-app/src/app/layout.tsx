@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "OCI Presale Studio — Landing Zone Solution Builder",
   description:
-    "Self-service presale tool: OCI landing-zone-aligned BOM, monthly THB pricing (AIS Cloud), 5-view architecture diagrams and LaC package",
+    "Self-service presale tool: OCI landing-zone-aligned BOM, monthly THB pricing (AIS Cloud), 10-view architecture diagrams and LaC package",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

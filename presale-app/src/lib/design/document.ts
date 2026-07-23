@@ -163,8 +163,126 @@ export function buildDesignDocument(result: GenerateResult): DesignDocument {
       ],
     },
     {
+      id: "compartment-posture",
+      heading: L("8. Compartment Security Posture", "8. Compartment Security Posture"),
+      kind: "prose",
+      view: "governance",
+      paragraphs: [
+        L(
+          `โครงสร้าง compartment (${facts.compartments.length} compartments) ถูกใช้เป็นขอบเขตการบังคับใช้ความปลอดภัย: ระดับ tenancy เปิด Cloud Guard, Vulnerability Scanning และ CIS Level ${spec.cisLevel} recipe ครอบทุก compartment ส่วนระดับ environment ใช้ Security Zone target ผูกกับ compartment ของ env ที่กำหนด (${securityTargetText(facts).th}) เพื่อบังคับ policy แบบ preventive`,
+          `The compartment structure (${facts.compartments.length} compartments) is the security enforcement boundary: tenancy-wide controls (Cloud Guard, Vulnerability Scanning, the CIS Level ${spec.cisLevel} recipe) cover every compartment, while environment-level Security Zone targets attach preventive policies to the designated environment compartments (${securityTargetText(facts).en}).`,
+        ),
+        L(
+          `แต่ละ project compartment สืบทอด posture จาก env ของตน และถูกจำกัดสิทธิ์ด้วย IAM policy แบบ least-privilege ตามสายงาน (${facts.policyCount} ชุด policy) — การแยก compartment ต่อ project ทำให้ยกเลิก/โอนย้าย workload ได้โดยไม่กระทบ project อื่น`,
+          `Each project compartment inherits its environment's posture and is constrained by least-privilege IAM policies (${facts.policyCount} policy sets) — per-project compartments allow decommissioning or transferring a workload without touching its neighbours.`,
+        ),
+        L(
+          `โครงสร้างเต็ม: ${facts.compartments.join(" · ")}`,
+          `Full tree: ${facts.compartments.join(" · ")}`,
+        ),
+      ],
+    },
+    {
+      id: "identity-groups",
+      heading: L("9. Groups และ Identity Providers", "9. Groups & Identity Providers"),
+      kind: "prose",
+      view: "identity",
+      paragraphs: [
+        L(
+          `IAM ใช้ Identity Domain เดียวเป็นศูนย์กลาง มี ${facts.groups.length} กลุ่มตามหน้าที่ (${facts.groups.slice(0, 6).join(", ")}${facts.groups.length > 6 ? "…" : ""}) — สิทธิ์ทั้งหมดผูกกับกลุ่ม ไม่ผูกกับผู้ใช้รายคน`,
+          `IAM centres on a single Identity Domain with ${facts.groups.length} functional groups (${facts.groups.slice(0, 6).join(", ")}${facts.groups.length > 6 ? "…" : ""}) — every permission binds to a group, never to individual users.`,
+        ),
+        L(
+          "องค์กรที่มี Identity Provider อยู่แล้ว (เช่น Azure AD/Entra, Okta, AD FS) เชื่อม federation ผ่าน SAML 2.0/OIDC และ provision ผู้ใช้–กลุ่มอัตโนมัติด้วย SCIM เพื่อให้ Joiner-Mover-Leaver จัดการจากระบบ HR/IdP เดิม โดย OCI เป็นฝั่ง service provider",
+          "Organisations with an existing Identity Provider (Azure AD/Entra, Okta, AD FS) federate via SAML 2.0/OIDC with SCIM user/group provisioning, so joiner-mover-leaver flows stay in the corporate IdP while OCI acts as the service provider.",
+        ),
+        L(
+          `กลุ่มทั้งหมด: ${facts.groups.join(" · ")} — mapping กลุ่ม IdP → กลุ่ม OCI กำหนดตอน onboard และทบทวนสิทธิ์ (access review) อย่างน้อยปีละ 2 ครั้ง`,
+          `All groups: ${facts.groups.join(" · ")} — IdP-group → OCI-group mappings are defined at onboarding with access reviews at least twice a year.`,
+        ),
+      ],
+    },
+    {
+      id: "password-policy",
+      heading: L("10. Password Policy", "10. Password Policy"),
+      kind: "prose",
+      paragraphs: [
+        L(
+          "Password policy ของ Identity Domain ตั้งค่าตาม baseline: ความยาวขั้นต่ำ 14 ตัวอักษร, บังคับตัวพิมพ์ใหญ่/เล็ก/ตัวเลข/อักขระพิเศษ, จำประวัติ 12 รหัสล่าสุด, อายุรหัสสูงสุด 90 วัน และล็อกบัญชีหลังพยายามผิด 5 ครั้ง (ปลดล็อกอัตโนมัติ 15 นาที) — สอดคล้อง CIS OCI Benchmark และลดความเสี่ยง credential stuffing",
+          "The Identity Domain password policy follows the baseline: minimum length 14, upper/lower/digit/special required, 12-password history, 90-day maximum age, and lockout after 5 failed attempts (15-minute auto-unlock) — aligned with the CIS OCI Benchmark and mitigating credential stuffing.",
+        ),
+        L(
+          "บัญชีที่ federate กับ IdP องค์กรใช้ password policy ของ IdP เป็นหลัก ส่วน policy นี้ครอบบัญชี local (เช่น break-glass) ซึ่งต้องมีจำนวนน้อยที่สุดและถูกตรวจสอบการใช้งานทุกครั้ง",
+          "Federated accounts inherit the corporate IdP's password policy; this policy governs local accounts (e.g. break-glass), which must be kept minimal with every use audited.",
+        ),
+      ],
+    },
+    {
+      id: "mfa",
+      heading: L("11. Multi-Factor Authentication (MFA)", "11. Multi-Factor Authentication (MFA)"),
+      kind: "prose",
+      paragraphs: [
+        L(
+          "Sign-on policy ของ Identity Domain บังคับ MFA กับผู้ใช้ทุกคน โดยรองรับ TOTP authenticator app และ FIDO2/passkey — บทบาทระดับผู้ดูแล (Administrators, network/security admins) บังคับ MFA ทุกครั้งที่ sign-in ไม่ยอมรับ session เดิม",
+          "The Identity Domain sign-on policy enforces MFA for every user, supporting TOTP authenticator apps and FIDO2/passkeys — administrator roles (Administrators, network/security admins) must satisfy MFA at every sign-in with no session carry-over.",
+        ),
+        L(
+          "เปิด adaptive/risk-based sign-on เพื่อยกระดับการยืนยันตัวตนเมื่อพบความเสี่ยง (เครือข่ายใหม่, impossible travel) และบัญชี break-glass ถูกยกเว้น MFA แต่ถูกเฝ้าระวังด้วย event + notification ทันทีที่ใช้งาน",
+          "Adaptive/risk-based sign-on steps up verification on anomalies (new network, impossible travel); the break-glass account is exempt from MFA but is monitored with an immediate event + notification on any use.",
+        ),
+      ],
+    },
+    {
+      id: "traffic-flow",
+      heading: L("12. Traffic Flow", "12. Traffic Flow"),
+      kind: "prose",
+      view: "traffic",
+      paragraphs: [
+        L(
+          `ทราฟฟิกทุกทิศทางวิ่งผ่าน hub เป็นจุดตรวจเดียว: north-south (internet เข้า/ออก) ${facts.hub.firewall ? `ผ่าน load balancer แล้วถูกตรวจโดย Network Firewall ${facts.hub.firewallCount} ชุดก่อนเข้าสู่ spoke` : "ผ่าน load balancer เข้าสู่ spoke (hub นี้ไม่มี firewall)"}, east-west (spoke ↔ spoke) วิ่งผ่าน DRG ${facts.hub.firewall ? "และถูกบังคับผ่าน firewall ด้วย route table" : "ตาม route table ของ DRG"} และทราฟฟิก on-premises เข้าทาง ${facts.connectivity === "none" ? "— (ไม่มีการเชื่อม on-prem)" : facts.connectivity} สู่ DRG`,
+          `All traffic transits the hub as the single inspection point: north-south (internet in/out) ${facts.hub.firewall ? `passes the load balancer and is inspected by ${facts.hub.firewallCount} Network Firewall instance(s) before reaching a spoke` : "passes the load balancer into the spokes (this hub has no firewall)"}; east-west (spoke ↔ spoke) rides the DRG ${facts.hub.firewall ? "and is forced through the firewall by route tables" : "per the DRG route tables"}; on-premises traffic enters via ${facts.connectivity === "none" ? "— (no on-prem link)" : facts.connectivity} into the DRG.`,
+        ),
+        L(
+          "ภายใน spoke การเข้าถึงระหว่างชั้นถูกจำกัดด้วย NSG ราย project (hub LB → web 80/443, web → app 80/443, app → db 1521, SSH เฉพาะจาก hub mgmt subnet) — ใน diagram เวอร์ชัน HTML จุดสีวิ่งตามเส้นแสดงทิศทางการไหลของแพ็กเก็ตแบบเคลื่อนไหว",
+          "Inside a spoke, inter-tier access is constrained by per-project NSGs (hub LB → web 80/443, web → app 80/443, app → db 1521, SSH only from the hub mgmt subnet) — in the HTML edition of this document the diagram animates packet dots along each path.",
+        ),
+      ],
+    },
+    {
+      id: "logging-central",
+      heading: L("13. Centralized Log Management", "13. Centralized Log Management"),
+      kind: "prose",
+      view: "logging",
+      paragraphs: [
+        L(
+          `Log ทุกแหล่ง (VCN flow logs, OCI Audit, Cloud Guard, ${facts.hub.firewall ? "Network Firewall, " : ""}application) ถูกรวมศูนย์ใน OCI Logging (${facts.observability.logGroups || "ชุดมาตรฐาน"} log groups) แล้วส่งต่อผ่าน Service Connector Hub ไปยัง Object Storage สำหรับ retention ระยะยาว และ Notifications (${facts.observability.topics || 1} topic) แจ้งทีม ops/security — ต่อยอดส่งเข้า SIEM ภายนอกได้ผ่าน connector เดียวกัน`,
+          `Every source (VCN flow logs, OCI Audit, Cloud Guard, ${facts.hub.firewall ? "Network Firewall, " : ""}application logs) is centralized into OCI Logging (${facts.observability.logGroups || "standard"} log groups), then routed by the Service Connector Hub to Object Storage for long-term retention and to Notifications (${facts.observability.topics || 1} topic(s)) for the ops/security teams — the same connector can feed an external SIEM.`,
+        ),
+        L(
+          `แนวทาง retention: audit log 365 วัน, flow log 90 วัน, และ archive ลง Object Storage (Standard → Infrequent Access → Archive) ตามข้อกำหนดขององค์กร — alarm ${facts.observability.alarms || 0} รายการเฝ้าโครงสร้างหลักและแจ้งผ่าน topic เดียวกัน`,
+          `Retention guidance: audit logs 365 days, flow logs 90 days, archived to Object Storage (Standard → Infrequent Access → Archive) per corporate requirements — ${facts.observability.alarms || 0} alarms watch the core infrastructure through the same topics.`,
+        ),
+      ],
+    },
+    {
+      id: "backup",
+      heading: L("14. Backup", "14. Backup"),
+      kind: "prose",
+      view: "backup",
+      paragraphs: [
+        L(
+          "Compute ใช้ Block Volume backup policy (incremental รายวัน + full รายสัปดาห์, เก็บ 30 วัน) กับ boot/data volume ทุกลูก; Autonomous Database มี automatic backup ในตัว (retention 60 วัน, จุด restore ต่อเนื่อง) ส่วน Base Database ใช้ managed RMAN backup ลง Object Storage — ทั้งหมดกำหนดผ่าน policy ไม่พึ่งการสั่งเอง",
+          "Compute uses Block Volume backup policies (daily incremental + weekly full, 30-day retention) on every boot/data volume; Autonomous Database has built-in automatic backups (60-day retention, continuous restore points) while Base Database uses managed RMAN backups to Object Storage — all policy-driven, never manual.",
+        ),
+        L(
+          "สำเนา backup พักใน Object Storage และไหลตาม lifecycle (Standard → IA → Archive) เพื่อคุมต้นทุน — RPO อ้างอิง: ระดับ DB ~1 ชั่วโมง (archived redo), ระดับ volume 24 ชั่วโมง; แนะนำทดสอบ restore จริงอย่างน้อยไตรมาสละครั้งและบันทึกผลเป็นหลักฐาน audit",
+          "Backup copies land in Object Storage and follow the lifecycle (Standard → IA → Archive) for cost control — reference RPO: ~1 hour at the DB tier (archived redo), 24 hours at the volume tier; run a real restore test at least quarterly and keep the evidence for audit.",
+        ),
+      ],
+    },
+    {
       id: "bom",
-      heading: L("8. รายการทรัพยากรและค่าใช้จ่าย (BOM & Cost)", "8. Bill of Materials & Cost"),
+      heading: L("15. รายการทรัพยากรและค่าใช้จ่าย (BOM & Cost)", "15. Bill of Materials & Cost"),
       kind: "bom",
       paragraphs: [
         L(
@@ -175,18 +293,33 @@ export function buildDesignDocument(result: GenerateResult): DesignDocument {
     },
     {
       id: "assumptions",
-      heading: L("9. สมมติฐานและขอบเขต", "9. Assumptions & Scope"),
+      heading: L("16. สมมติฐานและขอบเขต", "16. Assumptions & Scope"),
       kind: "assumptions",
       paragraphs: [],
     },
     {
       id: "deployment",
-      heading: L("10. แนวทางการ Deploy", "10. Deployment Approach"),
+      heading: L("17. แนวทางการ Deploy", "17. Deployment Approach"),
       kind: "deployment",
       paragraphs: [
         L(
-          "ใช้ไฟล์ Infrastructure-as-Code ที่อยู่ในแท็บ LaC (config.json + generated/*.json + README) กับ OCI Landing Zones Orchestrator ผ่าน Terraform CLI หรือ OCI Resource Manager",
-          "Use the Infrastructure-as-Code from the LaC tab (config.json + generated/*.json + README) with the OCI Landing Zones Orchestrator via Terraform CLI or OCI Resource Manager.",
+          "ใช้ไฟล์ Infrastructure-as-Code ที่อยู่ในแท็บ LaC (config.json + generated/*.json + README + deploy/) กับ OCI Landing Zones Orchestrator ผ่าน Terraform CLI หรือ OCI Resource Manager — สคริปต์และ runbook ฉบับเต็มอยู่ในโฟลเดอร์ deploy/ ของแพ็กเกจ",
+          "Use the Infrastructure-as-Code from the LaC tab (config.json + generated/*.json + README + deploy/) with the OCI Landing Zones Orchestrator via Terraform CLI or OCI Resource Manager — the full scripts and runbook live in the package's deploy/ folder.",
+        ),
+      ],
+    },
+    {
+      id: "references",
+      heading: L("18. เอกสารอ้างอิง (Official)", "18. References (Official)"),
+      kind: "prose",
+      paragraphs: [
+        L(
+          "การออกแบบนี้ยึดตามแหล่งอ้างอิง official ของ Oracle ทั้งหมด — OCI Open Landing Zone (Operating Entities): github.com/oci-landing-zones/oci-landing-zone-operating-entities · OCI Landing Zones Orchestrator (v2.1.3): github.com/oci-landing-zones/terraform-oci-modules-orchestrator · CIS OCI Foundations Benchmark: docs.oracle.com/en/solutions/cis-oci-benchmark",
+          "This design follows Oracle's official references throughout — OCI Open Landing Zone (Operating Entities): github.com/oci-landing-zones/oci-landing-zone-operating-entities · OCI Landing Zones Orchestrator (v2.1.3): github.com/oci-landing-zones/terraform-oci-modules-orchestrator · CIS OCI Foundations Benchmark: docs.oracle.com/en/solutions/cis-oci-benchmark",
+        ),
+        L(
+          "หัวข้อเชิงลึกตามบริการ: Security Zones และ Cloud Guard (docs.oracle.com/iaas/security-zone, docs.oracle.com/iaas/cloud-guard) · Identity Domains password/sign-on policy และ MFA (docs.oracle.com/iaas/Content/Identity) · Network Firewall (docs.oracle.com/iaas/Content/network-firewall) · Logging + Service Connector Hub (docs.oracle.com/iaas/Content/Logging) · Block Volume backup policy และ ADB automatic backup (docs.oracle.com/iaas/Content/Block, docs.oracle.com/iaas/autonomous-database) — diagram ในเอกสารนี้ใช้ visual language เดียวกับไฟล์ออกแบบ official ของ OCI Open LZ",
+          "Service deep-dives: Security Zones & Cloud Guard (docs.oracle.com/iaas/security-zone, docs.oracle.com/iaas/cloud-guard) · Identity Domains password/sign-on policies & MFA (docs.oracle.com/iaas/Content/Identity) · Network Firewall (docs.oracle.com/iaas/Content/network-firewall) · Logging + Service Connector Hub (docs.oracle.com/iaas/Content/Logging) · Block Volume backup policies & ADB automatic backup (docs.oracle.com/iaas/Content/Block, docs.oracle.com/iaas/autonomous-database) — the diagrams in this document share the official OCI Open LZ design files' visual language.",
         ),
       ],
     },
@@ -305,4 +438,11 @@ function connectivityDetail(spec: GenerateResult["spec"]): LocalizedText {
 }
 
 const money = (n: number) => n.toLocaleString("th-TH", { style: "currency", currency: "THB", maximumFractionDigits: 0 });
+
+function securityTargetText(facts: DesignFacts): LocalizedText {
+  const all = facts.securityZoneTargets.length >= facts.environments.length;
+  return all
+    ? L("ครอบทุก environment", "all environments")
+    : L(facts.securityZoneTargets.join(", "), facts.securityZoneTargets.join(", "));
+}
 const stripEnv = (label: string) => label.replace(/\s*\[[a-z]+\]\s*$/, "");

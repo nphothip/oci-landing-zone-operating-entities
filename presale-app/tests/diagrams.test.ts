@@ -23,8 +23,11 @@ function specWithTwoEnvs() {
 describe("diagram pipeline", () => {
   const diagrams = buildDiagrams(specWithTwoEnvs(), FILES);
 
-  it("produces all five views", () => {
-    expect(diagrams.map((d) => d.view)).toEqual(["functional", "security", "network", "operations", "runtime"]);
+  it("produces all ten views", () => {
+    expect(diagrams.map((d) => d.view)).toEqual([
+      "functional", "security", "network", "operations", "runtime",
+      "governance", "identity", "logging", "backup", "traffic",
+    ]);
     for (const d of diagrams) {
       expect(d.nodes.length, d.view).toBeGreaterThan(3);
       expect(d.width).toBeGreaterThan(300);
@@ -45,10 +48,10 @@ describe("diagram pipeline", () => {
     for (const d of diagrams) assertNoSiblingOverlap(d);
   });
 
-  it("serializes well-formed draw.io XML with 5 pages and escaped labels", () => {
+  it("serializes well-formed draw.io XML with 10 pages and escaped labels", () => {
     const xml = toDrawio(diagrams);
     expect(xml).toContain("<mxfile");
-    expect((xml.match(/<diagram /g) ?? []).length).toBe(5);
+    expect((xml.match(/<diagram /g) ?? []).length).toBe(10);
     expect(xml).not.toMatch(/&(?!amp;|lt;|gt;|quot;|#39;|#\d+;)/); // raw ampersands
     new XMLParser().assertWellFormed(xml);
   });

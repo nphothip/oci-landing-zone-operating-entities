@@ -7,9 +7,10 @@ import { TemplateGallery } from "@/components/wizard/TemplateGallery";
 import { SizingForm } from "@/components/wizard/SizingForm";
 import { FreeTextPanel } from "@/components/wizard/FreeTextPanel";
 import { ResultView } from "@/components/results/ResultView";
+import { bankingShowcaseSpec, BANKING_HIGHLIGHTS } from "@/lib/templates/banking-preset";
 import { L, LangProvider, useLang } from "@/lib/i18n";
 
-type Mode = "template" | "freetext" | "enterprise";
+type Mode = "template" | "freetext" | "enterprise" | "banking";
 
 function Studio() {
   const { lang, setLang, t } = useLang();
@@ -59,7 +60,7 @@ function Studio() {
             <span className="text-[#C74634]">OCI</span> Presale Studio
           </h1>
           <p className="text-sm text-neutral-600">
-            {t(L("BOM · ราคา/เดือน (THB) · Diagram 5 views · LaC code — ตามแนวทาง OCI Open Landing Zone", "BOM · monthly THB · 5-view diagrams · LaC code — per the OCI Open Landing Zone"))}
+            {t(L("BOM · ราคา/เดือน (THB) · Diagram 10 views · LaC code — ตามแนวทาง OCI Open Landing Zone", "BOM · monthly THB · 10-view diagrams · LaC code — per the OCI Open Landing Zone"))}
           </p>
         </div>
         <button
@@ -77,6 +78,7 @@ function Studio() {
             { id: "template", label: L("เลือกจาก Template", "Pick a template") },
             { id: "freetext", label: L("พิมพ์อธิบาย (AI)", "Describe it (AI)") },
             { id: "enterprise", label: L("Advanced (Enterprise)", "Advanced (Enterprise)") },
+            { id: "banking", label: L("🏦 Banking (จัดเต็ม)", "🏦 Banking (showcase)") },
           ] as { id: Mode; label: { th: string; en: string } }[]
         ).map((m) => (
           <button
@@ -100,14 +102,47 @@ function Studio() {
               setResult(null);
             }}
           />
+        ) : mode === "banking" ? (
+          <div className="rounded-xl border border-neutral-200 bg-white p-4">
+            <h3 className="text-sm font-semibold text-neutral-700">{t(L("🏦 Banking Landing Zone — ตัวอย่างการตั้งค่าขั้นสูงสุด", "🏦 Banking Landing Zone — maximum-security showcase"))}</h3>
+            <p className="mt-1 text-sm text-neutral-600">
+              {t(
+                L(
+                  "ตัวอย่าง landing zone ระดับธนาคารที่เปิดทุกการป้องกันที่ generator รองรับ — ใช้เป็นจุดตั้งต้นแล้วปรับตามลูกค้าจริงได้ทุกค่า (แก้ต่อในฟอร์มด้านล่างหลังกดโหลด)",
+                  "A bank-grade landing zone with every control the generator supports turned on — use it as the starting point and tune any value in the form below after loading",
+                ),
+              )}
+            </p>
+            <ul className="mt-3 space-y-1.5 text-sm text-neutral-700">
+              {BANKING_HIGHLIGHTS.map((h, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="text-[#C74634]">✓</span>
+                  <span>{t(h)}</span>
+                </li>
+              ))}
+            </ul>
+            {spec?.customerName !== "Banking Showcase (แบบจัดเต็ม)" ? (
+              <button
+                onClick={() => {
+                  setSpec(bankingShowcaseSpec());
+                  setAiNote(null);
+                  setResult(null);
+                  setError(null);
+                }}
+                className="mt-4 rounded-lg bg-[#C74634] px-4 py-2 text-sm font-semibold text-white shadow"
+              >
+                {t(L("โหลดตัวอย่าง Banking แบบจัดเต็ม", "Load the full Banking showcase"))}
+              </button>
+            ) : null}
+          </div>
         ) : (
           <div className="rounded-xl border border-neutral-200 bg-white p-4">
             <h3 className="text-sm font-semibold text-neutral-700">{t(L("Enterprise Landing Zone — professional service", "Enterprise Landing Zone — professional service"))}</h3>
             <p className="mt-1 text-sm text-neutral-600">
               {t(
                 L(
-                  "ออกแบบ landing zone เต็มรูปแบบตาม OCI Open LZ best practice — หลาย environment · หลาย project ต่อ env (compartment + NSG แยก) · OKE platform · Security Zones · เอกสารออกแบบครบ 5 views · แพ็กเกจ IaC พร้อม deploy",
-                  "Design a full landing zone per OCI Open LZ best practice — multiple environments · multiple projects per env (isolated compartments + NSGs) · OKE platforms · Security Zones · complete 5-view design doc · deploy-ready IaC package",
+                  "ออกแบบ landing zone เต็มรูปแบบตาม OCI Open LZ best practice — หลาย environment · หลาย project ต่อ env (compartment + NSG แยก) · OKE platform · Security Zones · เอกสารออกแบบครบ 10 views · แพ็กเกจ IaC พร้อม deploy",
+                  "Design a full landing zone per OCI Open LZ best practice — multiple environments · multiple projects per env (isolated compartments + NSGs) · OKE platforms · Security Zones · complete 10-view design doc · deploy-ready IaC package",
                 ),
               )}
             </p>

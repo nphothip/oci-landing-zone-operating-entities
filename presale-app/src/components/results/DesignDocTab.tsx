@@ -159,7 +159,7 @@ export function DesignDocTab({ result }: { result: GenerateResult }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-neutral-600">
-          {t(L("เอกสารออกแบบ landing zone + cloud design พร้อม diagram จริงทั้ง 5 views", "Landing zone + cloud design document with all five real diagram views"))}
+          {t(L("เอกสารออกแบบ landing zone + cloud design พร้อม diagram จริงทั้ง 10 views", "Landing zone + cloud design document with all ten real diagram views"))}
         </p>
         <div className="flex flex-wrap gap-2 text-sm">
           <button

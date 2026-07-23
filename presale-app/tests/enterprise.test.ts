@@ -6,6 +6,7 @@ import { finalizeBom } from "@/lib/bom/env";
 import { priceBom } from "@/lib/pricing/resolve";
 import { buildDeployBundle } from "@/lib/factory/deploy-bundle";
 import type { EnvName } from "@/lib/domain/types";
+import { bankingShowcaseSpec } from "@/lib/templates/banking-preset";
 
 const tpl = TEMPLATES.enterprise_lz;
 
@@ -143,6 +144,26 @@ describe("enterprise_lz template", () => {
   it("does not claim %-based right-sizing in the enterprise assumptions", () => {
     const texts = tpl.assumptions(tpl.defaults()).map((a) => a.en);
     expect(texts.some((x) => x.includes("right-sized down"))).toBe(false);
+  });
+
+  it("banking showcase preset is valid, maxed and fully priced", () => {
+    const spec = bankingShowcaseSpec();
+    const parsed = parseSolutionSpec(spec);
+    expect(parsed.ok, parsed.ok ? "" : parsed.message).toBe(true);
+    expect(spec.hub.kind).toBe("hub_a");
+    expect(spec.hub.inspection).toBe("tls");
+    expect(spec.cisLevel).toBe(2);
+    expect(spec.environments).toHaveLength(4);
+    const cfg = buildFactoryConfig(spec);
+    expect(cfg.ok, cfg.ok ? "" : cfg.message).toBe(true);
+    if (cfg.ok) {
+      expect(Object.keys(cfg.config.environments.prod.projects ?? {})).toEqual(["corebank", "payment", "mobile", "crm", "datalake"]);
+      expect(cfg.config.security_targets).toBeUndefined(); // all envs targeted
+      expect(cfg.config.environments.prod.platforms?.oke).toBeDefined();
+    }
+    const bom = priceBom(finalizeBom(tpl.buildBom(spec)));
+    expect(bom.totals.monthlyThb).toBeGreaterThan(0);
+    expect(bom.totals.unpricedCount).toBe(0);
   });
 
   it("deploy bundle single-run when no *_pre files (hub_e style)", () => {

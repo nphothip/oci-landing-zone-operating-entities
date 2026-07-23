@@ -44,8 +44,15 @@ describe("design document", () => {
   it("builds all document sections", () => {
     const doc = buildDesignDocument(result);
     const ids = doc.sections.map((s) => s.id);
-    expect(ids).toEqual(["executive", "overview", "functional", "security", "network", "operations", "runtime", "bom", "assumptions", "deployment"]);
+    expect(ids).toEqual([
+      "executive", "overview", "functional", "security", "network", "operations", "runtime",
+      "compartment-posture", "identity-groups", "password-policy", "mfa", "traffic-flow", "logging-central", "backup",
+      "bom", "assumptions", "deployment", "references",
+    ]);
     expect(doc.sections.find((s) => s.id === "network")?.view).toBe("network");
+    expect(doc.sections.find((s) => s.id === "traffic-flow")?.view).toBe("traffic");
+    expect(doc.sections.find((s) => s.id === "compartment-posture")?.view).toBe("governance");
+    expect(doc.sections.find((s) => s.id === "logging-central")?.view).toBe("logging");
     expect(doc.sections.every((s) => s.paragraphs.length > 0 || s.kind !== "prose")).toBe(true);
   });
 

@@ -488,7 +488,17 @@ export interface BomResult {
 // Diagrams — one layout model rendered as SVG, draw.io XML and PNG
 // ---------------------------------------------------------------------------
 
-export type ViewId = "functional" | "security" | "network" | "operations" | "runtime";
+export type ViewId =
+  | "functional"
+  | "security"
+  | "network"
+  | "operations"
+  | "runtime"
+  | "governance"
+  | "identity"
+  | "logging"
+  | "backup"
+  | "traffic";
 
 export type NodeKind =
   | "canvasTitle"

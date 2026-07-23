@@ -285,7 +285,7 @@ function NodeShape({ node }: { node: DiagramNode }) {
   return <g>{elements}</g>;
 }
 
-function EdgeShape({ edge, nodes }: { edge: DiagramEdge; nodes: Map<string, DiagramNode> }) {
+function EdgeShape({ edge, nodes, animate }: { edge: DiagramEdge; nodes: Map<string, DiagramNode>; animate?: boolean }) {
   const from = nodes.get(edge.from);
   const to = nodes.get(edge.to);
   if (!from || !to) return null;
@@ -301,6 +301,7 @@ function EdgeShape({ edge, nodes }: { edge: DiagramEdge; nodes: Map<string, Diag
   let labelX: number;
   let labelY: number;
   let path: ReactNode;
+  let dAttr: string | null = null; // kept for the animated-packet motion path
   if (edge.points?.length) {
     // orthogonal route via explicit waypoints
     const first = edge.points[0];
@@ -308,7 +309,7 @@ function EdgeShape({ edge, nodes }: { edge: DiagramEdge; nodes: Map<string, Diag
     const a = anchorPoint(from, { ...from, x: first.x, y: first.y, w: 0, h: 0 });
     const b = anchorPoint(to, { ...to, x: last.x, y: last.y, w: 0, h: 0 });
     const pts = [{ x: a.x1, y: a.y1 }, ...edge.points, { x: b.x1, y: b.y1 }];
-    const dAttr = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+    dAttr = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
     path = <path d={dAttr} fill="none" stroke={st.color} strokeWidth={st.width} markerEnd={st.marker} strokeDasharray={dash} />;
     const mid = edge.points[Math.floor((edge.points.length - 1) / 2)];
     labelX = mid.x;
@@ -316,12 +317,20 @@ function EdgeShape({ edge, nodes }: { edge: DiagramEdge; nodes: Map<string, Diag
   } else {
     const { x1, y1, x2, y2 } = anchorPoint(from, to);
     path = <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={st.color} strokeWidth={st.width} markerEnd={st.marker} strokeDasharray={dash} />;
+    dAttr = `M ${x1} ${y1} L ${x2} ${y2}`;
     labelX = (x1 + x2) / 2;
     labelY = (y1 + y2) / 2 - 5;
   }
   return (
     <g>
       {path}
+      {animate && edge.kind === "flow" && dAttr ? (
+        // SMIL packet animation — plays in the browser and in the exported
+        // self-contained HTML design doc; rasterized exports show frame 1.
+        <circle r={3.5} fill={C.cardMagenta} opacity={0.9}>
+          <animateMotion dur="3s" repeatCount="indefinite" path={dAttr} />
+        </circle>
+      ) : null}
       {edge.label ? (
         <Text x={labelX} y={labelY} size={9.5} color={st.color} italic anchor="middle">
           {edge.label}
@@ -352,7 +361,7 @@ export const DiagramCanvas = forwardRef<SVGSVGElement, { doc: DiagramDoc }>(func
         <NodeShape key={n.id} node={n} />
       ))}
       {doc.edges.map((e) => (
-        <EdgeShape key={e.id} edge={e} nodes={nodeMap} />
+        <EdgeShape key={e.id} edge={e} nodes={nodeMap} animate={doc.view === "traffic"} />
       ))}
     </svg>
   );

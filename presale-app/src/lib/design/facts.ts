@@ -30,6 +30,8 @@ export interface DesignFacts {
   compartments: string[];
   groups: string[];
   policyCount: number;
+  /** Environments carrying a Security Zone target (= all envs unless narrowed). */
+  securityZoneTargets: string[];
   vcns: DesignFactVcn[];
   posture: string[];
   observability: { logGroups: number; topics: number; events: number; alarms: number; serviceConnector: boolean };
@@ -112,6 +114,10 @@ export function buildDesignFacts(result: GenerateResult): DesignFacts {
     compartments: flatten(),
     groups: gen.groups,
     policyCount: gen.policyCount,
+    securityZoneTargets:
+      spec.sizing.kind === "enterprise_lz" && spec.sizing.securityTargetEnvs.length > 0
+        ? spec.environments.filter((e) => spec.sizing.kind === "enterprise_lz" && spec.sizing.securityTargetEnvs.includes(e))
+        : [...spec.environments],
     vcns: gen.vcns.map((v) => ({
       name: v.name,
       cidr: v.cidr,

@@ -5,8 +5,13 @@ import { layoutSecurityView } from "./layout/security";
 import { layoutNetworkView } from "./layout/network";
 import { layoutOperationsView } from "./layout/operations";
 import { layoutRuntimeView } from "./layout/runtime";
+import { layoutGovernanceView } from "./layout/governance";
+import { layoutIdentityView } from "./layout/identity";
+import { layoutLoggingView } from "./layout/logflow";
+import { layoutBackupView } from "./layout/backupview";
+import { layoutTrafficView } from "./layout/traffic";
 
-/** Build all five architecture views from the spec + generated LZ package. */
+/** Build all ten architecture views from the spec + generated LZ package. */
 export function buildDiagrams(spec: SolutionSpec, lacFiles: LacFile[]): DiagramDoc[] {
   const gen = parseGenerated(lacFiles);
   return [
@@ -15,5 +20,10 @@ export function buildDiagrams(spec: SolutionSpec, lacFiles: LacFile[]): DiagramD
     layoutNetworkView(spec, gen),
     layoutOperationsView(spec, gen),
     layoutRuntimeView(spec, gen),
+    layoutGovernanceView(spec, gen),
+    layoutIdentityView(spec, gen),
+    layoutLoggingView(spec, gen),
+    layoutBackupView(spec, gen),
+    layoutTrafficView(spec, gen),
   ];
 }
