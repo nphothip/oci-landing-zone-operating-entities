@@ -31,7 +31,9 @@ export function ResultView({
   const tabs: { id: Tab; label: { th: string; en: string } }[] = [
     { id: "summary", label: L("สรุป", "Summary") },
     { id: "bom", label: L("BOM & ราคา", "BOM & Pricing") },
-    { id: "compare", label: L("💰 เปรียบเทียบ 5 ค่าย", "💰 Compare 5 clouds") },
+    // No hardcoded provider count — the rate card grows and the label must not
+    // go stale (it said "5" while the table already showed 9 columns).
+    { id: "compare", label: L("💰 เปรียบเทียบราคาข้ามค่าย", "💰 Compare clouds") },
     { id: "diagrams", label: L("Diagram (13 views)", "Diagrams (13 views)") },
     { id: "doc", label: L("เอกสารออกแบบ", "Design Doc") },
     { id: "tor", label: L("TOR / Compliance", "TOR / Compliance") },
