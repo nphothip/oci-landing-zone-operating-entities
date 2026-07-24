@@ -603,7 +603,10 @@ export function layoutResilienceView(spec: SolutionSpec, gen: ParsedGenerated): 
     x: adX + 16, y: dbY, w: adW - 32, h: dbH,
     style: "stackCard", rows: db.rows, parent: "ad",
   });
-  if (db.present) d.edge({ from: "fd1", to: "dbcard", kind: "flow", label: "app → db" });
+  // No label: this connector crosses the full-width fault-domain note, so a
+  // caption would sit on top of that text. The card it points at is titled
+  // "DB TIER", which is all the caption would have said.
+  if (db.present) d.edge({ from: "fd1", to: "dbcard", kind: "flow" });
 
   // ---- below the region: connectivity redundancy + SLA reference ----------
   const cardsY = top + regionH + 24;

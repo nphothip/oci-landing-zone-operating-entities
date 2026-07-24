@@ -230,10 +230,13 @@ export function layoutTrafficView(spec: SolutionSpec, gen: ParsedGenerated): Dia
   };
 
   // ---- title ----------------------------------------------------------------
+  // The hybrid lane only exists when the hub has an on-prem link, so count what
+  // is actually drawn rather than always claiming four.
+  const laneNames = ["inbound", "outbound", "east-west", ...(conn !== "none" ? ["hybrid"] : [])];
   d.add({
     kind: "canvasTitle",
     label: "Traffic Flow View",
-    sublabel: `4 lanes — inbound · outbound · east-west · hybrid — ${hubKind.replace("_", " ").toUpperCase()} · ${spec?.region?.id ?? ""}`,
+    sublabel: `${laneNames.length} lanes — ${laneNames.join(" · ")} — ${hubKind.replace("_", " ").toUpperCase()} · ${spec?.region?.id ?? ""}`,
     x: 24, y: 14, w: 780, h: 40, style: "canvasTitle",
   });
 
@@ -259,27 +262,30 @@ export function layoutTrafficView(spec: SolutionSpec, gen: ParsedGenerated): Dia
     { id: "l1-users", label: "Internet users", sub: "public clients", icon: "user", kind: "block", style: "actor" },
     { id: "l1-igw", label: `igw-${short}-lz-hub`, gw: true, icon: "igw", inLabel: "«HTTPS 443»" },
   ];
+  // Lane 1 is the densest chain (8–9 hops across 1220px = ~30px between tiles),
+  // so its hop labels stay short tags; the note row below spells out the actual
+  // route-table rules.
   if (hubKind === "hub_a") {
-    hops1.push({ id: "l1-fw", label: "OCI NFW — DMZ", sub: inspLabel, icon: "fw", inLabel: "«inspect» igw rt → lb cidr" });
-    if (hasL7Lb) hops1.push(lbHop("«forward» to lb subnet"));
+    hops1.push({ id: "l1-fw", label: "OCI NFW — DMZ", sub: inspLabel, icon: "fw", inLabel: "«inspect» igw rt" });
+    if (hasL7Lb) hops1.push(lbHop("«forward»"));
   } else if (hubKind === "hub_c") {
-    hops1.push({ id: "l1-nlb", label: "NLB — untrust", sub: "symmetric flow-hash", icon: "lb", inLabel: "«igw rt» → lb cidr" });
+    hops1.push({ id: "l1-nlb", label: "NLB — untrust", sub: "symmetric flow-hash", icon: "lb", inLabel: "«igw rt»" });
     hops1.push({ id: "l1-fw", label: "3rd-party FW pair", sub: "BYOL appliances", icon: "fw", inLabel: "«inspect»" });
-    if (hasL7Lb) hops1.push(lbHop("«forward» to public L7 LB"));
+    if (hasL7Lb) hops1.push(lbHop("«forward»"));
   } else if (hubKind === "hub_e") {
-    if (hasL7Lb) hops1.push(lbHop("«route» igw → lb subnet"));
+    if (hasL7Lb) hops1.push(lbHop("«to lb subnet»"));
   } else {
     // hub_b (and any unrecognised kind): the IGW has no route table, so clients
     // reach the LB first and the single NFW inspects the LB → spoke leg.
-    if (hasL7Lb) hops1.push(lbHop("«route» igw → lb subnet"));
-    hops1.push({ id: "l1-fw", label: "OCI Network Firewall", sub: inspLabel, icon: "fw", inLabel: "«inspect» lb rt → spoke cidr" });
+    if (hasL7Lb) hops1.push(lbHop("«to lb subnet»"));
+    hops1.push({ id: "l1-fw", label: "OCI Network Firewall", sub: inspLabel, icon: "fw", inLabel: "«inspect» lb rt" });
   }
   hops1.push({
     id: "l1-drg", label: `drg-${short}-lz-hub`, gw: true,
-    inLabel: inspect ? "«route» spoke cidr" : "«route» spoke cidr — no inspection",
+    inLabel: inspect ? "«route» spoke cidr" : "«no inspection»",
   });
   hops1.push({ id: "l1-web", label: "web NSG", sub: webSub.name, icon: "shield", inLabel: "«NSG allow» 443" });
-  hops1.push({ id: "l1-app", label: "app NSG", sub: appSub.name, icon: "shield", inLabel: "«NSG allow» app port" });
+  hops1.push({ id: "l1-app", label: "app NSG", sub: appSub.name, icon: "shield", inLabel: "«NSG allow» app" });
   hops1.push({ id: "l1-db", label: "db NSG", sub: dbSub.name, icon: "shield", inLabel: "«NSG allow» 1521" });
 
   const lane1H = 160;

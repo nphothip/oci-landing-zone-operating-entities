@@ -332,9 +332,27 @@ function EdgeShape({ edge, nodes, animate }: { edge: DiagramEdge; nodes: Map<str
         </circle>
       ) : null}
       {edge.label ? (
-        <Text x={labelX} y={labelY} size={9.5} color={st.color} italic anchor="middle">
-          {edge.label}
-        </Text>
+        <>
+          {/* Halo behind flow labels only: hop chains pack tiles ~30px apart, so
+              a route label is wider than its gap and would otherwise be read on
+              top of the neighbouring tile's border. Leader labels annotate
+              across the canvas and can land on a card's own text, where an
+              opaque backing would erase it — those stay transparent. */}
+          {edge.kind === "flow" ? (
+            <rect
+              x={labelX - (edge.label.length * 9.5 * CHAR_W) / 2 - 3}
+              y={labelY - 9}
+              width={edge.label.length * 9.5 * CHAR_W + 6}
+              height={12}
+              rx={2}
+              fill="#ffffff"
+              opacity={0.88}
+            />
+          ) : null}
+          <Text x={labelX} y={labelY} size={9.5} color={st.color} italic anchor="middle">
+            {edge.label}
+          </Text>
+        </>
       ) : null}
     </g>
   );

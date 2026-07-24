@@ -322,9 +322,12 @@ export function layoutIamMatrixView(spec: SolutionSpec, gen: ParsedGenerated): D
   });
 
   // ---- leader edges: groups panel → scope columns -------------------------
-  d.edge({ from: "grp-panel", to: "zone-a", kind: "leader", label: "tenancy policies" });
-  d.edge({ from: "grp-panel", to: "zone-b", kind: "leader", label: "shared-service policies" });
-  d.edge({ from: "grp-panel", to: "zone-c", kind: "leader", label: "env / project policies" });
+  // Unlabelled on purpose: these run the width of the canvas, so a caption
+  // lands at the midpoint — inside the tenancy column, on top of its policy
+  // rows. Each column already carries the same words in its own header.
+  d.edge({ from: "grp-panel", to: "zone-a", kind: "leader" });
+  d.edge({ from: "grp-panel", to: "zone-b", kind: "leader" });
+  d.edge({ from: "grp-panel", to: "zone-c", kind: "leader" });
 
   // ---- bottom notes: least-privilege principles + security boundary -------
   const notesY = top + Math.max(zoneAH, zoneBH, zoneCH) + 26;
