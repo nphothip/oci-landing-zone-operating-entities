@@ -43,13 +43,31 @@ interface Corpus {
   /** Clauses whose text matches a pattern — the traceability trail. */
   hits: (re: RegExp) => string[];
   has: (re: RegExp) => boolean;
+  /**
+   * Same two helpers over EVERY clause, including the ones the extractor
+   * classified as legal/commercial. Used only where a clause outside the
+   * infrastructure scope still binds the design — a regulation named anywhere
+   * in a TOR governs the whole solution, so a PDPA clause filed as "legal"
+   * must still raise the security baseline.
+   */
+  hitsAll: (re: RegExp) => string[];
+  hasAll: (re: RegExp) => boolean;
 }
 
 function corpus(reqs: TorRequirement[]): Corpus {
   const infra = reqs.filter((r) => r.infraRelevant);
-  const all = infra.map((r) => r.text).join("\n");
-  const hits = (re: RegExp) => infra.filter((r) => re.test(r.text)).map((r) => r.clause || r.id).slice(0, 4);
-  return { all, reqs: infra, hits, has: (re) => re.test(all) };
+  const join = (rs: TorRequirement[]) => rs.map((r) => r.text).join("\n");
+  const clausesOf = (rs: TorRequirement[], re: RegExp) => rs.filter((r) => re.test(r.text)).map((r) => r.clause || r.id).slice(0, 4);
+  const all = join(infra);
+  const everything = join(reqs);
+  return {
+    all,
+    reqs: infra,
+    hits: (re) => clausesOf(infra, re),
+    has: (re) => re.test(all),
+    hitsAll: (re) => [...new Set(clausesOf(reqs, re))].slice(0, 4),
+    hasAll: (re) => re.test(everything),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -218,14 +236,18 @@ function deriveHub(c: Corpus): { kind: HubKind; inspection?: "standard" | "ids_i
 }
 
 function deriveCis(c: Corpus): { level: CisLevel; decision: SpecDecision } {
-  if (c.has(RE.compliance)) {
+  // Read the WHOLE document here, not just the infra-relevant clauses: an
+  // extractor will often file "ต้องเป็นไปตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล"
+  // as a legal clause, yet it is exactly the sort of requirement that has to
+  // raise the security baseline.
+  if (c.hasAll(RE.compliance)) {
     return {
       level: 2,
       decision: {
         field: "cisLevel",
         value: "2",
         source: "tor",
-        clauses: c.hits(RE.compliance),
+        clauses: c.hitsAll(RE.compliance),
         reason: L(
           "TOR อ้างถึงมาตรฐาน/กฎระเบียบด้านความมั่นคงปลอดภัยหรือการจัดการกุญแจ จึงใช้ CIS Level 2 (เพิ่ม OCI Vault + customer-managed keys และ recipe ที่เข้มขึ้น)",
           "The TOR cites a security standard/regulation or key management, so CIS Level 2 — adding OCI Vault, customer-managed keys, and stricter recipes.",

@@ -65,6 +65,40 @@ describe("deriving a design from TOR requirements", () => {
     expect(decisionFor(strict.decisions, "cisLevel")!.clauses).toContain("ข้อ 7.1");
   });
 
+  // Production caught this: the extractor files a PDPA clause under "legal",
+  // which dropped it from the infra corpus and left the design at CIS Level 1
+  // even though the TOR named the regulation. A regulation binds the whole
+  // solution regardless of how the clause was categorised.
+  it("raises CIS from a compliance clause the extractor marked non-infrastructure", () => {
+    const out = deriveSpecFromTor([
+      req("ต้องมีระบบสารสนเทศให้บริการประชาชน"),
+      req("ระบบต้องเป็นไปตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)", {
+        clause: "ข้อ 7.1",
+        infraRelevant: false,
+        category: "compliance",
+      }),
+    ]);
+    expect(out.spec.cisLevel).toBe(2);
+    const d = decisionFor(out.decisions, "cisLevel")!;
+    expect(d.source).toBe("tor");
+    expect(d.clauses).toContain("ข้อ 7.1");
+  });
+
+  // …but the whole-document read is scoped to compliance only. Everything else
+  // must still ignore legal/commercial clauses, or a bidder-experience clause
+  // would start adding services to the quotation.
+  it("does not let non-infrastructure clauses drive anything except the security baseline", () => {
+    const out = deriveSpecFromTor([
+      req("ผู้เสนอราคาต้องเคยติดตั้งระบบ VMware และ Kubernetes มาก่อน", { infraRelevant: false, category: "commercial" }),
+      req("ผู้รับจ้างต้องจัดหา firewall ให้ครบตามสัญญา", { infraRelevant: false, category: "commercial" }),
+      req("ต้องมีเว็บไซต์ให้บริการประชาชน"),
+    ]);
+    expect(out.spec.template).toBe("web_app");
+    expect(out.spec.addOns?.some((a) => a.id === "ocvs_3yr")).not.toBe(true);
+    // the commercial firewall mention must not be cited as a TOR-driven hub choice
+    expect(decisionFor(out.decisions, "hub.kind")!.source).toBe("best_practice");
+  });
+
   it("reads vCPU as half the OCPUs — and says so in the reasoning", () => {
     const out = deriveSpecFromTor([
       req("ต้องมีเครื่องแม่ข่ายไม่น้อยกว่า 4 เครื่อง", { metric: { name: "servers", op: ">=", value: 4, unit: "servers" } }),

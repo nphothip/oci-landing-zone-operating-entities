@@ -107,8 +107,10 @@ export function CompareTab({ result }: { result: GenerateResult }) {
             {p.currency === "USD" ? (
               <div className="text-[11px] text-neutral-500">≈ {thb(p.comparableThb)}</div>
             ) : null}
-            <div className="text-[11px] text-neutral-500">
-              {t(L(`AIS ชุดเดียวกัน ${thb(p.aisComparableThb)}`, `AIS same subset ${thb(p.aisComparableThb)}`))}
+            {/* The paired AIS figure is the only number this total may be read
+                against; when coverage is partial it must not be a whisper. */}
+            <div className={`text-[11px] ${p.mappedLines / cmp.lines.length < 0.6 ? "font-semibold text-amber-800" : "text-neutral-500"}`}>
+              {t(L(`เทียบกับ AIS ชุดเดียวกัน ${thb(p.aisComparableThb)}`, `vs AIS same subset ${thb(p.aisComparableThb)}`))}
             </div>
             {p.deltaPct != null ? (
               <div className={`mt-0.5 text-xs font-semibold ${p.deltaPct > 0 ? "text-green-700" : "text-red-700"}`}>
@@ -126,9 +128,12 @@ export function CompareTab({ result }: { result: GenerateResult }) {
               <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${CONF_BADGE[p.worstConfidence].cls}`}>
                 {t(CONF_BADGE[p.worstConfidence].label)}
               </span>
+              {/* Below ~60% coverage the headline number covers so little of
+                  the BOM that reading it against the AIS total is meaningless —
+                  flag it rather than let the big figure speak for itself. */}
               <span
                 className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-                  p.mappedLines / cmp.lines.length < 0.4 ? "bg-amber-100 text-amber-800" : "bg-neutral-100 text-neutral-600"
+                  p.mappedLines / cmp.lines.length < 0.6 ? "bg-amber-100 font-semibold text-amber-800" : "bg-neutral-100 text-neutral-600"
                 }`}
               >
                 {t(L(`เทียบได้ ${p.mappedLines}/${cmp.lines.length}`, `${p.mappedLines}/${cmp.lines.length} mapped`))}
