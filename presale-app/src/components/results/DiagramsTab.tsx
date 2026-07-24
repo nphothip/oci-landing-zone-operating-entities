@@ -18,6 +18,9 @@ const VIEW_LABEL: Record<ViewId, { th: string; en: string }> = {
   logging: L("Logging", "Logging"),
   backup: L("Backup", "Backup"),
   traffic: L("Traffic flow", "Traffic flow"),
+  resilience: L("Resilience/HA", "Resilience/HA"),
+  ipplan: L("IP plan", "IP plan"),
+  iam: L("IAM matrix", "IAM matrix"),
 };
 
 export function DiagramsTab({ diagrams, baseName }: { diagrams: DiagramDoc[]; baseName: string }) {
@@ -50,7 +53,7 @@ export function DiagramsTab({ diagrams, baseName }: { diagrams: DiagramDoc[]; ba
           <button
             className="rounded-lg border border-neutral-300 px-3 py-1.5 hover:bg-neutral-100"
             onClick={() => downloadBlob(new Blob([toDrawio(diagrams)], { type: "application/xml" }), `${baseName}-diagrams.drawio`)}
-            title={t(L("ไฟล์เดียว 10 หน้า เปิดแก้ต่อใน draw.io ได้", "One file, 10 pages — edit in draw.io"))}
+            title={t(L("ไฟล์เดียว 13 หน้า เปิดแก้ต่อใน draw.io ได้", "One file, 13 pages — edit in draw.io"))}
           >
             draw.io
           </button>

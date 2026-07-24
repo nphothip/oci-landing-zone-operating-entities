@@ -60,7 +60,7 @@ function Studio() {
             <span className="text-[#C74634]">OCI</span> Presale Studio
           </h1>
           <p className="text-sm text-neutral-600">
-            {t(L("BOM · ราคา/เดือน (THB) · Diagram 10 views · LaC code — ตามแนวทาง OCI Open Landing Zone", "BOM · monthly THB · 10-view diagrams · LaC code — per the OCI Open Landing Zone"))}
+            {t(L("BOM · ราคา/เดือน (THB) · Diagram 13 views · LaC code — ตามแนวทาง OCI Open Landing Zone", "BOM · monthly THB · 13-view diagrams · LaC code — per the OCI Open Landing Zone"))}
           </p>
         </div>
         <button
@@ -141,8 +141,8 @@ function Studio() {
             <p className="mt-1 text-sm text-neutral-600">
               {t(
                 L(
-                  "ออกแบบ landing zone เต็มรูปแบบตาม OCI Open LZ best practice — หลาย environment · หลาย project ต่อ env (compartment + NSG แยก) · OKE platform · Security Zones · เอกสารออกแบบครบ 10 views · แพ็กเกจ IaC พร้อม deploy",
-                  "Design a full landing zone per OCI Open LZ best practice — multiple environments · multiple projects per env (isolated compartments + NSGs) · OKE platforms · Security Zones · complete 10-view design doc · deploy-ready IaC package",
+                  "ออกแบบ landing zone เต็มรูปแบบตาม OCI Open LZ best practice — หลาย environment · หลาย project ต่อ env (compartment + NSG แยก) · OKE platform · Security Zones · เอกสารออกแบบครบ 13 views · แพ็กเกจ IaC พร้อม deploy",
+                  "Design a full landing zone per OCI Open LZ best practice — multiple environments · multiple projects per env (isolated compartments + NSGs) · OKE platforms · Security Zones · complete 13-view design doc · deploy-ready IaC package",
                 ),
               )}
             </p>

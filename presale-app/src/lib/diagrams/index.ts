@@ -10,6 +10,9 @@ import { layoutIdentityView } from "./layout/identity";
 import { layoutLoggingView } from "./layout/logflow";
 import { layoutBackupView } from "./layout/backupview";
 import { layoutTrafficView } from "./layout/traffic";
+import { layoutResilienceView } from "./layout/resilience";
+import { layoutIpPlanView } from "./layout/ipplan";
+import { layoutIamMatrixView } from "./layout/iam-matrix";
 
 /** Build all ten architecture views from the spec + generated LZ package. */
 export function buildDiagrams(spec: SolutionSpec, lacFiles: LacFile[]): DiagramDoc[] {
@@ -25,5 +28,8 @@ export function buildDiagrams(spec: SolutionSpec, lacFiles: LacFile[]): DiagramD
     layoutLoggingView(spec, gen),
     layoutBackupView(spec, gen),
     layoutTrafficView(spec, gen),
+    layoutResilienceView(spec, gen),
+    layoutIpPlanView(spec, gen),
+    layoutIamMatrixView(spec, gen),
   ];
 }

@@ -281,8 +281,56 @@ export function buildDesignDocument(result: GenerateResult): DesignDocument {
       ],
     },
     {
+      id: "resilience",
+      heading: L("15. Resilience และ High Availability", "15. Resilience & High Availability"),
+      kind: "prose",
+      view: "resilience",
+      paragraphs: [
+        L(
+          `การออกแบบกระจายความเสี่ยงตามลำดับชั้นของ OCI: ทรัพยากร compute กระจายข้าม Fault Domain (อย่างน้อย 2 FD ต่อ tier), Load Balancer เป็น regional service ที่มี HA ในตัว, ${facts.hub.firewallCount >= 2 ? "Network Firewall คู่ active/active แยก FD" : facts.hub.firewall ? "Network Firewall เดี่ยว (พิจารณาอัปเกรด Hub A เพื่อ HA)" : "hub ไม่มี firewall"} และฐานข้อมูล Autonomous DB มี HA/auto-failover ในตัว (Base DB เพิ่ม Data Guard standby ได้)`,
+          `The design de-risks along OCI's hierarchy: compute spreads across Fault Domains (>= 2 per tier), the Load Balancer is a regional service with built-in HA, ${facts.hub.firewallCount >= 2 ? "the Network Firewalls run as an active/active pair in separate FDs" : facts.hub.firewall ? "a single Network Firewall (consider Hub A for HA)" : "the hub carries no firewall"}, and Autonomous DB ships built-in HA/auto-failover (Base DB can add a Data Guard standby).`,
+        ),
+        L(
+          `การเชื่อมต่อภายนอกใช้ ${facts.connectivity} — เส้นทางคู่/สำรองถูกเลือกตามระดับ SLA ที่ต้องการ; SLA อ้างอิงของบริการหลัก: Load Balancer/ADB/OKE 99.95% ขึ้นไป ดูรายละเอียดใน diagram`,
+          `External connectivity uses ${facts.connectivity} — dual/backup paths are chosen to the required SLA; reference SLAs of the core services (Load Balancer/ADB/OKE) are 99.95%+, detailed in the diagram.`,
+        ),
+      ],
+    },
+    {
+      id: "ipplan",
+      heading: L("16. แผนผัง IP Address (CIDR Plan)", "16. IP Address Plan (CIDR Plan)"),
+      kind: "prose",
+      view: "ipplan",
+      paragraphs: [
+        L(
+          `พื้นที่ IP ถูกจัดสรรแบบไม่ทับซ้อนทั้งระบบ: hub VCN 10.0.0.0/21 (แบ่ง subnet อัตโนมัติตามชนิด hub), spoke ของแต่ละ environment ขนาด /21 (subnet web/app/db/infra อย่างละ /24) และ platform VCN ขนาด /20 ต่อ env ที่เปิด OKE — CIDR ภายใน cluster (services 10.96.0.0/16, pods 10.244.0.0/16) ไม่ถูก route ออกนอก cluster`,
+          `IP space is allocated overlap-free system-wide: hub VCN 10.0.0.0/21 (auto-carved subnets per hub kind), a /21 spoke per environment (web/app/db/infra /24s), and a /20 platform VCN per OKE-enabled environment — cluster-internal CIDRs (services 10.96.0.0/16, pods 10.244.0.0/16) are never routed outside the cluster.`,
+        ),
+        L(
+          "เลนที่ยังไม่ใช้ (environment ที่ไม่ได้เลือก) ถูกกันไว้เป็นพื้นที่ขยายในอนาคต — กติกา: ห้าม CIDR ทับซ้อนระหว่าง hub/spoke/platform ทั้งหมด, platform VCN ต้องเป็น /20 พอดี (ข้อกำหนด OKE profile), spoke ต้องกว้างอย่างน้อย /22",
+          "Unused lanes (unselected environments) are reserved for future growth — rules: no CIDR overlap across hub/spokes/platforms, platform VCNs must be exactly /20 (OKE profile requirement), spokes at least /22.",
+        ),
+      ],
+    },
+    {
+      id: "iam-matrix",
+      heading: L("17. IAM Policy Matrix", "17. IAM Policy Matrix"),
+      kind: "prose",
+      view: "iam",
+      paragraphs: [
+        L(
+          `สิทธิ์ทั้งหมดยึด least-privilege ผ่านกลุ่มเท่านั้น (${facts.policyCount} ชุด policy ที่ generate จริง): network-admin จัดการเฉพาะ cmp-lz-network, security-admin เฉพาะ cmp-lz-security, ผู้ดูแลราย environment เฉพาะ cmp ของ env ตน และผู้ดูแลราย project เห็นเฉพาะ project compartment ของตัวเอง — auditors ได้สิทธิ์อ่านทั้ง tenancy สำหรับตรวจสอบ`,
+          `Every right is least-privilege and group-based only (${facts.policyCount} generated policy sets): network-admin manages only cmp-lz-network, security-admin only cmp-lz-security, per-environment admins only their env compartment, and per-project admins see only their own project compartment — auditors get tenancy-wide read for reviews.`,
+        ),
+        L(
+          "หลักการที่บังคับใช้: deny-by-default (ไม่มี policy = ไม่มีสิทธิ์), ไม่มี grant ระดับผู้ใช้รายคน, แยกอำนาจ (ผู้ดูแล IAM ไม่ข้าม security), และ break-glass แยกบัญชีพร้อม audit ทุกการใช้งาน — matrix ฉบับเต็มอยู่ใน diagram",
+          "Enforced principles: deny-by-default (no policy = no access), no per-user grants, separation of duties (IAM admins cannot bypass security), and a separate audited break-glass account — the full matrix is in the diagram.",
+        ),
+      ],
+    },
+    {
       id: "bom",
-      heading: L("15. รายการทรัพยากรและค่าใช้จ่าย (BOM & Cost)", "15. Bill of Materials & Cost"),
+      heading: L("18. รายการทรัพยากรและค่าใช้จ่าย (BOM & Cost)", "18. Bill of Materials & Cost"),
       kind: "bom",
       paragraphs: [
         L(
@@ -293,13 +341,13 @@ export function buildDesignDocument(result: GenerateResult): DesignDocument {
     },
     {
       id: "assumptions",
-      heading: L("16. สมมติฐานและขอบเขต", "16. Assumptions & Scope"),
+      heading: L("19. สมมติฐานและขอบเขต", "19. Assumptions & Scope"),
       kind: "assumptions",
       paragraphs: [],
     },
     {
       id: "deployment",
-      heading: L("17. แนวทางการ Deploy", "17. Deployment Approach"),
+      heading: L("20. แนวทางการ Deploy", "20. Deployment Approach"),
       kind: "deployment",
       paragraphs: [
         L(
@@ -310,7 +358,7 @@ export function buildDesignDocument(result: GenerateResult): DesignDocument {
     },
     {
       id: "references",
-      heading: L("18. เอกสารอ้างอิง (Official)", "18. References (Official)"),
+      heading: L("21. เอกสารอ้างอิง (Official)", "21. References (Official)"),
       kind: "prose",
       paragraphs: [
         L(

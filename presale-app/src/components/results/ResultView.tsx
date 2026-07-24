@@ -21,7 +21,7 @@ export function ResultView({ result }: { result: GenerateResult }) {
   const tabs: { id: Tab; label: { th: string; en: string } }[] = [
     { id: "summary", label: L("สรุป", "Summary") },
     { id: "bom", label: L("BOM & ราคา", "BOM & Pricing") },
-    { id: "diagrams", label: L("Diagram (10 views)", "Diagrams (10 views)") },
+    { id: "diagrams", label: L("Diagram (13 views)", "Diagrams (13 views)") },
     { id: "doc", label: L("เอกสารออกแบบ", "Design Doc") },
     { id: "lac", label: L("LaC code", "LaC code") },
     { id: "deploy", label: L("Deploy", "Deploy") },

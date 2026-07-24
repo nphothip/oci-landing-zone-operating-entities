@@ -47,6 +47,7 @@ describe("design document", () => {
     expect(ids).toEqual([
       "executive", "overview", "functional", "security", "network", "operations", "runtime",
       "compartment-posture", "identity-groups", "password-policy", "mfa", "traffic-flow", "logging-central", "backup",
+      "resilience", "ipplan", "iam-matrix",
       "bom", "assumptions", "deployment", "references",
     ]);
     expect(doc.sections.find((s) => s.id === "network")?.view).toBe("network");

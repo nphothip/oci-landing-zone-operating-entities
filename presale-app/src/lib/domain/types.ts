@@ -498,7 +498,10 @@ export type ViewId =
   | "identity"
   | "logging"
   | "backup"
-  | "traffic";
+  | "traffic"
+  | "resilience"
+  | "ipplan"
+  | "iam";
 
 export type NodeKind =
   | "canvasTitle"
