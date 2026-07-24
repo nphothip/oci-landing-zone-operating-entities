@@ -131,17 +131,21 @@ describe("multi-cloud mapping — coverage and honesty", () => {
     expect(mapItem("huawei", fakeItem("base_db_ecpu", 4, 2976), CARDS).excluded).toBe(true);
   });
 
-  it("flags cross-border transfer on non-Thai regions and Thai→Thai on Thai regions", () => {
-    const gcpEgress = mapItem("gcp", fakeItem("egress_apac_gb", 1000, 1000), CARDS);
-    expect(gcpEgress.excluded).toBe(false);
-    if (!gcpEgress.excluded) expect(gcpEgress.note).toMatch(/ข้ามประเทศ|สิงคโปร์/);
-
-    const awsEgress = mapItem("aws", fakeItem("egress_apac_gb", 1000, 1000), CARDS);
-    expect(awsEgress.excluded).toBe(false);
-    if (!awsEgress.excluded && CARDS.aws.inCountry) expect(awsEgress.note).toContain("ไทย→ไทย");
-
-    const gcpLink = mapItem("gcp", fakeItem("fastconnect_1g", 1, 744), CARDS);
-    if (!gcpLink.excluded) expect(gcpLink.note).toMatch(/carrier.*ไม่รวม/);
+  // The border caveat has to follow the rate card, not a hardcoded provider
+  // list — GCP moved in-country when asia-southeast3 (Bangkok) went GA, and the
+  // wording must move with it.
+  it("derives the cross-border caveat from each card's own region", () => {
+    for (const p of PROVIDERS) {
+      const egress = mapItem(p, fakeItem("egress_apac_gb", 1000, 1000), CARDS);
+      if (egress.excluded) continue;
+      if (CARDS[p].inCountry) expect(egress.note, `${p} egress`).toContain("ไทย→ไทย");
+      else expect(egress.note, `${p} egress`).toMatch(/ข้ามประเทศ|ต่างประเทศ/);
+    }
+    // A hybrid link always states that the carrier circuit is excluded.
+    for (const p of PROVIDERS) {
+      const link = mapItem(p, fakeItem("fastconnect_1g", 1, 744), CARDS);
+      if (!link.excluded) expect(link.note, `${p} link`).toMatch(/ไม่รวม/);
+    }
   });
 
   // A firewall bundled free with every VM is a security group, not an NGFW with
@@ -268,8 +272,11 @@ describe("comparison engine — apples-to-apples totals", () => {
     expect(by("huawei").inCountry).toBe(true); // AP-Bangkok
     expect(by("nt").inCountry).toBe(true);
     expect(by("nipa").inCountry).toBe(true);
-    expect(by("gcp").inCountry).toBe(false); // no Thai GCP region — must show cross-border
-    expect(by("azure").inCountry).toBe(false); // Thailand Central not GA with prices
+    expect(by("gcp").inCountry).toBe(true); // asia-southeast3 Bangkok, GA 2026-01-21
+    expect(by("alibaba").inCountry).toBe(true);
+    // Azure's Thailand Central is announced but returns no priced SKUs, so it
+    // must still be presented as an overseas, cross-border option.
+    expect(by("azure").inCountry).toBe(false);
     expect(cmp.disclaimers.some((d) => d.th.includes("ข้ามประเทศ"))).toBe(true);
     // In-country providers must be listed first so the Thai option leads.
     const firstOverseas = cmp.totals.findIndex((p) => !p.inCountry);
@@ -365,6 +372,21 @@ describe("comparison engine — apples-to-apples totals", () => {
       expect(card.label.length, p).toBeGreaterThan(2);
       expect(card.region.length, p).toBeGreaterThan(2);
     }
+  });
+
+  // The whole table is only as trustworthy as its weakest rate, so guard the
+  // proportion that is pure model knowledge rather than a read-off price.
+  it("keeps unverified rates to a small minority of the rate card", () => {
+    let total = 0;
+    let estimate = 0;
+    for (const p of PROVIDERS) {
+      for (const r of Object.values(CARDS[p].rates)) {
+        total += 1;
+        if (r.confidence === "estimate") estimate += 1;
+      }
+    }
+    expect(total).toBeGreaterThan(150);
+    expect(estimate / total, `${estimate}/${total} rates are estimates`).toBeLessThan(0.1);
   });
 
   // A Thai cloud publishing only VM packages must not look artificially cheap:

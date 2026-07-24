@@ -390,317 +390,353 @@
   "gcp": {
     "provider": "gcp",
     "label": "Google Cloud",
-    "region": "asia-southeast1 (Singapore)",
-    "inCountry": false,
+    "region": "asia-southeast3 (Bangkok)",
+    "inCountry": true,
     "currency": "USD",
     "asOf": "2026-07-24",
+    "summary": "YES — a Thailand region is GA with published prices. Google Cloud launched the Bangkok region (asia-southeast3) on 2026-01-21 and it appears as a selectable region with published on-demand list prices in the region pickers on cloud.google.com pricing pages (Compute Engine, Cloud Storage, Filestore, Cloud SQL, Cloud Run, Memorystore, Datastream, BigQuery, Load Balancing, VPC network, Cloud VPN). All region-scoped rates below are therefore quoted for asia-southeast3 unless the note says otherwise. Prices were read directly out of the embedded per-region price dataset that backs the official pri…",
     "rates": {
       "vcpu_hour": {
         "id": "vcpu_hour",
-        "service": "Compute Engine N2D custom vCPU",
+        "service": "Compute Engine — N2D custom machine type, custom vCPU",
         "unit": "vCPU-hour",
-        "source": "https://cloud.google.com/compute/vm-instance-pricing",
-        "confidence": "estimate",
-        "price": 0.0332
+        "price": 0.03562545,
+        "source": "https://cloud.google.com/products/compute/pricing/general-purpose#n2d-machine-types",
+        "confidence": "verified",
+        "notes": "REGION EXCEPTION: from asia-southeast1 (Singapore). N2D (and N2) are not offered in asia-southeast3 — the Bangkok region price list covers 41 regions for N2D and Bangkok is not among them. Bangkok's nearest published general-purpose custom shape is N4: $0.034…"
       },
       "ram_gb_hour": {
         "id": "ram_gb_hour",
-        "service": "Compute Engine N2D custom RAM",
-        "unit": "GB-hour",
-        "source": "https://cloud.google.com/compute/vm-instance-pricing",
-        "confidence": "estimate",
-        "price": 0.00445
+        "service": "Compute Engine — N2D custom machine type, custom memory",
+        "unit": "GiB-hour",
+        "price": 0.00477435,
+        "source": "https://cloud.google.com/products/compute/pricing/general-purpose#n2d-machine-types",
+        "confidence": "verified",
+        "notes": "REGION EXCEPTION: from asia-southeast1 (Singapore), same reason as vcpu_hour. Bangkok N4 custom memory equivalent: $0.0039029 per GiB-hour (asia-southeast3). Singapore N2 custom memory for reference: $0.0054873/GiB-hr. Unit is GiB, not GB."
       },
       "block_gb_mo": {
         "id": "block_gb_mo",
-        "service": "Balanced persistent disk",
-        "unit": "GB-month",
-        "source": "https://cloud.google.com/compute/disks-image-pricing",
-        "confidence": "estimate",
-        "price": 0.12
+        "service": "Compute Engine — Balanced Persistent Disk (pd-balanced) provisioned space",
+        "unit": "GiB-month",
+        "price": 0.105,
+        "source": "https://cloud.google.com/products/compute/pricing/general-purpose#disk-pricing",
+        "confidence": "verified",
+        "notes": "asia-southeast3. Hourly equivalent on the same page: $0.000143836/GiB-hr. Regional (dual-zone) balanced is $0.21/GiB-month. Singapore comparison: $0.1099/GiB-mo (0.000150685/hr x 730)."
       },
       "os_std_gb_mo": {
         "id": "os_std_gb_mo",
-        "service": "Cloud Storage Standard",
-        "unit": "GB-month",
+        "service": "Cloud Storage — Standard storage, single region",
+        "unit": "GiB-month",
+        "price": 0.021,
         "source": "https://cloud.google.com/storage/pricing",
-        "confidence": "estimate",
-        "price": 0.02
+        "confidence": "verified",
+        "notes": "asia-southeast3 single-region bucket. Singapore is $0.020. Cloud Storage bills in GiB, not GB."
       },
       "os_ia_gb_mo": {
         "id": "os_ia_gb_mo",
-        "service": "Cloud Storage Nearline",
-        "unit": "GB-month",
+        "service": "Cloud Storage — Nearline storage, single region",
+        "unit": "GiB-month",
+        "price": 0.013,
         "source": "https://cloud.google.com/storage/pricing",
-        "confidence": "estimate",
-        "price": 0.01
+        "confidence": "verified",
+        "notes": "asia-southeast3. Nearline is GCP's infrequent-access class (30-day minimum storage duration). Coldline in Bangkok is $0.0055/GiB-mo if a colder tier is wanted."
       },
       "os_arch_gb_mo": {
         "id": "os_arch_gb_mo",
-        "service": "Cloud Storage Archive",
-        "unit": "GB-month",
+        "service": "Cloud Storage — Archive storage, single region",
+        "unit": "GiB-month",
+        "price": 0.0025,
         "source": "https://cloud.google.com/storage/pricing",
-        "confidence": "estimate",
-        "price": 0.0025
+        "confidence": "verified",
+        "notes": "asia-southeast3. 365-day minimum storage duration."
       },
       "os_retrieval_gb": {
         "id": "os_retrieval_gb",
-        "service": "Nearline retrieval",
-        "unit": "GB",
-        "source": "https://cloud.google.com/storage/pricing",
-        "confidence": "estimate",
-        "price": 0.01
+        "service": "Cloud Storage — Nearline data retrieval fee",
+        "unit": "GiB retrieved",
+        "price": 0.01,
+        "source": "https://cloud.google.com/storage/pricing#retrieval-pricing",
+        "confidence": "verified",
+        "notes": "Global rate, no regional variance. Coldline $0.02/GiB, Archive $0.05/GiB. Standard and Rapid storage have no retrieval fee. This is on top of Class B operation and egress charges."
       },
       "os_req_10k": {
         "id": "os_req_10k",
-        "service": "GCS Class B operations",
-        "unit": "10,000 ops",
-        "source": "https://cloud.google.com/storage/pricing",
-        "confidence": "estimate",
-        "price": 0.004
+        "service": "Cloud Storage — Class B operations, Standard storage, flat namespace",
+        "unit": "10,000 operations",
+        "price": 0.004,
+        "source": "https://cloud.google.com/storage/pricing#operations-pricing",
+        "confidence": "derived",
+        "notes": "Google publishes $0.0004 per 1,000 Class B ops for Standard storage in a single-region bucket (global rate, no regional variance). Math: $0.0004 x 10 = $0.004 per 10,000. Hierarchical-namespace buckets are $0.0005/1,000 -> $0.005/10,000. Nearline Class B is $…"
       },
       "fss_gb_mo": {
         "id": "fss_gb_mo",
-        "service": "Filestore Basic HDD",
-        "unit": "GB-month",
+        "service": "Filestore — Basic HDD tier (Standard), per-GiB capacity",
+        "unit": "GiB-month",
+        "price": 0.176,
         "source": "https://cloud.google.com/filestore/pricing",
-        "confidence": "estimate",
-        "price": 0.2
+        "confidence": "verified",
+        "notes": "asia-southeast3, Basic HDD tier (the tier Google labels 'Basic HDD (Standard)'). Hourly equivalent $0.000241096/GiB-hr. IMPORTANT: Basic HDD instances under 1 TiB also carry a per-instance fee of $36.30/month ($0.049726027/hr) which is waived at 1 TiB and abo…"
       },
       "alb_hour": {
         "id": "alb_hour",
-        "service": "External Application LB forwarding rule",
-        "unit": "hour",
-        "source": "https://cloud.google.com/vpc/network-pricing",
-        "confidence": "estimate",
-        "price": 0.025
+        "service": "Cloud Load Balancing — external Application Load Balancer forwarding rule",
+        "unit": "forwarding-rule-hour",
+        "price": 0.025,
+        "source": "https://cloud.google.com/load-balancing/pricing",
+        "confidence": "verified",
+        "notes": "Global rate (Google prices forwarding rules globally, not per region). $0.025/hr each for the first 5 forwarding rules, then $0.01/hr per additional rule. Monthly published equivalent $18.25 / $7.30. Covers global, classic and regional external Application Lo…"
       },
       "lb_data_gb": {
         "id": "lb_data_gb",
-        "service": "LB data processed",
-        "unit": "GB",
-        "source": "https://cloud.google.com/vpc/network-pricing",
-        "confidence": "estimate",
-        "price": 0.008
+        "service": "Cloud Load Balancing — data processed by load balancer",
+        "unit": "GiB processed",
+        "price": 0.0084,
+        "source": "https://cloud.google.com/load-balancing/pricing",
+        "confidence": "verified",
+        "notes": "asia-southeast3. Same $0.0084/GiB rate applies to both inbound and outbound processed data; charged per direction. Data processing is billed in the region where traffic is processed even for globally-scoped load balancers."
       },
       "nlb_hour": {
         "id": "nlb_hour",
-        "service": "Passthrough NLB forwarding rule",
-        "unit": "hour",
-        "source": "https://cloud.google.com/vpc/network-pricing",
-        "confidence": "estimate",
-        "price": 0.025
+        "service": "Cloud Load Balancing — passthrough Network Load Balancer forwarding rule",
+        "unit": "forwarding-rule-hour",
+        "price": 0.025,
+        "source": "https://cloud.google.com/load-balancing/pricing",
+        "confidence": "verified",
+        "notes": "Global rate. Internal and external passthrough Network Load Balancers use the same forwarding-rule pricing table as the ALB: $0.025/hr for the first 5 rules, $0.01/hr per additional rule. Passthrough NLBs incur no proxy-instance charge; regional data-processi…"
       },
       "fw_endpoint_hour": {
         "id": "fw_endpoint_hour",
-        "service": "Cloud NGFW endpoint",
-        "unit": "hour",
+        "service": "Cloud Next Generation Firewall (Cloud NGFW) Enterprise — firewall endpoint deployment",
+        "unit": "endpoint-hour",
+        "price": 1.75,
         "source": "https://cloud.google.com/firewall/pricing",
-        "confidence": "estimate",
-        "price": 0.4
+        "confidence": "verified",
+        "notes": "Global rate, no regional variance. Monthly published equivalent $1,277.50. The firewall endpoint is an organization-level resource billed to the billing project; one endpoint is required per zone you want L7 inspection in, so a 2-zone HA deployment is 2 x $1.…"
       },
       "fw_gb": {
         "id": "fw_gb",
-        "service": "Cloud NGFW traffic inspected",
-        "unit": "GB",
+        "service": "Cloud NGFW Enterprise — data processing (traffic inspected by L7 security)",
+        "unit": "GiB inspected",
+        "price": 0.0193,
         "source": "https://cloud.google.com/firewall/pricing",
-        "confidence": "estimate",
-        "price": 0.0075
+        "confidence": "verified",
+        "notes": "Global rate. Charged for traffic in BOTH directions of a flow. Same $0.0193/GiB applies to the Cloud NGFW Standard tier (FQDN/threat-intel), but a flow matched by Enterprise rules is only charged once (the Standard charge is waived). Cloud NGFW Essentials and…"
       },
-      "waf_policy_mo": {
-        "id": "waf_policy_mo",
-        "service": "Cloud Armor policy",
-        "unit": "month",
+      "waf_base_mo": {
+        "id": "waf_base_mo",
+        "service": "Google Cloud Armor Standard — security policy",
+        "unit": "policy-month",
+        "price": 5,
         "source": "https://cloud.google.com/armor/pricing",
-        "confidence": "estimate",
-        "notes": "+$1/rule/month not included",
-        "price": 5
+        "confidence": "verified",
+        "notes": "Global rate. $5.00 per policy per month ($0.006849315/hr) PLUS $1.00 per rule per month ($0.001369863/hr) — so a realistic WAF baseline is $5 + (n_rules x $1). Cloud Armor Enterprise Paygo is a different model at $200/month subscription covering 2 protected r…"
       },
       "waf_1m_req": {
         "id": "waf_1m_req",
-        "service": "Cloud Armor requests",
-        "unit": "1M requests",
+        "service": "Google Cloud Armor Standard — requests against a globally-scoped security policy",
+        "unit": "1,000,000 requests",
+        "price": 0.75,
         "source": "https://cloud.google.com/armor/pricing",
-        "confidence": "estimate",
-        "price": 0.75
+        "confidence": "verified",
+        "notes": "Global rate. Regionally-scoped security policies (regional external ALB / internal ALB) are cheaper at $0.60 per 1M requests. Under Cloud Armor Enterprise, request charges are 'all included' in the subscription."
       },
       "ic_1g_hour": {
         "id": "ic_1g_hour",
-        "service": "Partner Interconnect 1G VLAN attachment",
-        "unit": "hour",
+        "service": "Partner Interconnect — 1 Gbps VLAN attachment",
+        "unit": "attachment-hour",
+        "price": 0.2778,
         "source": "https://cloud.google.com/network-connectivity/docs/interconnect/pricing",
-        "confidence": "estimate",
-        "price": 0.3
+        "confidence": "verified",
+        "notes": "Product: Partner Interconnect (Google charges only for the VLAN attachment; the physical circuit is billed by the service provider separately and is not a Google list price). Global rate table, not region-specific. Bangkok-region attachments qualify for the d…"
       },
       "ic_10g_hour": {
         "id": "ic_10g_hour",
-        "service": "Dedicated Interconnect 10G attachment",
-        "unit": "hour",
+        "service": "Dedicated Interconnect — 1/2/5/10 Gbps VLAN attachment",
+        "unit": "attachment-hour",
+        "price": 0.1,
         "source": "https://cloud.google.com/network-connectivity/docs/interconnect/pricing",
-        "confidence": "estimate",
-        "price": 2.36
+        "confidence": "verified",
+        "notes": "Product: Dedicated Interconnect. IMPORTANT for TCO: this $0.10/hr is the VLAN attachment only. The underlying Dedicated Interconnect connection (physical circuit) is charged separately at $2.328/hr per 10-Gbps circuit, so a realistic 10G Dedicated Interconnec…"
       },
       "vpn_tunnel_hour": {
         "id": "vpn_tunnel_hour",
-        "service": "Cloud VPN tunnel",
+        "service": "Cloud VPN (HA VPN) — per tunnel attached to the gateway",
         "unit": "tunnel-hour",
+        "price": 0.0525,
         "source": "https://cloud.google.com/network-connectivity/docs/vpn/pricing",
-        "confidence": "estimate",
-        "price": 0.055
+        "confidence": "verified",
+        "notes": "asia-southeast3. Monthly published equivalent $38.325 per tunnel. HA VPN requires 2 tunnels for the 99.99% SLA (4 against an AWS peer), so budget 2 x $0.0525/hr. Rate is identical for Classic VPN. IPsec traffic is billed separately at standard internet egress…"
       },
       "egress_gb": {
         "id": "egress_gb",
-        "service": "Premium tier internet egress",
-        "unit": "GB",
-        "source": "https://cloud.google.com/vpc/network-pricing",
-        "confidence": "estimate",
-        "price": 0.12
+        "service": "VPC — Premium Tier internet data transfer out (egress), first paid tier",
+        "unit": "GiB",
+        "price": 0.12,
+        "source": "https://cloud.google.com/vpc/network-pricing#internet_egress",
+        "confidence": "verified",
+        "notes": "asia-southeast3, Premium Tier, 0–1,024 GiB/month band, destinations North America / Europe / Asia (excl. Korea and Indonesia). Next bands: $0.11 (1,024–10,240 GiB), $0.085 (>10,240 GiB). Destinations Australia/Indonesia/Korea/South America/Saudi Arabia are $0…"
       },
       "pg_vcpu_hour": {
         "id": "pg_vcpu_hour",
-        "service": "Cloud SQL PostgreSQL Enterprise vCPU",
+        "service": "Cloud SQL for PostgreSQL — Enterprise edition, dedicated-core vCPU",
         "unit": "vCPU-hour",
+        "price": 0.043365,
         "source": "https://cloud.google.com/sql/pricing",
-        "confidence": "estimate",
-        "price": 0.052
+        "confidence": "verified",
+        "notes": "asia-southeast3, Enterprise edition, zonal (non-HA). Monthly published equivalent $31.65645. HA (regional) doubles it to $0.08673/vCPU-hr. Google publishes one CPU/memory table covering both MySQL and PostgreSQL, so this rate is identical to mysql_vcpu_hour. …"
       },
       "pg_ram_gb_hour": {
         "id": "pg_ram_gb_hour",
-        "service": "Cloud SQL PostgreSQL Enterprise RAM",
-        "unit": "GB-hour",
+        "service": "Cloud SQL for PostgreSQL — Enterprise edition, memory",
+        "unit": "GiB-hour",
+        "price": 0.00735,
         "source": "https://cloud.google.com/sql/pricing",
-        "confidence": "estimate",
-        "price": 0.0088
+        "confidence": "verified",
+        "notes": "asia-southeast3, Enterprise edition, zonal. Monthly equivalent $5.3655/GiB. HA doubles to $0.0147/GiB-hr. Same table as MySQL. Enterprise Plus: $0.00945/GiB-hr."
       },
       "pg_storage_gb_mo": {
         "id": "pg_storage_gb_mo",
-        "service": "Cloud SQL SSD storage",
-        "unit": "GB-month",
+        "service": "Cloud SQL — SSD storage capacity",
+        "unit": "GiB-month",
+        "price": 0.1785,
         "source": "https://cloud.google.com/sql/pricing",
-        "confidence": "estimate",
-        "price": 0.204
+        "confidence": "verified",
+        "notes": "asia-southeast3, zonal SSD. HA/regional SSD is $0.357/GiB-mo. HDD is $0.0945/GiB-mo. Backups (used) $0.084/GiB-mo. Hyperdisk Balanced capacity option is $0.12075/GiB-mo + IOPS/throughput charges. Same storage table applies to MySQL and PostgreSQL."
       },
       "mysql_vcpu_hour": {
         "id": "mysql_vcpu_hour",
-        "service": "Cloud SQL MySQL Enterprise vCPU",
+        "service": "Cloud SQL for MySQL — Enterprise edition, dedicated-core vCPU",
         "unit": "vCPU-hour",
+        "price": 0.043365,
         "source": "https://cloud.google.com/sql/pricing",
-        "confidence": "estimate",
-        "price": 0.052
+        "confidence": "verified",
+        "notes": "asia-southeast3, Enterprise edition, zonal. Google publishes a single 'MySQL and PostgreSQL pricing' CPU/memory table, so MySQL and PostgreSQL Enterprise rates are identical by design — not an assumption on my part."
       },
       "mysql_ram_gb_hour": {
         "id": "mysql_ram_gb_hour",
-        "service": "Cloud SQL MySQL Enterprise RAM",
-        "unit": "GB-hour",
+        "service": "Cloud SQL for MySQL — Enterprise edition, memory",
+        "unit": "GiB-hour",
+        "price": 0.00735,
         "source": "https://cloud.google.com/sql/pricing",
-        "confidence": "estimate",
-        "price": 0.0088
+        "confidence": "verified",
+        "notes": "asia-southeast3, Enterprise edition, zonal. Identical to PostgreSQL Enterprise (shared pricing table). HA doubles to $0.0147/GiB-hr."
       },
       "k8s_cluster_hour": {
         "id": "k8s_cluster_hour",
-        "service": "GKE Standard cluster management",
+        "service": "Google Kubernetes Engine (GKE) — cluster management fee",
         "unit": "cluster-hour",
+        "price": 0.1,
         "source": "https://cloud.google.com/kubernetes-engine/pricing",
-        "confidence": "estimate",
-        "price": 0.1
+        "confidence": "verified",
+        "notes": "Global flat fee, charged in 1-second increments, identical for Standard and Autopilot and for zonal/regional clusters. Node compute is billed separately at Compute Engine rates. A GKE free tier gives $74.40/month in credits per billing account (one free zonal…"
       },
       "redis_gb_hour": {
         "id": "redis_gb_hour",
-        "service": "Memorystore for Redis Basic",
-        "unit": "GB-hour",
+        "service": "Memorystore for Redis — Basic tier, M1 capacity tier (1–4 GiB)",
+        "unit": "GiB-hour",
+        "price": 0.05145,
         "source": "https://cloud.google.com/memorystore/docs/redis/pricing",
-        "confidence": "estimate",
-        "price": 0.05
+        "confidence": "verified",
+        "notes": "asia-southeast3, Basic tier. Price is tiered DOWN with instance size: M1 (1–4 GiB) $0.05145, M2 (5–10 GiB) $0.02835, M3 (11–35 GiB) $0.02415, M4 (36–100 GiB) $0.01995, M5 (>100 GiB) $0.0168 per GiB-hour. Standard (HA) tier M1 is $0.0672/GiB-hr. Use the tier m…"
       },
       "functions_gbs": {
         "id": "functions_gbs",
-        "service": "Cloud Run functions (CPU+RAM effective)",
-        "unit": "GB-second",
+        "service": "Cloud Run functions — request-based billing, memory + CPU folded at 1 vCPU per GiB",
+        "unit": "GiB-second (incl. 1 vCPU-second)",
+        "price": 0.0000265,
         "source": "https://cloud.google.com/run/pricing",
-        "confidence": "estimate",
-        "notes": "GiB-s rate + vCPU-s rate folded at 1 vCPU per GB",
-        "price": 0.0000265
+        "confidence": "derived",
+        "notes": "asia-southeast3, Cloud Run services with request-based billing (the model Cloud Run functions use). Published components (active time): memory $0.0000025 per GiB-second, CPU $0.000024 per vCPU-second. Math at 1 vCPU per GiB: 0.0000025 + (1 x 0.000024) = $0.00…"
       },
       "functions_1m_inv": {
         "id": "functions_1m_inv",
-        "service": "Cloud Run requests",
-        "unit": "1M requests",
+        "service": "Cloud Run functions — requests (request-based billing)",
+        "unit": "1,000,000 requests",
+        "price": 0.4,
         "source": "https://cloud.google.com/run/pricing",
-        "confidence": "estimate",
-        "price": 0.4
+        "confidence": "verified",
+        "notes": "asia-southeast3. First 2 million requests per month are free. Instance-based-billing Cloud Run services have no per-request charge at all (they pay CPU/memory for the full instance lifetime instead: $0.000018/vCPU-s and $0.000002/GiB-s in Bangkok)."
       },
       "apigw_1m": {
         "id": "apigw_1m",
-        "service": "API Gateway",
-        "unit": "1M calls",
+        "service": "API Gateway — API calls (billed via Service Control)",
+        "unit": "1,000,000 API calls",
+        "price": 3,
         "source": "https://cloud.google.com/api-gateway/pricing",
-        "confidence": "estimate",
-        "price": 3
+        "confidence": "verified",
+        "notes": "Global rate, no regional variance. Tiers: first 2M calls/month free, 2M–1B at $3.00 per million, above 1B at $1.50 per million. Egress from API Gateway is billed separately at Premium Tier rates ($0.12/GiB for the Asia-Pacific-to-Asia-Pacific first band)."
       },
       "pubsub_tib": {
         "id": "pubsub_tib",
-        "service": "Pub/Sub throughput",
+        "service": "Pub/Sub — message delivery throughput (publish + subscribe)",
         "unit": "TiB",
+        "price": 40,
         "source": "https://cloud.google.com/pubsub/pricing",
-        "confidence": "estimate",
-        "price": 40
+        "confidence": "verified",
+        "notes": "Explicitly '$40 per TiB in all Google Cloud regions' — no regional variance. First 10 GiB/month per billing account free. BigQuery and Cloud Storage subscriptions are $50/TiB; import topics $50–$80/TiB. Message storage is a separate $0.27/GiB-month."
       },
       "log_ingest_gb": {
         "id": "log_ingest_gb",
-        "service": "Cloud Logging ingestion",
+        "service": "Cloud Logging — log ingestion into log buckets",
         "unit": "GiB",
+        "price": 0.5,
         "source": "https://cloud.google.com/stackdriver/pricing",
-        "confidence": "estimate",
-        "price": 0.5
+        "confidence": "verified",
+        "notes": "Global rate. One-time charge for streaming logs into bucket storage; includes up to 30 days retention, indexing and querying at no extra cost. First 50 GiB per project per month free. Vended network logs (VPC Flow Logs, Firewall Rules Logging, Cloud NAT) are …"
       },
       "dns_1m": {
         "id": "dns_1m",
-        "service": "Cloud DNS queries",
-        "unit": "1M queries",
+        "service": "Cloud DNS — regular DNS queries",
+        "unit": "1,000,000 queries",
+        "price": 0.4,
         "source": "https://cloud.google.com/dns/pricing",
-        "confidence": "estimate",
-        "notes": "routing policies included (no per-policy fee)",
-        "price": 0.4
+        "confidence": "verified",
+        "notes": "Global rate, no free tier for Cloud DNS. $0.40 per million for the first 1 billion queries/month, $0.20 per million above. Routing-policy queries (geo/weighted/failover) cost more: $0.70 per million. Managed zones are billed separately at $0.20/zone/month for…"
       },
       "queue_1m": {
         "id": "queue_1m",
-        "service": "Cloud Tasks",
-        "unit": "1M operations",
+        "service": "Cloud Tasks — billable operations (API calls and push delivery attempts)",
+        "unit": "1,000,000 operations",
+        "price": 0.4,
         "source": "https://cloud.google.com/tasks/pricing",
-        "confidence": "estimate",
-        "price": 0.4
+        "confidence": "verified",
+        "notes": "Global rate. First 1 million operations per month free; $0.40 per million up to 5 billion; above that contact sales. Operations are chunked at 32 KB — a 96 KB task counts as 3 operations. Egress for HTTP-target tasks is billed separately at network rates."
       },
       "datastream_gb": {
         "id": "datastream_gb",
-        "service": "Datastream CDC",
-        "unit": "GB",
+        "service": "Datastream — change data capture (CDC) data processed",
+        "unit": "GiB processed",
+        "price": 2.1,
         "source": "https://cloud.google.com/datastream/pricing",
-        "confidence": "estimate",
-        "price": 1
+        "confidence": "verified",
+        "notes": "asia-southeast3, first tier (0–2,500 GiB/month). Tiered down: $1.575 (2,500–5,000 GiB), $1.26 (5,000–10,000 GiB), $0.84 (>10,000 GiB). Backfill is separate and cheaper: first 500 GiB/month free then $0.42/GiB. AlloyDB and Spanner sources get 100 GiB/month of …"
       },
       "bq_slot_hour": {
         "id": "bq_slot_hour",
-        "service": "BigQuery Enterprise slot",
+        "service": "BigQuery — Enterprise edition slot (pay-as-you-go capacity compute)",
         "unit": "slot-hour",
+        "price": 0.072,
         "source": "https://cloud.google.com/bigquery/pricing",
-        "confidence": "estimate",
-        "price": 0.066
+        "confidence": "verified",
+        "notes": "asia-southeast3, Enterprise edition, pay-as-you-go, billed per second with a 1-minute minimum. Monthly published equivalent $52.56 per slot. With commitments: $0.0576/slot-hr (1-year) and $0.0432/slot-hr (3-year). This is compute only — BigQuery storage and s…"
       },
       "gcve_node_hour": {
         "id": "gcve_node_hour",
-        "service": "VMware Engine ve1-standard-72",
-        "unit": "node-hour",
+        "service": "Google Cloud VMware Engine — ve1-standard-72 node (portable VCF license)",
+        "unit": "node-hour (1-year commitment, monthly payments)",
+        "price": 4.9838063,
         "source": "https://cloud.google.com/vmware-engine/pricing",
-        "confidence": "estimate",
-        "price": 9
+        "confidence": "verified",
+        "notes": "TWO CAVEATS, both material. (1) REGION: VMware Engine is not offered in asia-southeast3 — this rate is asia-southeast1 (Singapore); Sydney is identical. (2) BASIS: the current official pricing page no longer publishes an on-demand hourly rate for ve1-standard…"
       },
-      "looker_user_mo": {
-        "id": "looker_user_mo",
-        "service": "Looker Studio Pro",
-        "unit": "user-month",
+      "bi_user_mo": {
+        "id": "bi_user_mo",
+        "service": "Looker Studio Pro (page currently branded 'Data Studio Pro') — Project subscription",
+        "unit": "user-month (per project)",
+        "price": 9,
         "source": "https://cloud.google.com/looker-studio",
-        "confidence": "estimate",
-        "price": 9
+        "confidence": "verified",
+        "notes": "Product identified: Looker Studio Pro, the paid tier of Looker Studio (self-service Looker Studio remains free). Billed as '$9 per user per project per month' — note the per-PROJECT scoping, so a user in three projects is billed three times. Global price, not…"
       }
     }
   },
@@ -1591,6 +1627,359 @@
         "source": "https://nipa.cloud/pricing/nipa-space/external-ip",
         "confidence": "verified",
         "notes": "Domestic (in-Thailand) bandwidth is FREE. International egress tiers, recalculated monthly: first 1 TiB 2.31; next 49 TiB 2.18; next 100 TiB 1.77; next 350 TiB 1.63; over 500 TiB 1.09 THB/GiB. Upload free. Related: external IP 170 THB/mo (0.24 THB/hr); unused…"
+      }
+    }
+  },
+  "alibaba": {
+    "provider": "alibaba",
+    "label": "Alibaba Cloud",
+    "region": "Thailand (Bangkok) ap-southeast-7",
+    "inCountry": true,
+    "currency": "USD",
+    "asOf": "2026-07-24",
+    "summary": "Alibaba Cloud publishes Thailand (Bangkok) prices for most core services. ECS and disk prices were read from Alibaba's official international price JSON (g.alicdn.com ecs-price-info-intl v2.0.410, published 2026-07-23) which backs the ECS pricing-list page; OSS/NAS/CDT prices from Bangkok region tables embedded in official pricing pages; LB/firewall/WAF/VPN/Express Connect/ACK/FC/Kafka/SLS/SMQ/MaxCompute/Quick BI from official Documentation Center billing pages (some are global or region-group reference prices). RDS PG/MySQL pay-as-you-go hourly is NOT published on the intl website, so per-vC…",
+    "rates": {
+      "vcpu_hour": {
+        "id": "vcpu_hour",
+        "service": "Elastic Compute Service (ECS) g7/r7 pay-as-you-go, Linux, Thailand (Bangkok)",
+        "unit": "vCPU-hour",
+        "price": 0.033482,
+        "source": "https://g.alicdn.com/aliyun/ecs-price-info-intl/2.0.410/price/download/instancePrice.json (data behind www.alibabacloud.com/en/product/ecs-pricing-list)",
+        "confidence": "derived",
+        "notes": "Anchors: ecs.g7.large 2v/8GB = $0.091314/hr and ecs.r7.large 2v/16GB = $0.115664/hr (Bangkok, PAYG effective price; pre-discount originals $0.1026/$0.12996). RAM = (0.115664-0.091314)/8 = 0.00304375/GB-hr; vCPU = (0.091314-8*0.00304375)/2 = 0.033482. Price fi…"
+      },
+      "ram_gb_hour": {
+        "id": "ram_gb_hour",
+        "service": "ECS memory component (g7 vs r7)",
+        "unit": "GB-hour",
+        "price": 0.00304375,
+        "source": "https://g.alicdn.com/aliyun/ecs-price-info-intl/2.0.410/price/download/instancePrice.json",
+        "confidence": "derived",
+        "notes": "See vcpu_hour: (r7.large - g7.large)/8 GB, Bangkok PAYG."
+      },
+      "block_gb_mo": {
+        "id": "block_gb_mo",
+        "service": "ESSD PL1 cloud disk",
+        "unit": "GB-month",
+        "price": 0.152,
+        "source": "https://g.alicdn.com/aliyun/ecs-price-info-intl/2.0.410/price/download/diskPrice.json",
+        "confidence": "verified",
+        "notes": "Bangkok (ap-southeast-7): $15.20 per 100 GB per month ($0.02532/100GB-hr hourly PAYG). Same file version as ECS prices."
+      },
+      "os_std_gb_mo": {
+        "id": "os_std_gb_mo",
+        "service": "OSS Standard storage (LRS)",
+        "unit": "GB-month",
+        "price": 0.016,
+        "source": "https://www.alibabacloud.com/en/product/oss/pricing",
+        "confidence": "verified",
+        "notes": "Thailand (Bangkok) region table; first 5 GB free. ZRS = $0.018."
+      },
+      "os_ia_gb_mo": {
+        "id": "os_ia_gb_mo",
+        "service": "OSS Infrequent Access storage (LRS)",
+        "unit": "GB-month",
+        "price": 0.00935,
+        "source": "https://www.alibabacloud.com/en/product/oss/pricing",
+        "confidence": "verified",
+        "notes": "Thailand (Bangkok). 30-day minimum storage duration, 64KB minimum object size."
+      },
+      "os_arch_gb_mo": {
+        "id": "os_arch_gb_mo",
+        "service": "OSS Archive storage (LRS)",
+        "unit": "GB-month",
+        "price": 0.0043,
+        "source": "https://www.alibabacloud.com/en/product/oss/pricing",
+        "confidence": "verified",
+        "notes": "Thailand (Bangkok). 60-day minimum storage duration."
+      },
+      "os_retrieval_gb": {
+        "id": "os_retrieval_gb",
+        "service": "OSS IA data retrieval",
+        "unit": "GB",
+        "price": 0.0072,
+        "source": "https://www.alibabacloud.com/en/product/oss/pricing",
+        "confidence": "verified",
+        "notes": "Thailand (Bangkok). Archive retrieval $0.0095/GB ($0.030/GB for real-time access of Archive)."
+      },
+      "os_req_10k": {
+        "id": "os_req_10k",
+        "service": "OSS API read requests",
+        "unit": "10,000 requests",
+        "price": 0.0014,
+        "source": "https://www.alibabacloud.com/en/product/oss/pricing",
+        "confidence": "verified",
+        "notes": "Thailand (Bangkok), Standard storage reads: first 500 million/month FREE, then $0.0014/10k. IA reads $0.010/10k; Standard writes free to 100M then $0.014/10k."
+      },
+      "fss_gb_mo": {
+        "id": "fss_gb_mo",
+        "service": "NAS (File Storage) - Capacity type, pay-as-you-go",
+        "unit": "GB-month",
+        "price": 0.09,
+        "source": "https://www.alibabacloud.com/en/product/nas/pricing",
+        "confidence": "verified",
+        "notes": "Thailand (Bangkok) region table. General-purpose Capacity NAS $0.09; Premium $0.13; Performance $0.32/GB-mo."
+      },
+      "alb_hour": {
+        "id": "alb_hour",
+        "service": "Application Load Balancer (ALB) Standard edition instance fee",
+        "unit": "hour",
+        "price": 0.021,
+        "source": "https://www.alibabacloud.com/help/en/slb/application-load-balancer/product-overview/alb-billing-rules",
+        "confidence": "verified",
+        "notes": "Doc reference price (region-uniform reference; buy page prevails). Basic $0.007, WAF-enabled $0.035. Doc updated 2026-06."
+      },
+      "lcu_hour": {
+        "id": "lcu_hour",
+        "service": "ALB LCU (capacity unit) fee",
+        "unit": "LCU-hour",
+        "price": 0.007,
+        "source": "https://www.alibabacloud.com/help/en/slb/application-load-balancer/product-overview/alb-billing-rules",
+        "confidence": "verified",
+        "notes": "LCU = max(new conns/25 per s, concurrent conns/3000, GB processed, rule evals/1000). Billed per listener on highest dimension."
+      },
+      "nlb_hour": {
+        "id": "nlb_hour",
+        "service": "Network Load Balancer (NLB) instance fee",
+        "unit": "hour",
+        "price": 0.02,
+        "source": "https://www.alibabacloud.com/help/en/slb/network-load-balancer/product-overview/nlb-billable-items",
+        "confidence": "verified",
+        "notes": "Doc reference price; NLB also bills LCU fee separately plus EIP data transfer."
+      },
+      "fw_endpoint_hour": {
+        "id": "fw_endpoint_hour",
+        "service": "Cloud Firewall pay-as-you-go instance fee (Billing 2.0)",
+        "unit": "instance-hour",
+        "price": 0.36,
+        "source": "https://www.alibabacloud.com/help/en/cloud-firewall/latest/the-pay-as-you-go-billing-method",
+        "confidence": "verified",
+        "notes": "$0.36 per firewall instance-hour (one Internet Firewall per protected region; one NAT FW per NAT GW; one VPC FW per TR/VPC pair). Native billing shape = instance-hour + traffic."
+      },
+      "fw_gb": {
+        "id": "fw_gb",
+        "service": "Cloud Firewall traffic processing fee",
+        "unit": "GB",
+        "price": 0.06,
+        "source": "https://www.alibabacloud.com/help/en/cloud-firewall/latest/the-pay-as-you-go-billing-method",
+        "confidence": "verified",
+        "notes": "Total traffic across Internet/NAT/VPC boundary firewalls; up to 10 Gbps peak. Subscription Premium/Enterprise editions also exist (monthly, quote on buy page)."
+      },
+      "waf_base_mo": {
+        "id": "waf_base_mo",
+        "service": "WAF 3.0 pay-as-you-go instance fee",
+        "unit": "month (derived from 0.5 SeCU/hour)",
+        "price": 3.65,
+        "source": "https://www.alibabacloud.com/help/en/waf/web-application-firewall-3-0/billing-description-v3",
+        "confidence": "derived",
+        "notes": "SeCU unit price $0.01; instance = 0.5 SeCU/hr = $0.005/hr x 730 h = $3.65/mo. Domain onboarding adds SeCU (e.g. 2nd-10th CNAME domain 5 SeCU/domain/hr)."
+      },
+      "waf_1m_req": {
+        "id": "waf_1m_req",
+        "service": "WAF 3.0 base request fee",
+        "unit": "1M requests",
+        "price": 2,
+        "source": "https://www.alibabacloud.com/help/en/waf/web-application-firewall-3-0/billing-description-v3",
+        "confidence": "derived",
+        "notes": "1 SeCU per 5,000 requests/hr; 1M req = 200 SeCU x $0.01 = $2.00. Protection features (bot mgmt, API security) consume additional SeCUs."
+      },
+      "dc_1g": {
+        "id": "dc_1g",
+        "service": "Express Connect dedicated physical port, 1 Gbps",
+        "unit": "month",
+        "price": 210,
+        "source": "https://www.alibabacloud.com/help/en/express-connect/product-overview/resource-usage-fee",
+        "confidence": "verified",
+        "notes": "Monthly subscription, regions outside Chinese mainland (Bangkok included). One-off port setup fee $1,500 waived when outbound data transfer billing enabled; 50 TB/mo free outbound quota until 2026-12-31."
+      },
+      "dc_10g": {
+        "id": "dc_10g",
+        "service": "Express Connect dedicated physical port, 10 Gbps",
+        "unit": "month",
+        "price": 1600,
+        "source": "https://www.alibabacloud.com/help/en/express-connect/product-overview/resource-usage-fee",
+        "confidence": "verified",
+        "notes": "Monthly subscription, outside Chinese mainland."
+      },
+      "vpn_gw_hour": {
+        "id": "vpn_gw_hour",
+        "service": "VPN Gateway - IPsec-VPN connection (site-to-site)",
+        "unit": "connection-hour",
+        "price": 0.05,
+        "source": "https://www.alibabacloud.com/help/en/vpn/product-overview/billing",
+        "confidence": "verified",
+        "notes": "$0.05/connection/hr in all regions except Dubai/Riyadh ($0.06); higher-bandwidth connection class $0.5/connection/hr. Outbound traffic billed via CDT."
+      },
+      "egress_gb": {
+        "id": "egress_gb",
+        "service": "Internet egress (Cloud Data Transfer, BGP), first paid tier",
+        "unit": "GB",
+        "price": 0.1,
+        "source": "https://www.alibabacloud.com/help/en/cdt/product-overview/internet-data-transfers",
+        "confidence": "verified",
+        "notes": "Thailand (Bangkok): CDT tier 0-10TB $0.100/GB (10-50TB $0.070; 50-150TB $0.065; >150TB $0.055). 200 GB/month free for regions outside mainland China. Legacy ECS pay-by-traffic rate for Bangkok is $0.081/GB."
+      },
+      "pg_vcpu_hour": {
+        "id": "pg_vcpu_hour",
+        "service": "ApsaraDB RDS for PostgreSQL (High-Availability), vCPU component",
+        "unit": "vCPU-hour",
+        "price": 0.0524,
+        "source": "https://www.alibabacloud.com/en/pricing-calculator (#/commodity/rds_intl)",
+        "confidence": "derived",
+        "notes": "Bangkok, HA edition, general-purpose, official calculator 1-month subscription: 2c8g=$143.25, 4c8g=$219.75, 4c16g=$280.05 (incl. 20GB Premium ESSD $6.45). vCPU=(219.75-143.25)/2=$38.25/mo /730=$0.0524/hr. PAYG hourly is not published on the intl site and is t…"
+      },
+      "pg_ram_gb_hour": {
+        "id": "pg_ram_gb_hour",
+        "service": "ApsaraDB RDS for PostgreSQL, RAM component",
+        "unit": "GB-hour",
+        "price": 0.010325,
+        "source": "https://www.alibabacloud.com/en/pricing-calculator (#/commodity/rds_intl)",
+        "confidence": "derived",
+        "notes": "RAM=(280.05-219.75)/8=$7.5375/GB-mo /730=$0.010325/GB-hr. Same anchors/caveats as pg_vcpu_hour."
+      },
+      "pg_storage_gb_mo": {
+        "id": "pg_storage_gb_mo",
+        "service": "ApsaraDB RDS Premium ESSD storage (HA, both nodes)",
+        "unit": "GB-month",
+        "price": 0.3225,
+        "source": "https://www.alibabacloud.com/en/pricing-calculator (#/commodity/rds_intl)",
+        "confidence": "derived",
+        "notes": "Calculator expense detail: 20 GB = $6.45/mo for HA edition in Bangkok => $0.3225/GB-mo (covers primary+standby replica storage)."
+      },
+      "mysql_vcpu_hour": {
+        "id": "mysql_vcpu_hour",
+        "service": "ApsaraDB RDS for MySQL (High-Availability), vCPU component",
+        "unit": "vCPU-hour",
+        "price": 0.06103,
+        "source": "https://www.alibabacloud.com/en/pricing-calculator (#/commodity/rds_intl)",
+        "confidence": "derived",
+        "notes": "Bangkok, HA, dedicated class, 1-month subscription: 2c8g=$160.29, 2c16g=$188.82, 4c8g=$249.39 (incl. $6.45 storage). vCPU=(249.39-160.29)/2=$44.55/mo /730=$0.06103/hr. PAYG hourly not published on intl site."
+      },
+      "mysql_ram_gb_hour": {
+        "id": "mysql_ram_gb_hour",
+        "service": "ApsaraDB RDS for MySQL, RAM component",
+        "unit": "GB-hour",
+        "price": 0.004885,
+        "source": "https://www.alibabacloud.com/en/pricing-calculator (#/commodity/rds_intl)",
+        "confidence": "derived",
+        "notes": "RAM=(188.82-160.29)/8=$3.56625/GB-mo /730=$0.004885/GB-hr. Same anchors/caveats as mysql_vcpu_hour."
+      },
+      "k8s_cluster_hour": {
+        "id": "k8s_cluster_hour",
+        "service": "Container Service for Kubernetes (ACK) Pro - cluster management fee",
+        "unit": "cluster-hour",
+        "price": 0.09,
+        "source": "https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/product-overview/ack-pro-cluster-billing",
+        "confidence": "verified",
+        "notes": "USD 0.09 per cluster per hour pay-as-you-go (doc notes prices may vary by region). ACK Basic managed clusters are free (control plane); worker nodes billed as ECS."
+      },
+      "redis_gb_hour": {
+        "id": "redis_gb_hour",
+        "service": "Tair (Redis OSS-compatible) - effective per-GB memory",
+        "unit": "GB-hour",
+        "price": 0.05,
+        "source": "https://www.alibabacloud.com/help/en/redis/product-overview/billable-items (prices only on logged-in buy page)",
+        "confidence": "estimate",
+        "notes": "Intl website does not publish Tair/Redis instance USD prices (buy page only). Estimate ~$0.05/GB-hr for Community edition 1-2GB HA master-replica in Singapore/Bangkok, from knowledge of console pricing. Verify on buy page."
+      },
+      "functions_gbs": {
+        "id": "functions_gbs",
+        "service": "Function Compute - memory usage (CU model)",
+        "unit": "GB-second (memory)",
+        "price": 0.000003,
+        "source": "https://www.alibabacloud.com/en/product/function-compute/pricing (FC billing description doc)",
+        "confidence": "derived",
+        "notes": "FC bills unified CUs: tier-1 price $0.000020/CU; memory factor 0.15 CU/GB-s => $0.000003/GB-s. NOTE: vCPU billed separately at 1 CU/vCPU-s = $0.00002/vCPU-s (unlike AWS-style bundled GB-s). Monthly tiered per region; $0.01/hr minimum for active functions."
+      },
+      "functions_1m_inv": {
+        "id": "functions_1m_inv",
+        "service": "Function Compute - invocations",
+        "unit": "1M invocations",
+        "price": 0.15,
+        "source": "https://www.alibabacloud.com/en/product/function-compute/pricing (FC billing description doc)",
+        "confidence": "derived",
+        "notes": "0.0075 CU/invocation x 1M = 7,500 CU x $0.000020 = $0.15 per million."
+      },
+      "apig_hour": {
+        "id": "apig_hour",
+        "service": "Cloud-native API Gateway - apigw.small.x1 instance",
+        "unit": "hour",
+        "price": 0.291,
+        "source": "https://www.alibabacloud.com/help/en/api-gateway/billing-overview",
+        "confidence": "verified",
+        "notes": "Native shape is now instance-hour (Cloud-native API Gateway): apigw.small.x1 $0.291/hr (doc example price, Chinese mainland; intl region price on buy page) + data processing $0.005/GB (Internet). Legacy shared API Gateway per-1M-call pricing (~$0.45/1M) is be…"
+      },
+      "kafka_hour": {
+        "id": "kafka_hour",
+        "service": "ApsaraMQ for Kafka - Standard Edition (High Write) alikafka.hw.2xlarge (3x20 MB/s)",
+        "unit": "instance-hour",
+        "price": 0.42,
+        "source": "https://www.alibabacloud.com/help/en/apsaramq-for-kafka/cloud-message-queue-for-kafka/product-overview/pay-as-you-go-billing-rules",
+        "confidence": "verified",
+        "notes": "Thailand (Bangkok) is Region group 3 = $0.420/hr for smallest standard spec; plus disk (ultra $0.01/100GB-hr, SSD $0.03/100GB-hr) and optional extra partitions. Professional hw.2xlarge = $1.06/hr in group 3. Serverless edition also exists."
+      },
+      "vdi_desktop_mo": {
+        "id": "vdi_desktop_mo",
+        "service": "WUYING / Elastic Desktop Service (EDS) - 4vCPU/8GB office desktop",
+        "unit": "desktop-month",
+        "price": 57,
+        "source": "https://www.alibabacloud.com/help/en/wuying-workspace/wuying-workspace-pro-edition/product-overview/subscription (prices on buy page only)",
+        "confidence": "estimate",
+        "notes": "Intl docs show billing structure but not USD price tables (doc example cites ~$53.30/mo compute unit + $0.051/GiB storage; +80GB disk ~ $57/mo total). Region: Singapore reference; verify on EDS buy page."
+      },
+      "email_1k": {
+        "id": "email_1k",
+        "service": "DirectMail pay-as-you-go",
+        "unit": "1,000 emails",
+        "price": 0.29,
+        "source": "https://www.alibabacloud.com/en/product/directmail/pricing",
+        "confidence": "verified",
+        "notes": "$0.29 per 1,000 messages; 2,000 free emails per account (max 200/day). Resource plans cheaper (e.g. 1M messages $230.55)."
+      },
+      "log_ingest_gb": {
+        "id": "log_ingest_gb",
+        "service": "Simple Log Service (SLS) - pay-by-ingested-data",
+        "unit": "GB ingested",
+        "price": 0.061,
+        "source": "https://www.alibabacloud.com/en/product/log-service/pricing",
+        "confidence": "verified",
+        "notes": "$0.061/GB raw ingested (includes 30-day hot storage & features). Extended storage $0.002875/GB-day; global reference price (buy page prevails)."
+      },
+      "dns_1m": {
+        "id": "dns_1m",
+        "service": "Alibaba Cloud DNS - Public Zone (authoritative), free edition",
+        "unit": "1M queries",
+        "price": 0,
+        "source": "https://www.alibabacloud.com/help/en/dns/pubz-product-billing",
+        "confidence": "verified",
+        "notes": "Free edition: authoritative DNS hosting free with no per-query metering (QPS-capped, no SLA). Paid editions are per-domain monthly/yearly subscriptions, not per-query."
+      },
+      "queue_1m": {
+        "id": "queue_1m",
+        "service": "Simple Message Queue (formerly MNS) - standard queue requests",
+        "unit": "1M requests",
+        "price": 0.32,
+        "source": "https://www.alibabacloud.com/help/en/mns/product-overview/billing-overview",
+        "confidence": "verified",
+        "notes": "$0.32 per million requests (doc example, China (Hangzhou); ~uniform). First 20M requests/month free."
+      },
+      "opensearch_node_hour": {
+        "id": "opensearch_node_hour",
+        "service": "Alibaba Cloud Elasticsearch - data node (2c8g class)",
+        "unit": "node-hour",
+        "price": 0.22,
+        "source": "https://www.alibabacloud.com/help/en/es/product-overview/billing-overview/ (prices on buy page only)",
+        "confidence": "estimate",
+        "notes": "Intl site publishes no USD node prices (buy page only). Estimate ~$0.22/hr for a 2-vCPU/8GB data node in Singapore from knowledge of console pricing; storage extra. Verify on ES buy page."
+      },
+      "bi_user_mo": {
+        "id": "bi_user_mo",
+        "service": "Quick BI - Advanced Version (per user)",
+        "unit": "user-month",
+        "price": 11.67,
+        "source": "https://www.alibabacloud.com/help/en/quick-bi/product-overview/billing-methods-of-quick-bi",
+        "confidence": "derived",
+        "notes": "Yearly subscription only: 5 users = $700/yr => 700/(5x12) = $11.67/user-mo (10 users = $10.83; volume tiers cheaper). Enterprise Standard 50 users = $18,000/yr = $30/user-mo. SaaS - not region-specific (intl sites: SG, HK, MY, ID, JP, US, DE)."
       }
     }
   }
