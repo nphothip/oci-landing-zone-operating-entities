@@ -200,6 +200,53 @@ describe("deterministic compliance matching", () => {
     expect(asOcpu.offered).not.toContain("vCPU (VM");
   });
 
+  // Models name metrics in snake_case; `_` is a word character, so a naive
+  // `\bcpu\b` silently misses "total_cpu" and the clause falls to manual.
+  it("matches snake_case metric names from the extractor", () => {
+    const ocpu = result.bom.items.filter((i) => i.catalogKey === "compute_e5_ocpu").reduce((a, i) => a + i.quantity, 0);
+    for (const name of ["total_cpu", "total-cpu", "cpu_cores_total"]) {
+      const row = matchRequirements([req("ประมวลผลรวม", { metric: { name, op: ">=", value: ocpu, unit: "OCPU" } })], result)[0];
+      expect(row.status, name).toBe("pass");
+    }
+  });
+
+  // A TOR asking for "พื้นที่จัดเก็บข้อมูล" means all the data the system holds.
+  it("counts database storage in a storage requirement", () => {
+    const dbGb = result.bom.items.filter((i) => i.catalogKey === "adb_storage_gb").reduce((a, i) => a + i.quantity, 0);
+    expect(dbGb).toBeGreaterThan(0);
+    const blockGb = result.bom.items.filter((i) => i.catalogKey === "block_storage_gb").reduce((a, i) => a + i.quantity, 0);
+    const row = matchRequirements(
+      [req("พื้นที่จัดเก็บข้อมูลไม่น้อยกว่า", { metric: { name: "storage_capacity", op: ">=", value: dbGb + blockGb, unit: "GB" } })],
+      result,
+    )[0];
+    expect(row.status).toBe("pass");
+    expect(row.offered).toContain("database");
+  });
+
+  it("recognises data-residency clauses however the TOR words them", () => {
+    for (const text of [
+      "ศูนย์ข้อมูลต้องตั้งอยู่ในราชอาณาจักรไทย",
+      "ข้อมูลต้องไม่ถูกส่งออกนอกประเทศ",
+      "ศูนย์ข้อมูลต้องตั้งอยู่ในประเทศไทย",
+    ]) {
+      const row = matchRequirements([req(text)], result)[0];
+      expect(row.status, text).toBe("pass");
+      expect(row.offered, text).toMatch(/ap-bangkok-1/);
+    }
+  });
+
+  it("answers a zone-separation clause that never says the word firewall", () => {
+    const hubA = fakeResult();
+    hubA.spec.hub.kind = "hub_a";
+    const row = matchRequirements([req("แยกโซน DMZ ออกจากโซนภายใน")], hubA)[0];
+    expect(row.status).toBe("pass");
+    expect(row.offered).toMatch(/DMZ/);
+
+    const hubE = fakeResult();
+    hubE.spec.hub.kind = "hub_e";
+    expect(matchRequirements([req("แยกโซน DMZ ออกจากโซนภายใน")], hubE)[0].status).toBe("fail");
+  });
+
   it("answers a server-count clause from the sizing, not from summed OCPUs", () => {
     const vms = (result.spec.sizing as { appVmCount: number }).appVmCount;
     expect(vms).toBeGreaterThan(0);

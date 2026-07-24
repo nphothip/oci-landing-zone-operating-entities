@@ -346,6 +346,16 @@ const METRIC_RE = {
   dbEcpu: /ecpu|database.*cpu|ฐานข้อมูล/i,
 };
 
+/**
+ * Models name metrics in snake_case ("total_cpu", "storage_capacity").
+ * `_` is a word character, so `\bcpu\b` never matches "total_cpu" — normalise
+ * separators to spaces before matching or quantitative clauses fall through to
+ * "unmapped" and the design silently ignores a stated minimum.
+ */
+export function normalizeMetricName(name: string): string {
+  return name.replace(/[_\-.]+/g, " ").toLowerCase().trim();
+}
+
 /** A TOR that says "vCPU" means half as many OCPUs — the classic sizing trap. */
 function toOcpu(name: string, unit: string, value: number): { ocpu: number; converted: boolean } {
   const isVcpu = /vcpu/i.test(unit) || /vcpu/i.test(name);
@@ -370,7 +380,7 @@ function applySizing(
       unmapped.push(r);
       continue;
     }
-    const name = m.name.toLowerCase();
+    const name = normalizeMetricName(m.name);
     const clause = r.clause || r.id;
     let handled = false;
 

@@ -78,6 +78,24 @@ describe("deriving a design from TOR requirements", () => {
     expect(d.reason.en).toContain("16 OCPU");
   });
 
+  // The extractor names metrics in snake_case. If the deriver does not
+  // normalise them, a stated minimum silently becomes "unmapped" and the
+  // proposal quietly under-sizes.
+  it("sizes from snake_case metric names the extractor actually produces", () => {
+    const out = deriveSpecFromTor([
+      req("ต้องจัดหาเครื่องแม่ข่ายเสมือนไม่น้อยกว่า 4 เครื่อง", { metric: { name: "virtual_servers", op: ">=", value: 4, unit: "เครื่อง" } }),
+      req("หน่วยประมวลผลรวมทั้งระบบต้องไม่น้อยกว่า 32 vCPU", { metric: { name: "total_cpu", op: ">=", value: 32, unit: "vCPU" } }),
+      req("หน่วยความจำรวมทั้งระบบต้องไม่น้อยกว่า 256 GB", { metric: { name: "total_memory", op: ">=", value: 256, unit: "GB" } }),
+      req("พื้นที่จัดเก็บข้อมูลต้องไม่น้อยกว่า 4000 GB", { metric: { name: "storage_capacity", op: ">=", value: 4000, unit: "GB" } }),
+    ]);
+    const sizing = out.spec.sizing as { appVmCount: number; ocpusPerVm: number; memGbPerVm: number; db: { storageGb: number } };
+    expect(sizing.appVmCount).toBe(4);
+    expect(sizing.ocpusPerVm).toBe(4); // 32 vCPU = 16 OCPU over 4 VMs
+    expect(sizing.memGbPerVm).toBe(64);
+    expect(sizing.db.storageGb).toBeGreaterThanOrEqual(4000);
+    expect(out.unmapped).toHaveLength(0);
+  });
+
   it("treats a TOR quantity as a floor and never shrinks the template default", () => {
     const base = TEMPLATES.web_app.defaults().sizing as { memGbPerVm: number };
     const out = deriveSpecFromTor([req("หน่วยความจำไม่น้อยกว่า 1 GB", { metric: { name: "memory", op: ">=", value: 1, unit: "GB" } })]);

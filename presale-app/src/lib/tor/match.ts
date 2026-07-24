@@ -1,5 +1,6 @@
 import type { GenerateResult } from "@/lib/domain/types";
 import { buildDesignFacts } from "@/lib/design/facts";
+import { normalizeMetricName } from "./derive-spec";
 import type { ComplianceRow, ComplianceStatus, TorRequirement } from "./types";
 
 // Deterministic compliance matching. NOTHING here asks a model: every "offered"
@@ -216,9 +217,27 @@ const CAPABILITIES: Capability[] = [
     evidence: "Design Doc §8 Compartment Posture / §13 Logging",
   },
   {
-    keys: /data ?cent|ตั้งอยู่ในประเทศไทย|ในประเทศไทย|data residency|อธิปไตย|sovereign/i,
-    offered: () => "ให้บริการจาก AIS Cloud (Oracle Alloy) ศูนย์ข้อมูลในประเทศไทย — ข้อมูลไม่ออกนอกราชอาณาจักร",
+    // Thai TORs write this several ways: ประเทศไทย, ราชอาณาจักร(ไทย), and the
+    // negative form "ต้องไม่ถูกส่งออกนอกประเทศ".
+    keys: /data ?cent|ในประเทศไทย|ราชอาณาจักร|data residency|อธิปไตย|sovereign|(ไม่|ห้าม).{0,12}(ออกนอกประเทศ|ส่งออกนอก)|ออกนอกราชอาณาจักร/i,
+    offered: () => "ให้บริการจาก AIS Cloud (Oracle Alloy) ศูนย์ข้อมูลในประเทศไทย region ap-bangkok-1 — ข้อมูลทั้งหมดอยู่ในราชอาณาจักร ไม่มีการจำลองออกนอกประเทศ",
     evidence: "Design Doc §2 Solution Overview (region ap-bangkok-1)",
+  },
+  {
+    // Zone separation is what the hub topology delivers; a clause can ask for it
+    // without ever using the word "firewall".
+    keys: /\bdmz\b|แยกโซน|โซนภายใน|แบ่งโซน|segmentation|แบ่งส่วนเครือข่าย|zone.*(แยก|ภายใน)/i,
+    offered: (c) => {
+      const k = c.result.spec.hub.kind;
+      if (k === "hub_a")
+        return "แยกโซนด้วย hub-and-spoke: subnet DMZ ของ hub มี Network Firewall เฉพาะสำหรับทราฟฟิกขาเข้า แยกจาก Internal Firewall ที่คุม east-west และ egress; workload แต่ละ environment อยู่คนละ spoke VCN และคนละ NSG";
+      if (k === "hub_b")
+        return "แยกโซนด้วย hub-and-spoke: ทราฟฟิกทุกทิศทางผ่าน Network Firewall ที่ hub และ workload แต่ละ environment อยู่คนละ spoke VCN คนละ NSG (ยกระดับเป็น Hub A เพื่อแยก firewall ของ DMZ ออกจาก internal ได้)";
+      if (k === "hub_c")
+        return "แยกโซนด้วย hub-and-spoke: NLB untrust รับทราฟฟิกอินเทอร์เน็ต แยกจาก NLB trust ที่คุม east-west/egress โดยมี firewall ของผู้ผลิตภายนอกคั่นกลาง; workload แยก spoke VCN ต่อ environment";
+      return null; // hub_e has no inspection point between the zones
+    },
+    evidence: "Design Doc §5 Network / §12 Traffic Flow · Diagram: Network, Traffic flow",
   },
   {
     keys: /segregat|แบ่งแยก.*สิทธิ|least privilege|rbac|สิทธิ.*ผู้ใช้|บทบาทหน้าที่/i,
@@ -252,7 +271,7 @@ function offeredMetric(
   c: Ctx,
   demand: { name: string; unit: string },
 ): { value: number; unit: string; text: string; evidence: string } | null {
-  const n = name.toLowerCase();
+  const n = normalizeMetricName(name);
   if (/vcpu|ocpu|cpu|core|หน่วยประมวลผล/.test(n)) {
     const ocpu = c.qty("compute_e5_ocpu");
     if (!ocpu) return null;
@@ -277,8 +296,19 @@ function offeredMetric(
     return v ? { value: v, unit: "GB", text: `รวม ${v} GB memory`, evidence: "BOM: Compute memory" } : null;
   }
   if (/storage|disk|พื้นที่|ความจุ/.test(n)) {
-    const v = c.qty("block_storage_gb") + c.qty("os_standard_gb") + c.qty("fss_gb");
-    return v ? { value: v, unit: "GB", text: `รวม ${v} GB (block ${c.qty("block_storage_gb")} + object ${c.qty("os_standard_gb")} + file ${c.qty("fss_gb")})`, evidence: "BOM: Storage" } : null;
+    // Database storage counts: a TOR asking for "พื้นที่จัดเก็บข้อมูล" is asking
+    // how much data the system holds, and leaving ADB/MySQL/PostgreSQL volumes
+    // out under-reports what we actually provision.
+    const parts: [string, number][] = [
+      ["block", c.qty("block_storage_gb")],
+      ["object", c.qty("os_standard_gb") + c.qty("os_ia_gb") + c.qty("os_archive_gb")],
+      ["file", c.qty("fss_gb")],
+      ["database", c.qty("adb_storage_gb") + c.qty("adw_storage_gb") + c.qty("base_db_storage_gb") + c.qty("pg_storage_gb") + c.qty("mysql_storage_gb")],
+    ];
+    const v = Math.round(parts.reduce((a, [, q]) => a + q, 0) * 100) / 100;
+    if (!v) return null;
+    const shown = parts.filter(([, q]) => q > 0).map(([k, q]) => `${k} ${q}`).join(" + ");
+    return { value: v, unit: "GB", text: `รวม ${v} GB (${shown})`, evidence: "BOM: Storage" };
   }
   if (/bandwidth|แบนด์วิดท์|throughput|ความเร็ว/.test(n)) {
     const v = c.qty("lb_bandwidth");
