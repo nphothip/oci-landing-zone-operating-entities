@@ -356,6 +356,12 @@ export interface SolutionSpec {
    */
   envOverride?: Partial<Record<EnvName, Record<string, number>>>;
   sizing: Sizing;
+  /**
+   * Extra AIS-sellable services bolted onto the template (MySQL, PostgreSQL,
+   * OpenSearch, GoldenGate, OCVS, …). Ids come from lib/bom/addons.ts; each is
+   * priced as a post-LZ line so the landing zone itself is unaffected.
+   */
+  addOns?: { id: string; qty: number; env?: EnvName }[];
   /** Assumptions recorded by the LLM parser or the form defaults */
   assumptionNotes: string[];
 }

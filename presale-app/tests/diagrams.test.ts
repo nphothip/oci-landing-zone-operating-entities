@@ -49,6 +49,22 @@ describe("diagram pipeline", () => {
     for (const d of diagrams) assertNoSiblingOverlap(d);
   });
 
+  it("every template (all 15) renders all 13 views without crashing or overlapping", async () => {
+    const { bankingShowcaseSpec } = await import("@/lib/templates/banking-preset");
+    const specs = [...Object.values(TEMPLATES).map((t) => t.defaults()), bankingShowcaseSpec()];
+    for (const spec of specs) {
+      const docs = buildDiagrams(spec, FILES);
+      expect(docs, spec.template).toHaveLength(13);
+      for (const d of docs) {
+        expect(d.nodes.length, `${spec.template}/${d.view}`).toBeGreaterThan(0);
+        expect(d.width, `${spec.template}/${d.view}`).toBeLessThanOrEqual(1700);
+        assertNoSiblingOverlap(d, `${spec.template}/${d.view}`);
+      }
+      // and the whole set serializes to well-formed draw.io XML
+      new XMLParser().assertWellFormed(toDrawio(docs));
+    }
+  });
+
   it("serializes well-formed draw.io XML with 13 pages and escaped labels", () => {
     const xml = toDrawio(diagrams);
     expect(xml).toContain("<mxfile");
@@ -58,7 +74,7 @@ describe("diagram pipeline", () => {
   });
 });
 
-function assertNoSiblingOverlap(doc: DiagramDoc) {
+function assertNoSiblingOverlap(doc: DiagramDoc, tag?: string) {
   const byParent = new Map<string, typeof doc.nodes>();
   for (const n of doc.nodes) {
     const key = n.parent ?? "__root__";
@@ -73,7 +89,7 @@ function assertNoSiblingOverlap(doc: DiagramDoc) {
         if (a.kind === "gateway" || b.kind === "gateway") continue; // gateways sit on borders by design
         if (a.style === "adTab" || b.style === "adTab") continue; // AD tabs peek over the VCN edge by design
         const overlap = a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
-        expect(overlap, `${doc.view}: "${a.label}" overlaps "${b.label}" (parent ${parent})`).toBe(false);
+        expect(overlap, `${tag ?? doc.view}: "${a.label}" overlaps "${b.label}" (parent ${parent})`).toBe(false);
       }
     }
   }

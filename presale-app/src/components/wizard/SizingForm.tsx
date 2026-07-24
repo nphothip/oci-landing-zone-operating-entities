@@ -5,15 +5,16 @@ import type { EnvName, HubKind, LocalizedText, SolutionSpec } from "@/lib/domain
 import { TEMPLATES } from "@/lib/templates";
 import { getPath, setPath } from "@/lib/domain/path";
 import { envScale } from "@/lib/bom/env";
+import { ADDONS } from "@/lib/bom/addons";
 import { orderEnvs } from "@/lib/domain/cidr";
 import { EnterprisePlanEditor } from "./EnterprisePlanEditor";
 import { L, useLang } from "@/lib/i18n";
 
 const HUBS: { value: HubKind; label: { th: string; en: string }; cost: { th: string; en: string } }[] = [
-  { value: "hub_a", label: L("Hub A — NFW คู่ (HA)", "Hub A — dual NFW (HA)"), cost: L("~฿229,200/เดือน (FW)", "~฿229,200/mo (FW)") },
+  { value: "hub_a", label: L("Hub A — NFW 2 ตัว (DMZ + internal)", "Hub A — 2 NFW (DMZ + internal)"), cost: L("~฿229,200/เดือน (FW)", "~฿229,200/mo (FW)") },
   { value: "hub_b", label: L("Hub B — NFW เดี่ยว", "Hub B — single NFW"), cost: L("~฿114,600/เดือน (FW)", "~฿114,600/mo (FW)") },
-  { value: "hub_c", label: L("Hub C — NLB สำหรับ FW 3rd-party", "Hub C — NLB for 3rd-party FW"), cost: L("NLB ฟรี + ค่า FW เอง", "free NLB + own FW cost") },
-  { value: "hub_e", label: L("Hub E — ไม่มี firewall", "Hub E — no firewall"), cost: L("ฟรี (เหมาะ PoC)", "free (PoC-friendly)") },
+  { value: "hub_c", label: L("Hub C — NLB trust/untrust สำหรับ FW 3rd-party", "Hub C — trust/untrust NLB for 3rd-party FW"), cost: L("NLB ฟรี + ค่า FW เอง", "free NLB + own FW cost") },
+  { value: "hub_e", label: L("Hub E — ไม่ตรวจทราฟฟิก", "Hub E — no traffic inspection"), cost: L("ฟรี (เหมาะ PoC)", "free (PoC-friendly)") },
 ];
 
 const ENVS: EnvName[] = ["prod", "preprod", "uat", "dev"];
@@ -62,6 +63,17 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
   const setEnvOverride = (env: string, key: string, val: number) =>
     onChange(setPath(spec, `envOverride.${env}.${key}`, Math.max(0, Math.round(val || 0))));
   const stripEnv = (s: string) => s.replace(/\s*\[[a-z]+\]\s*$/, "");
+
+  const setAddOns = (next: NonNullable<SolutionSpec["addOns"]>) =>
+    onChange({ ...spec, addOns: next.length ? next : undefined });
+  const toggleAddOn = (id: string, on: boolean, defaultQty: number) => {
+    const rest = (spec.addOns ?? []).filter((x) => x.id !== id);
+    setAddOns(on ? [...rest, { id, qty: defaultQty }] : rest);
+  };
+  const setAddOnQty = (id: string, qty: number) =>
+    setAddOns((spec.addOns ?? []).map((x) => (x.id === id ? { ...x, qty: Math.max(1, Math.round(qty || 0)) } : x)));
+  const setAddOnEnv = (id: string, env: string) =>
+    setAddOns((spec.addOns ?? []).map((x) => (x.id === id ? { ...x, env: env ? (env as EnvName) : undefined } : x)));
 
   const toggleEnv = (env: EnvName) => {
     const has = spec.environments.includes(env);
@@ -472,6 +484,69 @@ export function SizingForm({ spec, onChange }: { spec: SolutionSpec; onChange: (
           </div>
         </details>
       ) : null}
+
+      {/* extra AIS-sellable services — priced post-LZ, never re-scaled */}
+      <details className="rounded-xl border border-neutral-200 bg-white p-4">
+        <summary className="cursor-pointer text-sm font-semibold text-neutral-700">
+          {t(L("บริการเสริมที่ AIS ขาย (เลือกเพิ่มได้)", "Additional AIS-sellable services"))}
+          {(spec.addOns?.length ?? 0) > 0 ? (
+            <span className="ml-2 rounded-full bg-[#C74634] px-2 py-0.5 text-[10px] font-semibold text-white">{spec.addOns?.length}</span>
+          ) : null}
+        </summary>
+        <p className="mb-3 mt-1 text-[11px] text-neutral-500">
+          {t(
+            L(
+              "ทุกตัวใช้ SKU จาก price list ของ AIS โดยตรง — จำนวนที่กรอกจะไม่ถูก scale ตาม env และคิดเป็นบริการที่ provision หลังวาง landing zone",
+              "Every item uses a SKU straight from the AIS price list. Quantities you type are never env-scaled, and are provisioned after the landing zone.",
+            ),
+          )}
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {ADDONS.map((a) => {
+            const chosen = spec.addOns?.find((x) => x.id === a.id);
+            return (
+              <div key={a.id} className={`rounded-lg border p-2.5 ${chosen ? "border-[#C74634] bg-[#C74634]/5" : "border-neutral-200"}`}>
+                <label className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={!!chosen}
+                    onChange={(e) => toggleAddOn(a.id, e.target.checked, a.defaultQty)}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-medium text-neutral-800">{t(a.name)}</span>
+                    <span className="block text-[11px] text-neutral-500">{t(a.hint)}</span>
+                  </span>
+                </label>
+                {chosen ? (
+                  <div className="mt-2 flex items-center justify-end gap-2 text-xs">
+                    <span className="text-neutral-500">{t(a.unit)}</span>
+                    <input
+                      type="number"
+                      min={1}
+                      className="w-24 rounded border border-neutral-300 px-1 py-0.5 text-right"
+                      value={chosen.qty}
+                      onChange={(e) => setAddOnQty(a.id, Number(e.target.value))}
+                    />
+                    <select
+                      className="rounded border border-neutral-300 px-1 py-0.5"
+                      value={chosen.env ?? ""}
+                      onChange={(e) => setAddOnEnv(a.id, e.target.value)}
+                    >
+                      <option value="">shared</option>
+                      {spec.environments.map((env) => (
+                        <option key={env} value={env}>
+                          {env}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      </details>
     </div>
   );
 }

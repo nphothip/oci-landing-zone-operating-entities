@@ -1,7 +1,18 @@
 {
   "currency": "THB",
-  "fetchedAt": "2026-07-21T03:41:00.628Z",
+  "fetchedAt": "2026-07-24T00:51:42.220Z",
   "prices": {
+    "B108030": {
+      "name": "MySQL Database - ECPU",
+      "metric": "ECPU Per Hour",
+      "tiers": [
+        {
+          "value": 1.729829277,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
     "B108077": {
       "name": "Oracle Cloud Infrastructure Generative AI - Large Cohere",
       "metric": "10,000 Transactions",
@@ -18,7 +29,7 @@
       "metric": "10,000 Transactions",
       "tiers": [
         {
-          "value": 0.050413967999999997,
+          "value": 0.0504139679999999,
           "min": 0,
           "max": null
         }
@@ -35,12 +46,45 @@
         }
       ]
     },
+    "B108809": {
+      "name": "Oracle Cloud VMware Solution - Base - BM.Standard.E5.48 - Hourly Commit",
+      "metric": "Node Per Hour",
+      "tiers": [
+        {
+          "value": 933.313789584,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
+    "B108810": {
+      "name": "Oracle Cloud VMware Solution - Base - BM.Standard.E5.48 - 1 Year Commit",
+      "metric": "Node Per Hour",
+      "tiers": [
+        {
+          "value": 737.186649408,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
+    "B108811": {
+      "name": "Oracle Cloud VMware Solution - Base - BM.Standard.E5.48 - 3 Year Commit",
+      "metric": "Node Per Hour",
+      "tiers": [
+        {
+          "value": 594.431096688,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
     "B111584": {
       "name": "Oracle Base Database Service - Database Storage",
       "metric": "Gigabyte Storage Capacity Per Month",
       "tiers": [
         {
-          "value": 2.8121541525,
+          "value": 5.6715714,
           "min": 0,
           "max": null
         }
@@ -95,12 +139,45 @@
         }
       ]
     },
+    "B88525": {
+      "name": "Oracle Cloud Infrastructure - DNS",
+      "metric": "1,000,000 Queries",
+      "tiers": [
+        {
+          "value": 40.17363075,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
     "B89057": {
       "name": "Oracle Cloud Infrastructure - File Storage",
       "metric": "Gigabyte Storage Capacity per Month",
       "tiers": [
         {
           "value": 14.1789285,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
+    "B90260": {
+      "name": "Oracle Digital Assistant Cloud Service",
+      "metric": "Request",
+      "tiers": [
+        {
+          "value": 1.096503804,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
+    "B90327": {
+      "name": "Oracle Cloud Infrastructure - DNS Traffic Management",
+      "metric": "1,000,000 DNS Traffic Management Queries",
+      "tiers": [
+        {
+          "value": 189.05238,
           "min": 0,
           "max": null
         }
@@ -154,7 +231,7 @@
       "metric": "Gigabyte Per Hour",
       "tiers": [
         {
-          "value": 0.009452618999999999,
+          "value": 0.0094526189999999,
           "min": 0,
           "max": null
         }
@@ -170,7 +247,7 @@
           "max": 5
         },
         {
-          "value": 0.16069452299999998,
+          "value": 0.1606945229999999,
           "min": 5,
           "max": null
         }
@@ -224,7 +301,7 @@
       "metric": "Performance Units Per Gigabyte Per Month",
       "tiers": [
         {
-          "value": 0.08034726149999999,
+          "value": 0.0803472614999999,
           "min": 0,
           "max": null
         }
@@ -236,6 +313,28 @@
       "tiers": [
         {
           "value": 141.789285,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
+    "B92426": {
+      "name": "MySQL Database - Storage",
+      "metric": "Gigabyte Storage Capacity per Month",
+      "tiers": [
+        {
+          "value": 1.8905238,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
+    "B92483": {
+      "name": "MySQL Database - Backup Storage",
+      "metric": "Gigabyte Storage Capacity per Month",
+      "tiers": [
+        {
+          "value": 1.8905238,
           "min": 0,
           "max": null
         }
@@ -285,6 +384,28 @@
       "tiers": [
         {
           "value": 3781.0476,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
+    "B92992": {
+      "name": "Oracle Cloud Infrastructure - GoldenGate",
+      "metric": "OCPU Per Hour",
+      "tiers": [
+        {
+          "value": 63.5263259895,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
+    "B92993": {
+      "name": "Oracle Cloud Infrastructure - GoldenGate - BYOL",
+      "metric": "OCPU Per Hour",
+      "tiers": [
+        {
+          "value": 15.247074447,
           "min": 0,
           "max": null
         }
@@ -348,8 +469,24 @@
           "max": 7440
         },
         {
-          "value": 0.0047263094999999995,
+          "value": 0.0047263094999999,
           "min": 7440,
+          "max": null
+        }
+      ]
+    },
+    "B93423": {
+      "name": "Oracle Cloud AI Services - Language - Pre - trained Inferencing",
+      "metric": "1,000 Transactions",
+      "tiers": [
+        {
+          "value": 0,
+          "min": 0,
+          "max": 5
+        },
+        {
+          "value": 11.81577375,
+          "min": 5,
           "max": null
         }
       ]
@@ -371,6 +508,17 @@
         {
           "value": 0.5907886875,
           "min": 10240,
+          "max": null
+        }
+      ]
+    },
+    "B93709": {
+      "name": "Oracle Cloud Infrastructure Search with OpenSearch HA",
+      "metric": "Node Per Hour",
+      "tiers": [
+        {
+          "value": 11.81577375,
+          "min": 0,
           "max": null
         }
       ]
@@ -445,6 +593,22 @@
         }
       ]
     },
+    "B95697": {
+      "name": "Oracle Cloud Infrastructure Queue",
+      "metric": "1,000,000 Requests",
+      "tiers": [
+        {
+          "value": 0,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "value": 10.3978809,
+          "min": 1,
+          "max": null
+        }
+      ]
+    },
     "B95701": {
       "name": "Oracle Autonomous AI Lakehouse - ECPU",
       "metric": "ECPU Per Hour",
@@ -472,7 +636,7 @@
       "metric": "Gigabyte Storage Capacity Per Month",
       "tiers": [
         {
-          "value": 5.4636137819999995,
+          "value": 9.2304824535,
           "min": 0,
           "max": null
         }
@@ -483,7 +647,7 @@
       "metric": "Gigabyte Storage Capacity Per Month",
       "tiers": [
         {
-          "value": 1.153219518,
+          "value": 1.4131665405,
           "min": 0,
           "max": null
         }
@@ -496,6 +660,49 @@
         {
           "value": 4.7263095,
           "min": 0,
+          "max": null
+        }
+      ]
+    },
+    "B96625": {
+      "name": "Oracle Cloud Infrastructure - HeatWave - Storage",
+      "metric": "Gigabyte Storage Capacity Per Month",
+      "tiers": [
+        {
+          "value": 0.9452619,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
+    "B96626": {
+      "name": "Oracle Cloud Infrastructure - HeatWave",
+      "metric": "HeatWave Capacity Per Hour",
+      "tiers": [
+        {
+          "value": 0.519894045,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
+    "B97181": {
+      "name": "Oracle Access Governance Premium - Workforce User",
+      "metric": "Workforce User Per Month",
+      "tiers": [
+        {
+          "value": 141.789285,
+          "min": 0,
+          "max": 10000
+        },
+        {
+          "value": 53.40729735,
+          "min": 10000,
+          "max": 30000
+        },
+        {
+          "value": 7.08946425,
+          "min": 30000,
           "max": null
         }
       ]
@@ -527,7 +734,40 @@
       "metric": "Redis Memory Gigabyte Per Hour",
       "tiers": [
         {
-          "value": 0.9169040430000001,
+          "value": 0.916904043,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
+    "B99060": {
+      "name": "Oracle Cloud Infrastructure Database with PostgreSQL - X86",
+      "metric": "OCPU Per Hour",
+      "tiers": [
+        {
+          "value": 4.63178331,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
+    "B99062": {
+      "name": "Oracle Cloud Infrastructure Database Optimized Storage",
+      "metric": "Gigabyte Storage Capacity Per Month",
+      "tiers": [
+        {
+          "value": 3.40294284,
+          "min": 0,
+          "max": null
+        }
+      ]
+    },
+    "B99709": {
+      "name": "Oracle APEX Application Development - ECPU",
+      "metric": "ECPU Per Hour",
+      "tiers": [
+        {
+          "value": 3.8141317665,
           "min": 0,
           "max": null
         }

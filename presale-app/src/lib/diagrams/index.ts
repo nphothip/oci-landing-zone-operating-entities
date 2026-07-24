@@ -14,7 +14,7 @@ import { layoutResilienceView } from "./layout/resilience";
 import { layoutIpPlanView } from "./layout/ipplan";
 import { layoutIamMatrixView } from "./layout/iam-matrix";
 
-/** Build all ten architecture views from the spec + generated LZ package. */
+/** Build all 13 architecture views from the spec + generated LZ package. */
 export function buildDiagrams(spec: SolutionSpec, lacFiles: LacFile[]): DiagramDoc[] {
   const gen = parseGenerated(lacFiles);
   return [

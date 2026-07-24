@@ -44,12 +44,8 @@ export function buildDesignDocument(result: GenerateResult): DesignDocument {
   const { spec } = result;
   const t = TEMPLATES[spec.template];
   const envList = spec.environments.join(", ");
-  const fwText = facts.hub.firewall
-    ? L(
-        `north-south traffic ถูกตรวจโดย OCI Network Firewall ${facts.hub.firewallCount} ชุดใน hub`,
-        `north-south traffic is inspected by ${facts.hub.firewallCount} OCI Network Firewall instance(s) in the hub`,
-      )
-    : L("hub นี้ไม่มี firewall (เหมาะกับ PoC/งบจำกัด)", "this hub has no firewall (suited to PoC/budget-constrained cases)");
+  const insp = inspectionCopy(facts);
+  const fwText = insp.summary;
 
   const sections: DesignSection[] = [
     {
@@ -239,8 +235,8 @@ export function buildDesignDocument(result: GenerateResult): DesignDocument {
       view: "traffic",
       paragraphs: [
         L(
-          `ทราฟฟิกทุกทิศทางวิ่งผ่าน hub เป็นจุดตรวจเดียว: north-south (internet เข้า/ออก) ${facts.hub.firewall ? `ผ่าน load balancer แล้วถูกตรวจโดย Network Firewall ${facts.hub.firewallCount} ชุดก่อนเข้าสู่ spoke` : "ผ่าน load balancer เข้าสู่ spoke (hub นี้ไม่มี firewall)"}, east-west (spoke ↔ spoke) วิ่งผ่าน DRG ${facts.hub.firewall ? "และถูกบังคับผ่าน firewall ด้วย route table" : "ตาม route table ของ DRG"} และทราฟฟิก on-premises เข้าทาง ${facts.connectivity === "none" ? "— (ไม่มีการเชื่อม on-prem)" : facts.connectivity} สู่ DRG`,
-          `All traffic transits the hub as the single inspection point: north-south (internet in/out) ${facts.hub.firewall ? `passes the load balancer and is inspected by ${facts.hub.firewallCount} Network Firewall instance(s) before reaching a spoke` : "passes the load balancer into the spokes (this hub has no firewall)"}; east-west (spoke ↔ spoke) rides the DRG ${facts.hub.firewall ? "and is forced through the firewall by route tables" : "per the DRG route tables"}; on-premises traffic enters via ${facts.connectivity === "none" ? "— (no on-prem link)" : facts.connectivity} into the DRG.`,
+          `${facts.hub.inspects ? "hub เป็นจุดตรวจกลางของทราฟฟิกทุกทิศทาง" : "hub เป็นจุดรวมเส้นทาง (ไม่มีการตรวจทราฟฟิก)"}: north-south (internet เข้า/ออก) ${insp.northSouth.th}, east-west (spoke ↔ spoke) ${insp.eastWest.th} และทราฟฟิก on-premises เข้าทาง ${facts.connectivity === "none" ? "— (ไม่มีการเชื่อม on-prem)" : facts.connectivity} สู่ DRG`,
+          `${facts.hub.inspects ? "The hub is the central inspection point for traffic in every direction" : "The hub is the central routing point (with no traffic inspection)"}: north-south (internet in/out) ${insp.northSouth.en}; east-west (spoke ↔ spoke) ${insp.eastWest.en}; on-premises traffic enters via ${facts.connectivity === "none" ? "— (no on-prem link)" : facts.connectivity} into the DRG.`,
         ),
         L(
           "ภายใน spoke การเข้าถึงระหว่างชั้นถูกจำกัดด้วย NSG ราย project (hub LB → web 80/443, web → app 80/443, app → db 1521, SSH เฉพาะจาก hub mgmt subnet) — ใน diagram เวอร์ชัน HTML จุดสีวิ่งตามเส้นแสดงทิศทางการไหลของแพ็กเก็ตแบบเคลื่อนไหว",
@@ -255,8 +251,8 @@ export function buildDesignDocument(result: GenerateResult): DesignDocument {
       view: "logging",
       paragraphs: [
         L(
-          `Log ทุกแหล่ง (VCN flow logs, OCI Audit, Cloud Guard, ${facts.hub.firewall ? "Network Firewall, " : ""}application) ถูกรวมศูนย์ใน OCI Logging (${facts.observability.logGroups || "ชุดมาตรฐาน"} log groups) แล้วส่งต่อผ่าน Service Connector Hub ไปยัง Object Storage สำหรับ retention ระยะยาว และ Notifications (${facts.observability.topics || 1} topic) แจ้งทีม ops/security — ต่อยอดส่งเข้า SIEM ภายนอกได้ผ่าน connector เดียวกัน`,
-          `Every source (VCN flow logs, OCI Audit, Cloud Guard, ${facts.hub.firewall ? "Network Firewall, " : ""}application logs) is centralized into OCI Logging (${facts.observability.logGroups || "standard"} log groups), then routed by the Service Connector Hub to Object Storage for long-term retention and to Notifications (${facts.observability.topics || 1} topic(s)) for the ops/security teams — the same connector can feed an external SIEM.`,
+          `Log ทุกแหล่ง (VCN flow logs, OCI Audit, Cloud Guard, ${insp.logSource.th}application) ถูกรวมศูนย์ใน OCI Logging (${facts.observability.logGroups || "ชุดมาตรฐาน"} log groups) แล้วส่งต่อผ่าน Service Connector Hub ไปยัง Object Storage สำหรับ retention ระยะยาว และ Notifications (${facts.observability.topics || 1} topic) แจ้งทีม ops/security — ต่อยอดส่งเข้า SIEM ภายนอกได้ผ่าน connector เดียวกัน${facts.hub.inspection === "third_party" ? " ส่วน log ของ third-party firewall อยู่บน appliance ของลูกค้า และ forward เข้า Logging/SIEM เดียวกันได้" : ""}`,
+          `Every source (VCN flow logs, OCI Audit, Cloud Guard, ${insp.logSource.en}application logs) is centralized into OCI Logging (${facts.observability.logGroups || "standard"} log groups), then routed by the Service Connector Hub to Object Storage for long-term retention and to Notifications (${facts.observability.topics || 1} topic(s)) for the ops/security teams — the same connector can feed an external SIEM.${facts.hub.inspection === "third_party" ? " Third-party firewall logs stay on the customer's appliances and can be forwarded into the same Logging/SIEM pipeline." : ""}`,
         ),
         L(
           `แนวทาง retention: audit log 365 วัน, flow log 90 วัน, และ archive ลง Object Storage (Standard → Infrequent Access → Archive) ตามข้อกำหนดขององค์กร — alarm ${facts.observability.alarms || 0} รายการเฝ้าโครงสร้างหลักและแจ้งผ่าน topic เดียวกัน`,
@@ -287,8 +283,8 @@ export function buildDesignDocument(result: GenerateResult): DesignDocument {
       view: "resilience",
       paragraphs: [
         L(
-          `การออกแบบกระจายความเสี่ยงตามลำดับชั้นของ OCI: ทรัพยากร compute กระจายข้าม Fault Domain (อย่างน้อย 2 FD ต่อ tier), Load Balancer เป็น regional service ที่มี HA ในตัว, ${facts.hub.firewallCount >= 2 ? "Network Firewall คู่ active/active แยก FD" : facts.hub.firewall ? "Network Firewall เดี่ยว (พิจารณาอัปเกรด Hub A เพื่อ HA)" : "hub ไม่มี firewall"} และฐานข้อมูล Autonomous DB มี HA/auto-failover ในตัว (Base DB เพิ่ม Data Guard standby ได้)`,
-          `The design de-risks along OCI's hierarchy: compute spreads across Fault Domains (>= 2 per tier), the Load Balancer is a regional service with built-in HA, ${facts.hub.firewallCount >= 2 ? "the Network Firewalls run as an active/active pair in separate FDs" : facts.hub.firewall ? "a single Network Firewall (consider Hub A for HA)" : "the hub carries no firewall"}, and Autonomous DB ships built-in HA/auto-failover (Base DB can add a Data Guard standby).`,
+          `การออกแบบกระจายความเสี่ยงตามลำดับชั้นของ OCI: ทรัพยากร compute กระจายข้าม Fault Domain (อย่างน้อย 2 FD ต่อ tier), Load Balancer เป็น regional service ที่มี HA ในตัว, ${insp.resilience.th} และฐานข้อมูล Autonomous DB มี HA ในตัวระดับ region (Base DB เพิ่ม Data Guard standby ได้)`,
+          `The design de-risks along OCI's hierarchy: compute spreads across Fault Domains (>= 2 per tier), the Load Balancer is a regional service with built-in HA, ${insp.resilience.en}, and Autonomous DB ships built-in in-region HA (Base DB can add a Data Guard standby).`,
         ),
         L(
           `การเชื่อมต่อภายนอกใช้ ${facts.connectivity} — เส้นทางคู่/สำรองถูกเลือกตามระดับ SLA ที่ต้องการ; SLA อ้างอิงของบริการหลัก: Load Balancer/ADB/OKE 99.95% ขึ้นไป ดูรายละเอียดใน diagram`,
@@ -319,8 +315,8 @@ export function buildDesignDocument(result: GenerateResult): DesignDocument {
       view: "iam",
       paragraphs: [
         L(
-          `สิทธิ์ทั้งหมดยึด least-privilege ผ่านกลุ่มเท่านั้น (${facts.policyCount} ชุด policy ที่ generate จริง): network-admin จัดการเฉพาะ cmp-lz-network, security-admin เฉพาะ cmp-lz-security, ผู้ดูแลราย environment เฉพาะ cmp ของ env ตน และผู้ดูแลราย project เห็นเฉพาะ project compartment ของตัวเอง — auditors ได้สิทธิ์อ่านทั้ง tenancy สำหรับตรวจสอบ`,
-          `Every right is least-privilege and group-based only (${facts.policyCount} generated policy sets): network-admin manages only cmp-lz-network, security-admin only cmp-lz-security, per-environment admins only their env compartment, and per-project admins see only their own project compartment — auditors get tenancy-wide read for reviews.`,
+          `สิทธิ์ทั้งหมดยึด least-privilege ผ่านกลุ่มเท่านั้น (${facts.policyCount} ชุด policy ที่ generate จริง): grp-lz-network-admin ได้สิทธิ์แบบ tag-scoped ครอบทุก compartment ใต้ cmp-landingzone ที่ติดแท็ก lz-network-admin — คือ cmp-lz-network และ cmp-lz-<env>-network ของทุก environment — บวกสิทธิ์ use/read (bastion, vault, logging) ใน compartment ฝั่ง security; grp-lz-security-admin สมมาตรกัน ครอบ cmp-lz-security และ cmp-lz-<env>-security ทุกตัว พร้อม read/use และ manage private-ips ฝั่ง network; ผู้ดูแลราย project (grp-lz-<env>-<project>-admin) จัดการเฉพาะ project compartment ของตัวเอง โดยมีสิทธิ์ use แบบแคบบน network/security compartment ของ env นั้น — ระดับ tenancy มี grp-iam-admin (identity), grp-security-admin (Cloud Guard), grp-cost-admin (budget/usage) และ grp-auditors-admin (อ่านทั้ง tenancy สำหรับตรวจสอบ); landing zone ไม่ได้สร้างกลุ่มผู้ดูแลระดับ environment แยกต่างหาก`,
+          `Every right is least-privilege and group-based only (${facts.policyCount} generated policy sets): grp-lz-network-admin is tag-scoped, managing network resources in every compartment under cmp-landingzone tagged lz-network-admin — cmp-lz-network plus each environment's cmp-lz-<env>-network — with additional use/read rights (bastion, vaults, logging) in the security-tagged compartments; grp-lz-security-admin mirrors it across cmp-lz-security and every cmp-lz-<env>-security, with read/use and manage private-ips on the network side; per-project admins (grp-lz-<env>-<project>-admin) manage only their own project compartment plus narrow use-grants on that environment's network and security compartments. At tenancy level: grp-iam-admin (identity), grp-security-admin (Cloud Guard), grp-cost-admin (budgets/usage) and grp-auditors-admin (tenancy-wide read for reviews). The landing zone creates no separate per-environment admin group.`,
         ),
         L(
           "หลักการที่บังคับใช้: deny-by-default (ไม่มี policy = ไม่มีสิทธิ์), ไม่มี grant ระดับผู้ใช้รายคน, แยกอำนาจ (ผู้ดูแล IAM ไม่ข้าม security), และ break-glass แยกบัญชีพร้อม audit ทุกการใช้งาน — matrix ฉบับเต็มอยู่ใน diagram",
@@ -389,6 +385,110 @@ export function buildDesignDocument(result: GenerateResult): DesignDocument {
   };
 }
 
+interface InspectionCopy {
+  /** Clause for the network-section lead sentence. */
+  summary: LocalizedText;
+  /** North-south (internet in/out) path description for the traffic-flow section. */
+  northSouth: LocalizedText;
+  /** East-west (spoke ↔ spoke) treatment for the traffic-flow section. */
+  eastWest: LocalizedText;
+  /** Extra log source to name in the centralized-logging section ("" when there is none). */
+  logSource: LocalizedText;
+  /** Inspection-tier clause for the resilience section. */
+  resilience: LocalizedText;
+}
+
+/**
+ * Single source of truth for every firewall/inspection sentence in the document.
+ * Hub C *does* inspect traffic — third-party firewall appliances behind a
+ * trust/untrust NLB pair, licensed by the customer — so only Hub E may be
+ * described as having no inspection.
+ */
+function inspectionCopy(facts: DesignFacts): InspectionCopy {
+  switch (facts.hub.inspection) {
+    case "nfw_dual":
+      return {
+        summary: L(
+          "north-south traffic ถูกตรวจโดย OCI Network Firewall 2 ชุดใน hub (DMZ สำหรับขาเข้า + Internal สำหรับ egress/east-west)",
+          "north-south traffic is inspected by two OCI Network Firewalls in the hub (a DMZ firewall for ingress and an internal firewall for egress/east-west)",
+        ),
+        northSouth: L(
+          "ขาเข้าถูกตรวจที่ DMZ Network Firewall ก่อนถึง load balancer แล้วจึงส่งต่อเข้า spoke ผ่าน DRG ส่วนขาออกถูกตรวจที่ Internal Network Firewall ก่อนออกทาง NAT Gateway",
+          "is inspected by the DMZ Network Firewall on the way in, before traffic reaches the load balancer and is handed to the spokes via the DRG, and by the internal Network Firewall on the way out, before it leaves through the NAT Gateway",
+        ),
+        eastWest: L(
+          "ถูกบังคับผ่าน Internal Network Firewall ด้วย route table ของ DRG",
+          "is forced through the internal Network Firewall by the DRG route tables",
+        ),
+        logSource: L("Network Firewall, ", "Network Firewall, "),
+        resilience: L(
+          "Network Firewall 2 ตัวทำหน้าที่คนละบทบาท (DMZ ขาเข้า + Internal ขาออก/east-west) จึงเป็นคนละเส้นทาง ไม่ใช่คู่สำรองของกันและกัน (ทั้งคู่เป็น managed service ที่ Oracle ดูแล และ LZ ไม่ได้กำหนด fault domain ให้)",
+          "the two Network Firewalls hold different roles (DMZ for ingress, internal for egress/east-west) so they are separate path elements rather than a redundant pair (both are Oracle-managed services that the LZ does not pin to fault domains)",
+        ),
+      };
+    case "nfw_single":
+      return {
+        summary: L(
+          "north-south traffic ถูกตรวจโดย OCI Network Firewall 1 ชุดใน hub",
+          "north-south traffic is inspected by a single OCI Network Firewall in the hub",
+        ),
+        northSouth: L(
+          "ถูกบังคับผ่าน OCI Network Firewall ของ hub ด้วย route table ทั้งขาเข้า (ไปยัง subnet ของ load balancer) และขาออก (0.0.0.0/0) ก่อนเข้า/ออก spoke",
+          "is steered through the hub's single OCI Network Firewall by route tables in both directions — inbound toward the load-balancer subnet and outbound on 0.0.0.0/0 — before reaching or leaving a spoke",
+        ),
+        eastWest: L(
+          "ถูกบังคับผ่าน Network Firewall ตัวเดียวกันด้วย route table ของ DRG",
+          "is forced through the same Network Firewall by the DRG route tables",
+        ),
+        logSource: L("Network Firewall, ", "Network Firewall, "),
+        resilience: L(
+          "Network Firewall เดี่ยวเป็นจุดเดียวบนทุกเส้นทางที่ตรวจ (พิจารณา Hub A หากต้องการแยกชั้น DMZ/Internal)",
+          "the single Network Firewall sits on every inspected path (consider Hub A to split the DMZ and internal inspection layers)",
+        ),
+      };
+    case "third_party":
+      return {
+        summary: L(
+          "ทราฟฟิกถูกตรวจโดย third-party firewall (BYOL/marketplace ลูกค้าเป็นผู้ถือ licence) ที่วางอยู่หลัง Network Load Balancer คู่ trust/untrust ใน hub — LZ สร้าง NLB, subnet, NSG และ route ให้ครบ ส่วนตัว firewall ลูกค้า deploy เอง",
+          "traffic is inspected by third-party firewall appliances (BYOL/marketplace, licensed by the customer) sitting behind a trust/untrust pair of Network Load Balancers in the hub — the LZ ships the NLBs, subnets, NSGs and routes; the appliances themselves are customer-deployed",
+        ),
+        northSouth: L(
+          "ขาเข้ามาทาง Internet Gateway แล้วถูกส่งผ่าน untrust NLB ไปยัง firewall pair ก่อนถึง load balancer และ spoke ส่วนขาออกจาก spoke วิ่งผ่าน DRG → trust NLB → firewall pair แล้วออกอินเทอร์เน็ตทาง Internet Gateway",
+          "enters via the Internet Gateway and is steered through the untrust NLB to the firewall pair before reaching the load balancer and the spokes, while spoke egress runs DRG → trust NLB → firewall pair and back out through the Internet Gateway",
+        ),
+        eastWest: L(
+          "ถูกบังคับผ่าน trust NLB และ third-party firewall ด้วย route table ของ DRG",
+          "is forced through the trust NLB and the third-party firewalls by the DRG route tables",
+        ),
+        logSource: L("", ""),
+        resilience: L(
+          "NLB 2 ตัวเป็น trust และ untrust คนละบทบาท (ไม่ใช่คู่สำรอง) และเป็น regional managed service ส่วนชั้นที่ต้องทำ HA จริงคือ firewall appliance ของลูกค้า (ควร deploy อย่างน้อย 2 ตัวคนละ fault domain เป็น backend ของ NLB)",
+          "the two NLBs are role-distinct (a trust and an untrust load balancer, not a redundant pair) regional managed services while the HA-critical tier is the customer's firewall appliances (run at least two, in separate fault domains, behind the NLBs)",
+        ),
+      };
+    default:
+      return {
+        summary: L(
+          "hub นี้ไม่มีการตรวจทราฟฟิก (ไม่มี firewall — เหมาะกับ PoC/งบจำกัด)",
+          "this hub performs no traffic inspection (no firewall — suited to PoC/budget-constrained cases)",
+        ),
+        northSouth: L(
+          "ขาเข้าผ่าน load balancer เข้าสู่ spoke โดยตรง ส่วนขาออกใช้ NAT Gateway ของ spoke แต่ละตัวเอง ไม่ผ่าน hub",
+          "passes the load balancer straight into the spokes on the way in, while egress leaves through each spoke's own NAT Gateway without transiting the hub",
+        ),
+        eastWest: L(
+          "วิ่งตาม route table ของ DRG โดยไม่มีการ inspect",
+          "rides the DRG route tables with no inspection",
+        ),
+        logSource: L("", ""),
+        resilience: L(
+          "hub ไม่มีชั้น inspection (อัปเกรดเป็น Hub B/A หรือ Hub C ได้ภายหลังโดยไม่ต้องรื้อ)",
+          "the hub has no inspection tier (upgradeable to Hub B/A or Hub C later without redesign)",
+        ),
+      };
+  }
+}
+
 function workloadParagraph(facts: DesignFacts): LocalizedText {
   const comps = facts.workload.components.map((c) => `${c.label} (${c.detail})`).slice(0, 6).join(", ");
   return L(
@@ -409,16 +509,16 @@ function networkParagraph(facts: DesignFacts): LocalizedText {
 }
 
 function firewallDetail(spec: GenerateResult["spec"], facts: DesignFacts): LocalizedText {
-  if (!facts.hub.firewall) {
-    if (spec.hub.kind === "hub_c") {
-      return L(
-        "การตรวจสอบทราฟฟิก: Hub C วาง Network Load Balancer คู่เพื่อส่งทราฟฟิกไปยัง third-party firewall (BYOL/marketplace) แบบ HA — นโยบายและการ inspect อยู่ที่ firewall ของลูกค้า",
-        "Traffic inspection: Hub C places a pair of Network Load Balancers to steer traffic to a third-party firewall (BYOL/marketplace) in HA — policy and inspection live on the customer's firewall.",
-      );
-    }
+  if (facts.hub.inspection === "third_party") {
     return L(
-      "การตรวจสอบทราฟฟิก: hub นี้ไม่มี firewall (เหมาะกับ PoC/งบจำกัด) — ควบคุมด้วย Security List/NSG และ route ผ่าน gateway; อัปเกรดเป็น Hub B/A ได้ภายหลังโดยไม่ต้องรื้อ",
-      "Traffic inspection: this hub has no firewall (PoC/budget) — controlled via Security Lists/NSGs and gateway routing; upgradeable to Hub B/A later without redesign.",
+      "การตรวจสอบทราฟฟิก: Hub C วาง Network Load Balancer 2 ตัว (trust สำหรับขาออก/east-west + untrust สำหรับขาเข้า) เป็นทางเข้า-ออกของ third-party firewall ที่ลูกค้า deploy เอง (BYOL/marketplace — licence ไม่รวมใน BOM) — LZ สร้าง VCN/subnet/NSG/route และ NLB ให้ครบ ส่วนนโยบายและการ inspect ทั้งหมดอยู่บน firewall ของลูกค้า; ควรวาง appliance อย่างน้อย 2 ตัวคนละ fault domain เป็น backend ของ NLB",
+      "Traffic inspection: Hub C places two Network Load Balancers (trust for egress/east-west, untrust for ingress) as the entry and exit points of the customer-deployed third-party firewalls (BYOL/marketplace — the licence is not part of this BOM). The LZ ships the VCN, subnets, NSGs, routes and both NLBs; all policy and inspection live on the customer's firewalls, which should be deployed as at least two appliances across separate fault domains behind the NLBs.",
+    );
+  }
+  if (!facts.hub.inspects) {
+    return L(
+      "การตรวจสอบทราฟฟิก: hub นี้ไม่มีชั้น inspection (เหมาะกับ PoC/งบจำกัด) — ควบคุมด้วย Security List/NSG และ route ผ่าน gateway; อัปเกรดเป็น Hub B/A (OCI Network Firewall) หรือ Hub C (third-party firewall) ได้ภายหลังโดยไม่ต้องรื้อ",
+      "Traffic inspection: this hub has no inspection tier (PoC/budget) — controlled via Security Lists/NSGs and gateway routing; upgradeable to Hub B/A (OCI Network Firewall) or Hub C (third-party firewalls) later without redesign.",
     );
   }
   const inspection = spec.hub.inspection ?? "standard";
@@ -435,11 +535,11 @@ function firewallDetail(spec: GenerateResult["spec"], facts: DesignFacts): Local
         ? "IDS/IPS (threat signatures for detection/prevention) + application-ID + URL filtering (L3–L7)"
         : "stateful L3/L4 + application-ID + URL filtering";
   const ha = spec.hub.kind === "hub_a"
-    ? "ทำงานแบบ active/active 2 instance (subnet fw-dmz + fw-int) รองรับ failover"
-    : "1 instance ในซับเน็ต fw ของ hub";
+    ? "2 instance แยกบทบาท — DMZ (subnet fw-dmz) ตรวจขาเข้าก่อนถึง load balancer และ Internal (subnet fw-int) ตรวจขาออก/east-west"
+    : "1 instance ในซับเน็ต fw ของ hub ตรวจทั้งขาเข้าและขาออก";
   const haEn = spec.hub.kind === "hub_a"
-    ? "runs active/active across 2 instances (fw-dmz + fw-int subnets) for failover"
-    : "a single instance in the hub fw subnet";
+    ? "two role-separated instances — a DMZ firewall (fw-dmz subnet) inspecting ingress ahead of the load balancer and an internal firewall (fw-int subnet) inspecting egress/east-west"
+    : "a single instance in the hub fw subnet inspecting both directions";
   return L(
     `การปรับแต่ง Network Firewall: ${ha} ทำ ${depthTh} — บังคับให้ทราฟฟิก north-south (internet ingress/egress) และ east-west (spoke-to-spoke) วิ่งผ่าน firewall ผ่าน route table ที่ DRG/hub; นโยบายเป็นแบบ default-deny + allowlist ต่อ application; log ส่งเข้า Logging (flow logs + firewall logs). ค่า data processing คิด 10TB แรก/เดือนฟรี แล้ว ฿0.56/GB — ปรับ policy/threat feed เพิ่มได้หลัง deploy`,
     `Network Firewall tuning: ${haEn}, performing ${depthEn} — north-south (internet ingress/egress) and east-west (spoke-to-spoke) traffic is forced through the firewall via DRG/hub route tables; policy is default-deny with per-application allowlists; logs stream to Logging (flow + firewall logs). Data processing is free for the first 10TB/month then ฿0.56/GB — policies/threat feeds can be extended after deployment.`,

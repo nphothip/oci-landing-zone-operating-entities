@@ -14,6 +14,13 @@ export const XS = {
   title: 4,
   catLabel: 5,
   catCurrency: 6,
+  /** Long free text — wraps and top-aligns (TOR clauses, notes). */
+  wrap: 7,
+  /** Compliance verdicts, colour-coded so a reviewer scans the matrix visually. */
+  statusPass: 8,
+  statusPartial: 9,
+  statusFail: 10,
+  statusManual: 11,
 } as const;
 
 export type XlsxCell = null | { v: string | number; s?: number };
@@ -24,6 +31,8 @@ export interface XlsxSheet {
   rows: XlsxCell[][];
   /** A1-style range to enable Excel AutoFilter on, e.g. "A4:J40" */
   autoFilter?: string;
+  /** Freeze everything above this 1-based row (e.g. 4 keeps rows 1–4 visible). */
+  freezeRow?: number;
 }
 
 function esc(s: string): string {
@@ -49,22 +58,29 @@ function safeSheetName(name: string, fallback: string): string {
 const STYLES_XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
 <numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;฿&quot;#,##0.00"/></numFmts>
-<fonts count="3">
+<fonts count="6">
 <font><sz val="11"/><color theme="1"/><name val="Calibri"/></font>
 <font><b/><sz val="11"/><color theme="1"/><name val="Calibri"/></font>
 <font><b/><sz val="14"/><color theme="1"/><name val="Calibri"/></font>
+<font><b/><sz val="11"/><color rgb="FF1B5E20"/><name val="Calibri"/></font>
+<font><b/><sz val="11"/><color rgb="FF7F4F00"/><name val="Calibri"/></font>
+<font><b/><sz val="11"/><color rgb="FF9C0006"/><name val="Calibri"/></font>
 </fonts>
-<fills count="3">
+<fills count="7">
 <fill><patternFill patternType="none"/></fill>
 <fill><patternFill patternType="gray125"/></fill>
 <fill><patternFill patternType="solid"><fgColor rgb="FFF2F2F2"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFD9EAD3"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFFFF2CC"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFF4CCCC"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFE3E9F2"/><bgColor indexed="64"/></patternFill></fill>
 </fills>
 <borders count="2">
 <border><left/><right/><top/><bottom/><diagonal/></border>
 <border><left/><right/><top/><bottom style="thin"><color rgb="FFBFBFBF"/></bottom><diagonal/></border>
 </borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="7">
+<cellXfs count="12">
 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
 <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
 <xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
@@ -72,6 +88,11 @@ const STYLES_XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
 <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/>
 <xf numFmtId="164" fontId="1" fillId="2" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1"/>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="3" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="top" horizontal="center"/></xf>
+<xf numFmtId="0" fontId="4" fillId="4" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="top" horizontal="center"/></xf>
+<xf numFmtId="0" fontId="5" fillId="5" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="top" horizontal="center"/></xf>
+<xf numFmtId="0" fontId="1" fillId="6" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="top" horizontal="center"/></xf>
 </cellXfs>
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`;
@@ -107,6 +128,9 @@ function workbookRels(sheetCount: number): string {
 }
 
 function sheetXml(sheet: XlsxSheet): string {
+  const views = sheet.freezeRow
+    ? `<sheetViews><sheetView workbookViewId="0"><pane ySplit="${sheet.freezeRow}" topLeftCell="A${sheet.freezeRow + 1}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>`
+    : "";
   const cols = sheet.cols.length
     ? `<cols>${sheet.cols.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("")}</cols>`
     : "";
@@ -127,7 +151,7 @@ function sheetXml(sheet: XlsxSheet): string {
     .join("");
   const filter = sheet.autoFilter ? `<autoFilter ref="${sheet.autoFilter}"/>` : "";
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${cols}<sheetData>${rows}</sheetData>${filter}</worksheet>`;
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${views}${cols}<sheetData>${rows}</sheetData>${filter}</worksheet>`;
 }
 
 /** Build an .xlsx workbook Blob (for browser download) from sheet definitions. */

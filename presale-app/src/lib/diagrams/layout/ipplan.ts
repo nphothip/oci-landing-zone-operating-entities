@@ -9,15 +9,24 @@ import { HUB_VCN, envBlocks, OKE_SERVICES_CIDR, hubMgmtSubnet, orderEnvs } from 
 // network JSON (gen.vcns) when available; otherwise everything is computed
 // from the deterministic lane plan in lib/domain/cidr.ts:
 //   hub 10.0.0.0/21 · per-env spoke /21 · per-env platform (OKE) /20.
+// OKE runs VCN-native CNI by default (gen/.../oke/simple/oke_builder.libsonnet
+// defaults cni_type to "native" and no template overrides it), so pods live on
+// a ROUTED /21 carved at the start of the platform /20 — not on an overlay
+// pods CIDR.
 
 const ALL_ENVS: EnvName[] = ["prod", "preprod", "staging", "uat", "dev", "test"];
 
-/** OKE pods CIDR (cluster-internal, non-routed — pairs with OKE_SERVICES_CIDR). */
+/**
+ * Overlay (flannel) pods CIDR. Only configured when config_params.cni_type is
+ * "overlay"; the generated default is VCN-native CNI, where this value is never
+ * emitted and pods use a routed platform-VCN /21 instead.
+ */
 const OKE_PODS_CIDR = "10.244.0.0/16";
 
 // Hub auto-subnet carve: consecutive /24s from the hub VCN in a fixed per-hub
 // order (gen/config.libsonnet; see hubMgmtSubnet comments in lib/domain/cidr.ts).
-// hub_c skips .4, so each entry carries its explicit third-octet index.
+// auto_subnets_24 allocates gapless blocks, so the index is just the position
+// in that order — no hub kind skips a /24.
 const HUB_SUBNET_PLAN: Record<HubKind, { name: string; idx: number }[]> = {
   hub_a: [
     { name: "fw-dmz", idx: 0 },
@@ -40,11 +49,13 @@ const HUB_SUBNET_PLAN: Record<HubKind, { name: string; idx: number }[]> = {
     { name: "mon", idx: 2 },
     { name: "dns", idx: 3 },
   ],
+  // gen/config.libsonnet: ['untrust','trust','lb','mgmt','mon','dns']
   hub_c: [
     { name: "untrust", idx: 0 },
     { name: "trust", idx: 1 },
     { name: "lb", idx: 2 },
     { name: "mgmt", idx: 3 },
+    { name: "mon", idx: 4 },
     { name: "dns", idx: 5 },
   ],
 };
@@ -61,6 +72,21 @@ function slash24(base: string, offset: number): string {
   const third = Number(m[3]) + offset;
   if (!Number.isFinite(third) || third > 255) return base;
   return `${m[1]}.${m[2]}.${third}.0/24`;
+}
+
+/**
+ * Pods subnet under VCN-native CNI (the generated default): the "small" OKE
+ * profile carves ['pods','workers','int-lb','control-plane'] sequentially from
+ * the platform /20, so the pods /21 sits at the start of that VCN
+ * (e.g. platform 10.0.96.0/20 -> pods 10.0.96.0/21). Defensive: anything that
+ * is not a parsable /20-or-larger block echoes back unchanged.
+ */
+function podsSlash21(platformCidr: string): string {
+  const m = /^(\d+\.\d+\.\d+\.\d+)\/(\d+)$/.exec(platformCidr);
+  if (!m) return platformCidr;
+  const prefix = Number(m[2]);
+  if (!Number.isFinite(prefix) || prefix > 21) return platformCidr;
+  return `${m[1]}/21`;
 }
 
 /** Word-boundary env match so "prod" does not match "preprod". */
@@ -90,7 +116,7 @@ export function layoutIpPlanView(spec: SolutionSpec, gen: ParsedGenerated): Diag
   d.add({
     kind: "canvasTitle",
     label: "IP Address Plan",
-    sublabel: "CIDR allocation — hub /21 · env spoke /21 · platform (OKE) /20 · cluster-internal ranges",
+    sublabel: "CIDR allocation — hub /21 · env spoke /21 · platform (OKE) /20 with routed pods /21 · cluster-internal ranges",
     x: 24, y: 14, w: 760, h: 40, style: "canvasTitle",
   });
 
@@ -149,15 +175,20 @@ export function layoutIpPlanView(spec: SolutionSpec, gen: ParsedGenerated): Diag
   });
 
   // ---- (3) cluster-internal card (kept next to the hub in column 0) --------
+  // Only the Kubernetes services range is cluster-internal in the generated
+  // design. The overlay pods CIDR is listed for completeness but is emitted
+  // solely when cni_type = "overlay"; the default VCN-native CNI puts pods on
+  // a routed platform-VCN /21 (shown on each env card below).
   putCard({
     id: "card-cluster",
     title: "OKE cluster-internal (non-routed)",
     style: "routeCardDrg",
     colHeaders: ["Range", "CIDR"],
     rows: [
-      { left: "Kubernetes services", right: OKE_SERVICES_CIDR },
-      { left: "Pods (VCN-native alt.)", right: OKE_PODS_CIDR },
+      { left: "Kubernetes services", right: OKE_SERVICES_CIDR, bold: true },
+      { left: "Pods — overlay (flannel) CNI only", right: OKE_PODS_CIDR },
       { left: "never routed — may overlap other tenancies" },
+      { left: "default = VCN-native CNI: pods use a routed /21" },
     ],
     forceCol: 0,
   });
@@ -191,6 +222,15 @@ export function layoutIpPlanView(spec: SolutionSpec, gen: ParsedGenerated): Diag
       right: platCidr,
       bold: okeOn,
     });
+    if (okeOn) {
+      // VCN-native CNI: pods are a routed subnet at the start of the platform
+      // /20 — the range firewalls/allowlists must actually account for.
+      const genPods = platVcn?.subnets?.find((s) => /pods/i.test(`${s.name} ${s.key}`))?.cidr;
+      rows.push({
+        left: "pods subnet — routed (VCN-native)",
+        right: genPods || podsSlash21(platCidr),
+      });
+    }
 
     const id = `card-env-${env}`;
     putCard({
@@ -244,6 +284,7 @@ export function layoutIpPlanView(spec: SolutionSpec, gen: ParsedGenerated): Diag
   const ruleRows: Row[] = [
     { left: "No overlap: hub + spokes + platforms", bold: true },
     { left: "Platform VCN must be exactly /20" },
+    { left: "OKE pods /21 carved first from that /20" },
     { left: "Spoke VCN ≥ /22" },
     { left: `OKE API allowed from mgmt ${hubMgmtSubnet(hubKind)}` },
   ];

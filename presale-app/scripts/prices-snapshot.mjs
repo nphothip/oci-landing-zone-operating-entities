@@ -25,7 +25,9 @@ for (const row of Array.isArray(data) ? data : []) {
 
 const prices = {};
 for (const [sku, rows] of rowsBySku) {
-  rows.sort((a, b) => (a.step ?? 0) - (b.step ?? 0));
+  // Sort by band boundary, matching price-client.ts — AIS sometimes gives a
+  // free first tier a higher `step` than the paid tier above it.
+  rows.sort((a, b) => (a.step_start ?? 0) - (b.step_start ?? 0));
   prices[sku] = {
     name: rows[0].service_name,
     metric: rows[0].metric,

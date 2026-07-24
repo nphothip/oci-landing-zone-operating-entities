@@ -1,13 +1,32 @@
-import type { Connectivity, DiagramDoc, SolutionSpec, TemplateId } from "@/lib/domain/types";
+import type {
+  Connectivity,
+  DiagramDoc,
+  EnterpriseEnvPlan,
+  EnterpriseLzSizing,
+  EnvName,
+  SolutionSpec,
+} from "@/lib/domain/types";
 import { Doc, addLegend } from "../model";
 import type { ParsedGenerated } from "../generated-parse";
+import { orderEnvs } from "@/lib/domain/cidr";
+import { defaultEnvPlan, enterpriseHasOke } from "@/lib/templates/enterprise-lz";
 
 // Resilience / High-Availability View — one region box with an Availability
-// Domain split into the three Fault Domain columns. Shows where the HA-critical
-// components physically land: the hub firewall pair (or its SPOF), the
-// FD-spanning regional Load Balancer, app VMs spread round-robin, OKE workers,
-// and the managed-HA DB tier. Below the region: connectivity redundancy and an
-// OCI SLA reference card. Same visual language as operations/logging views.
+// Domain split into the three Fault Domain columns.
+//
+// Two things this view must never overstate, because the generated LZ does not
+// implement them:
+//   1. Fault-domain placement. `grep -r fault_domain gen/` matches nothing
+//      outside the OCVS extension, so the LZ pins NO component to an FD. The FD
+//      columns are therefore the RECOMMENDED anti-affinity target for
+//      customer-deployed compute, labelled as guidance, not as-built.
+//   2. Hub appliance redundancy. hub_a ships a DMZ firewall and an Internal
+//      firewall with different policies on different subnets (gen/hub/hub_a.libsonnet)
+//      and hub_c ships a trust NLB and an untrust NLB (gen/hub/hub_c.libsonnet) —
+//      role-split path elements, not interchangeable HA pairs. They are managed
+//      regional services, so they sit in a tier band above the FD columns.
+// Below the region: connectivity redundancy and an OCI SLA reference card.
+// Same visual language as the operations/logging views.
 
 interface Tile {
   id: string;
@@ -20,7 +39,28 @@ interface Tile {
 const num = (v: unknown): number =>
   typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
 
-/** Prod-tier FD-pinned VM fleet for every template (defensive on sizing). */
+/**
+ * Environment whose plan drives the enterprise_lz compute tier, plus the plan
+ * that is actually priced for it. templates/enterprise-lz.ts fills a missing
+ * plan with defaultEnvPlan(env), so the diagram must do the same — and it must
+ * caption the tier with the environment it really read (never "prod" when prod
+ * has no plan and another env was used).
+ */
+function enterpriseTier(
+  spec: SolutionSpec,
+  s: EnterpriseLzSizing,
+): { env: EnvName; plan: EnterpriseEnvPlan } {
+  const plans = s.plans ?? {};
+  const envs = orderEnvs(spec.environments ?? []);
+  const env: EnvName =
+    envs.find((e) => e === "prod") ??
+    envs[0] ??
+    (Object.keys(plans)[0] as EnvName | undefined) ??
+    "prod";
+  return { env, plan: plans[env] ?? defaultEnvPlan(env) };
+}
+
+/** Prod-tier VM fleet for every template (defensive on sizing). */
 function vmTier(spec: SolutionSpec): { count: number; name: string; sub: string } {
   const s = spec.sizing as SolutionSpec["sizing"] | undefined;
   switch (s?.kind) {
@@ -34,12 +74,15 @@ function vmTier(spec: SolutionSpec): { count: number; name: string; sub: string 
       return s.runtime === "vm"
         ? { count: num(s.appVmCount), name: "Bot VM", sub: `${num(s.ocpusPerVm) || "?"} OCPU · E5.Flex` }
         : { count: 0, name: "App VM", sub: "" };
-    case "dr":
-      return {
-        count: num(s.protectedVmCount),
-        name: "Standby VM",
-        sub: s.mode === "warm_standby" ? "warm standby (running)" : "pilot light (stopped)",
-      };
+    case "dr": {
+      // templates/dr.ts runs (and bills) ceil(protectedVmCount / 2) VMs for
+      // warm_standby and none for pilot light — the view follows the BOM.
+      const total = num(s.protectedVmCount);
+      const running = Math.ceil(total / 2);
+      return s.mode === "warm_standby"
+        ? { count: running, name: "Standby VM", sub: `warm standby running · ${running} of ${total}` }
+        : { count: total, name: "Standby VM", sub: "pilot light (stopped)" };
+    }
     case "erp":
       return {
         count: num(s.appVmCount),
@@ -59,11 +102,10 @@ function vmTier(spec: SolutionSpec): { count: number; name: string; sub: string 
     case "streaming":
       return { count: num(s.consumerVmCount), name: "Consumer VM", sub: `${num(s.consumerOcpus) || "?"} OCPU` };
     case "enterprise_lz": {
-      const plans = s.plans ?? {};
-      const plan = plans.prod ?? Object.values(plans).find((p) => Boolean(p));
-      const projects = (plan?.projects ?? []).filter((p) => Boolean(p));
+      const { env, plan } = enterpriseTier(spec, s);
+      const projects = (plan.projects ?? []).filter((p) => Boolean(p));
       const count = projects.reduce((a, p) => a + num(p.vmCount), 0);
-      return { count, name: "App VM", sub: `prod · ${projects.length} project(s)` };
+      return { count, name: "App VM", sub: `${env} · ${projects.length} project(s)` };
     }
     default:
       return { count: 0, name: "App VM", sub: "" };
@@ -77,19 +119,30 @@ function okeWorkers(spec: SolutionSpec): number {
   if (s.kind === "oke_platform") return num(s.workerCount);
   if (s.kind === "chatbot" && s.runtime === "oke") return num(s.okeWorkerCount);
   if (s.kind === "enterprise_lz") {
-    const plans = s.plans ?? {};
-    const plan = plans.prod ?? Object.values(plans).find((p) => Boolean(p));
-    return plan?.oke ? num(plan.okeWorkerCount) || 3 : 0;
+    const { plan } = enterpriseTier(spec, s);
+    return plan.oke ? num(plan.okeWorkerCount) || 3 : 0;
   }
   return 0;
 }
 
 /** DB tier HA posture rows (ADB managed HA and/or Base DB Data Guard note). */
-function dbTier(spec: SolutionSpec): { rows: { left: string; right?: string; bold?: boolean }[]; present: boolean } {
+function dbTier(spec: SolutionSpec): {
+  rows: { left: string; right?: string; bold?: boolean }[];
+  present: boolean;
+  adb: boolean;
+} {
   const s = spec.sizing as SolutionSpec["sizing"] | undefined;
   const rows: { left: string; right?: string; bold?: boolean }[] = [];
-  const adb = (detail: string) =>
-    rows.push({ left: "Autonomous DB — built-in HA, auto-failover", right: detail, bold: true });
+  let adbPresent = false;
+  let dataGuard = false;
+  // Plain Autonomous DB has managed HA *within* the region (automatic
+  // restart/recovery on the same or another node) — it has NO standby database
+  // and therefore no failover target unless Autonomous Data Guard is enabled,
+  // which none of these templates configure.
+  const adb = (detail: string) => {
+    adbPresent = true;
+    rows.push({ left: "Autonomous DB — managed HA inside the region (no standby)", right: detail, bold: true });
+  };
   const base = (detail: string) =>
     rows.push({ left: "Base DB VM — single node", right: detail });
   switch (s?.kind) {
@@ -101,9 +154,20 @@ function dbTier(spec: SolutionSpec): { rows: { left: string; right?: string; bol
       if (s.rag) adb(`vector store · ${num(s.vectorDbEcpus) || "?"} ECPU`);
       break;
     case "dr":
-      if (s.dbDr === "adb_cross_region") adb("cross-region standby");
-      else if (s.dbDr === "base_db_data_guard")
+      if (s.dbDr === "adb_cross_region") {
+        // Autonomous Data Guard automates failover only for a LOCAL standby;
+        // a cross-region standby is switched over / failed over by the customer.
+        adbPresent = true;
+        dataGuard = true;
+        rows.push({
+          left: "Autonomous DB + Autonomous Data Guard — cross-region standby",
+          right: "manual switchover/failover",
+          bold: true,
+        });
+      } else if (s.dbDr === "base_db_data_guard") {
+        dataGuard = true;
         rows.push({ left: "Base DB + Data Guard standby", right: "switchover ready", bold: true });
+      }
       break;
     case "erp":
       if (s.db?.engine === "adb_serverless") adb(`${num(s.db.ecpus) || "?"} ECPU`);
@@ -136,9 +200,15 @@ function dbTier(spec: SolutionSpec): { rows: { left: string; right?: string; bol
     default:
       break;
   }
+  if (adbPresent && !dataGuard) {
+    rows.push({
+      left: "Autonomous Data Guard standby — automatic failover only when local",
+      right: "optional add-on",
+    });
+  }
   const present = rows.length > 0;
-  if (!present) rows.push({ left: "No FD-pinned database tier in this solution" });
-  return { rows, present };
+  if (!present) rows.push({ left: "No database tier in this solution" });
+  return { rows, present, adb: adbPresent };
 }
 
 /** On-prem connectivity redundancy summary. */
@@ -224,23 +294,105 @@ function connInfo(c: Connectivity | undefined): {
   }
 }
 
-const LB_TEMPLATES: TemplateId[] = [
-  "web_app",
-  "chatbot",
-  "ecommerce",
-  "erp",
-  "vdi",
-  "oke_platform",
-  "serverless",
-  "enterprise_lz",
-];
+/**
+ * Does the LZ IaC ship the hub L7 load balancer for this design?
+ * gen/landing_zone.libsonnet sets create_l7_load_balancer=false whenever a
+ * platform uses the oke_simple extension — every hub builder creates the LB
+ * otherwise. This mirrors lzShipsHubLb in src/lib/templates/lz-baseline.ts
+ * (which drives the BOM's deployedByLz flag) and is used only as a fallback
+ * when the generated network JSON is not available to read.
+ */
+function lzShipsHubLb(spec: SolutionSpec): boolean {
+  if (spec.template === "oke_platform") return false;
+  const s = spec.sizing as SolutionSpec["sizing"] | undefined;
+  if (s?.kind === "chatbot" && s.runtime === "oke") return false;
+  if (s?.kind === "enterprise_lz") return !enterpriseHasOke(spec);
+  return true;
+}
+
+/**
+ * Hub inspection / ingress tier. Everything here is a REGIONAL managed service
+ * attached to a subnet (OCI Network Firewall, OCI Network Load Balancer): the
+ * LZ never selects a fault domain for them, and in hub_a / hub_c the two
+ * appliances carry DIFFERENT roles, so they are drawn as a role-split tier
+ * above the FD columns instead of as an interchangeable HA pair.
+ */
+function hubTierTiles(hubKind: string | undefined): Tile[] {
+  switch (hubKind) {
+    case "hub_a":
+      return [
+        {
+          id: "nfw-dmz",
+          label: "OCI Network Firewall — DMZ",
+          sub: "inbound north-south (IGW → firewall → LB)",
+          icon: "fw",
+          style: "service",
+        },
+        {
+          id: "nfw-int",
+          label: "OCI Network Firewall — Internal",
+          sub: "east-west + egress (DRG ingress, NAT path)",
+          icon: "fw",
+          style: "service",
+        },
+        {
+          id: "fw-role-note",
+          label: "Two roles, not a redundant pair",
+          sub: "each firewall is the only element on its own path",
+          style: "note",
+        },
+      ];
+    case "hub_b":
+      return [
+        {
+          id: "nfw-single",
+          label: "OCI Network Firewall",
+          sub: "single instance — inspects every hub path",
+          icon: "fw",
+          style: "service",
+        },
+        {
+          id: "nfw-advice",
+          label: "SPOF — one inspection point",
+          sub: "Hub A adds a second firewall in a different role (DMZ + Internal): defence in depth, not a standby",
+          style: "note",
+        },
+      ];
+    case "hub_c":
+      return [
+        {
+          id: "nlb-untrust",
+          label: "Hub NLB — untrust",
+          sub: "internet-side ingress → firewall VMs (private)",
+          icon: "lb",
+          style: "service",
+        },
+        {
+          id: "nlb-trust",
+          label: "Hub NLB — trust",
+          sub: "spoke egress + east-west → same firewall VMs",
+          icon: "lb",
+          style: "service",
+        },
+        {
+          id: "nlb-role-note",
+          label: "Two roles, not a redundant pair",
+          sub: "HA comes from the firewall VMs behind both NLBs",
+          style: "note",
+        },
+      ];
+    default:
+      // hub_e — no hub inspection appliance at all.
+      return [];
+  }
+}
 
 export function layoutResilienceView(spec: SolutionSpec, gen: ParsedGenerated): DiagramDoc {
   const d = new Doc();
   d.add({
     kind: "canvasTitle",
     label: "Resilience View",
-    sublabel: "fault-domain placement, HA pairs & connectivity redundancy",
+    sublabel: "hub inspection tier, recommended fault-domain spread & connectivity redundancy",
     x: 24, y: 14, w: 720, h: 40, style: "canvasTitle",
   });
 
@@ -250,7 +402,9 @@ export function layoutResilienceView(spec: SolutionSpec, gen: ParsedGenerated): 
   const oke = okeWorkers(spec);
   const db = dbTier(spec);
   const conn = connInfo(spec.hub?.connectivity);
-  const wantsLb = Boolean(gen?.hasHubLb) || LB_TEMPLATES.includes(spec.template);
+  const wantsLb = Boolean(gen?.hasHubLb) || lzShipsHubLb(spec);
+  const hubTier = hubTierTiles(hubKind);
+  const spofFw = hubKind === "hub_b";
 
   // ---- fill the three FD columns (shortest-column round-robin) ------------
   const fdSlots: Tile[][] = [[], [], []];
@@ -260,24 +414,26 @@ export function layoutResilienceView(spec: SolutionSpec, gen: ParsedGenerated): 
     return bi;
   };
 
-  let spofNfw = false;
-  if (hubKind === "hub_a") {
-    fdSlots[0].push({ id: "nfw1", label: "Network Firewall 1", sub: "hub — active HA pair", icon: "fw", style: "stage" });
-    fdSlots[1].push({ id: "nfw2", label: "Network Firewall 2", sub: "hub — active HA pair", icon: "fw", style: "stage" });
-  } else if (hubKind === "hub_b") {
-    spofNfw = true;
-    fdSlots[0].push({ id: "nfw1", label: "Network Firewall", sub: "hub — single instance", icon: "fw", style: "note" });
-    fdSlots[1].push({
-      id: "nfw-advice",
-      label: "SPOF — single firewall",
-      sub: "upgrade to hub_a NFW pair for HA",
-      style: "note",
+  // hub_c is the only hub whose HA-critical element is customer compute: the
+  // 3rd-party firewall appliances registered as the backends of BOTH NLBs
+  // (gen/hub/hub_c.libsonnet placeholder_targets). The LZ only records their
+  // OCIDs, so their FD spread is a deployment recommendation.
+  if (hubKind === "hub_c") {
+    fdSlots[0].push({
+      id: "fwvm1",
+      label: "3rd-party firewall VM 1",
+      sub: "backend of both hub NLBs",
+      icon: "fw",
+      style: "stage",
     });
-  } else if (hubKind === "hub_c") {
-    fdSlots[0].push({ id: "nlb1", label: "Hub NLB 1", sub: "network LB — HA pair", icon: "lb", style: "stage" });
-    fdSlots[1].push({ id: "nlb2", label: "Hub NLB 2", sub: "network LB — HA pair", icon: "lb", style: "stage" });
+    fdSlots[1].push({
+      id: "fwvm2",
+      label: "3rd-party firewall VM 2",
+      sub: "put in a separate FD (recommended)",
+      icon: "fw",
+      style: "stage",
+    });
   }
-  // hub_e: no hub inspection appliance — nothing to place.
 
   const shownVm = vm.count > 6 ? 5 : vm.count;
   for (let i = 0; i < shownVm; i++) {
@@ -316,7 +472,7 @@ export function layoutResilienceView(spec: SolutionSpec, gen: ParsedGenerated): 
   if (fdSlots.every((c) => c.length === 0)) {
     fdSlots[0].push({
       id: "nofd",
-      label: "No FD-pinned compute",
+      label: "No FD-placed compute",
       sub: "managed services handle HA",
       icon: "cloud",
       style: "resourceTile",
@@ -329,15 +485,21 @@ export function layoutResilienceView(spec: SolutionSpec, gen: ParsedGenerated): 
   const adX = regionX + 20;
   const adW = regionW - 40;
   const adY = top + 30;
+  const tierY = adY + 30;
+  const tierTileH = 62;
+  const tierH = hubTier.length > 0 ? 28 + tierTileH + 8 : 0;
   const lbH = wantsLb ? 52 : 0;
-  const colY = adY + 30 + (wantsLb ? lbH + 24 : 0);
+  const lbY = tierY + (tierH > 0 ? tierH + 16 : 0);
+  const colY = lbY + (wantsLb ? lbH + 24 : 0);
   const colGap = 14;
   const colW = Math.floor((adW - 32 - 2 * colGap) / 3);
   const tileH = 50;
   const tileGap = 10;
   const maxSlots = Math.max(1, fdSlots[0].length, fdSlots[1].length, fdSlots[2].length);
   const colH = 30 + maxSlots * (tileH + tileGap) + 4;
-  const dbY = colY + colH + 20;
+  const fdNoteY = colY + colH + 12;
+  const fdNoteH = 34;
+  const dbY = fdNoteY + fdNoteH + 14;
   const dbH = 26 + db.rows.length * 17 + 10;
   const adH = dbY + dbH + 14 - adY;
   const regionH = adY + adH + 16 - top;
@@ -364,14 +526,40 @@ export function layoutResilienceView(spec: SolutionSpec, gen: ParsedGenerated): 
     style: "adTab", parent: "ad",
   });
 
+  // ---- hub inspection tier (regional managed services, above the FDs) -----
+  if (hubTier.length > 0) {
+    d.add({
+      id: "hubtier",
+      kind: "zone",
+      label: "HUB INSPECTION TIER — REGIONAL MANAGED SERVICES (NO FAULT-DOMAIN CONTROL)",
+      x: adX + 16, y: tierY, w: adW - 32, h: tierH,
+      style: "zone", parent: "ad",
+    });
+    const innerW = adW - 32 - 20;
+    const gap = 14;
+    const tw = Math.floor((innerW - (hubTier.length - 1) * gap) / hubTier.length);
+    hubTier.forEach((t, i) => {
+      d.add({
+        id: t.id,
+        kind: t.style === "note" && !t.icon ? "note" : "service",
+        label: t.label,
+        sublabel: t.sub,
+        icon: t.icon,
+        x: adX + 26 + i * (tw + gap), y: tierY + 26, w: tw, h: tierTileH,
+        style: t.style, parent: "hubtier",
+      });
+    });
+  }
+  if (spofFw) d.edge({ from: "nfw-advice", to: "nfw-single", kind: "leader", dashed: true });
+
   if (wantsLb) {
     d.add({
       id: "lb",
       kind: "service",
       label: "Load Balancer — regional",
-      sublabel: "spans all fault domains · managed HA · 99.95% SLA",
+      sublabel: "hub public ingress · spans all fault domains · managed HA · 99.95% SLA",
       icon: "lb",
-      x: adX + 16, y: adY + 30, w: adW - 32, h: lbH,
+      x: adX + 16, y: lbY, w: adW - 32, h: lbH,
       style: "service", parent: "ad",
     });
   }
@@ -398,7 +586,15 @@ export function layoutResilienceView(spec: SolutionSpec, gen: ParsedGenerated): 
     });
     if (wantsLb) d.edge({ from: "lb", to: `fd${f}`, kind: "flow" });
   }
-  if (spofNfw) d.edge({ from: "nfw-advice", to: "nfw1", kind: "leader", dashed: true });
+
+  d.add({
+    id: "fd-note",
+    kind: "note",
+    label:
+      "Fault-domain columns show the recommended anti-affinity target — the generated LZ sets no fault_domain; the FD is chosen at instance launch.",
+    x: adX + 16, y: fdNoteY, w: adW - 32, h: fdNoteH,
+    style: "note", parent: "ad",
+  });
 
   d.add({
     id: "dbcard",
@@ -420,18 +616,22 @@ export function layoutResilienceView(spec: SolutionSpec, gen: ParsedGenerated): 
     x: 24, y: cardsY, w: cardW, h: connH,
     style: "routeCardHub", rows: conn.rows,
   });
+  // Only quote an SLA for something this design actually deploys.
+  const slaRows: { left: string; right?: string }[] = [];
+  if (wantsLb) slaRows.push({ left: "Load Balancer (regional, FD-spanning)", right: "99.95%" });
+  if (db.adb) slaRows.push({ left: "Autonomous Database", right: "99.95%" });
+  if (oke > 0) slaRows.push({ left: "OKE control plane", right: "99.95%" });
+  slaRows.push(
+    { left: "Compute SLA — spread ≥ 2 VMs across FDs", right: "guidance" },
+    { left: "Fault domain is chosen at instance launch, not by the LZ", right: "guidance" },
+  );
   d.add({
     id: "slacard",
     kind: "routeCard",
-    label: "AVAILABILITY SLA REFERENCE (OCI PUBLISHED)",
-    x: 24 + cardW + 24, y: cardsY, w: cardW, h: 26 + 4 * 17 + 10,
+    label: "AVAILABILITY SLA & PLACEMENT REFERENCE (OCI PUBLISHED)",
+    x: 24 + cardW + 24, y: cardsY, w: cardW, h: 26 + slaRows.length * 17 + 10,
     style: "stackCard",
-    rows: [
-      { left: "Load Balancer (regional, FD-spanning)", right: "99.95%" },
-      { left: "Autonomous Database", right: "99.95%" },
-      { left: "OKE control plane", right: "99.95%" },
-      { left: "Compute SLA — spread ≥ 2 VMs across FDs", right: "guidance" },
-    ],
+    rows: slaRows,
   });
   if (conn.single) {
     d.add({
@@ -448,22 +648,24 @@ export function layoutResilienceView(spec: SolutionSpec, gen: ParsedGenerated): 
   const railX = regionX + regionW + 26;
   addLegend(d, railX, top, [
     { left: "FAULT DOMAIN", swatch: "zone" },
-    { left: "HA PAIR (FD-SPREAD)", swatch: "stage" },
-    { left: "SINGLE POINT OF FAILURE", swatch: "note" },
-    { left: "MANAGED-HA SERVICE", swatch: "service" },
-    { left: "COMPUTE (ANTI-AFFINITY)", swatch: "resourceTile" },
+    { left: "REGIONAL / MANAGED SERVICE", swatch: "service" },
+    { left: "CUSTOMER-DEPLOYED HA TIER", swatch: "stage" },
+    { left: "SPOF / ADVISORY", swatch: "note" },
+    { left: "COMPUTE (RECOMMENDED SPREAD)", swatch: "resourceTile" },
   ]);
   d.add({
     id: "fd-explainer",
     kind: "note",
     label: "Fault domains",
     sublabel: "แยกฮาร์ดแวร์ภายใน AD",
-    x: railX, y: top + 30 + 5 * 24 + 20, w: 210, h: 96,
+    x: railX, y: top + 30 + 5 * 24 + 20, w: 210, h: 128,
     style: "note",
     rows: [
       { left: "Isolated hardware & power within 1 AD", bold: true },
       { left: "OCI never patches 2 FDs at once" },
       { left: "Spread every HA tier over ≥ 2 FDs" },
+      { left: "The LZ IaC pins no fault domain —" },
+      { left: "placement above is guidance" },
     ],
   });
 

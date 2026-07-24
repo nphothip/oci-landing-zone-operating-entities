@@ -8,9 +8,10 @@ import { DiagramsTab } from "./DiagramsTab";
 import { LacTab } from "./LacTab";
 import { DesignDocTab } from "./DesignDocTab";
 import { DeployTab } from "./DeployTab";
+import { TorTab } from "./TorTab";
 import { L, useLang } from "@/lib/i18n";
 
-type Tab = "summary" | "bom" | "diagrams" | "doc" | "lac" | "deploy";
+type Tab = "summary" | "bom" | "diagrams" | "doc" | "tor" | "lac" | "deploy";
 
 export function ResultView({ result }: { result: GenerateResult }) {
   const { t } = useLang();
@@ -23,6 +24,7 @@ export function ResultView({ result }: { result: GenerateResult }) {
     { id: "bom", label: L("BOM & ราคา", "BOM & Pricing") },
     { id: "diagrams", label: L("Diagram (13 views)", "Diagrams (13 views)") },
     { id: "doc", label: L("เอกสารออกแบบ", "Design Doc") },
+    { id: "tor", label: L("TOR / Compliance", "TOR / Compliance") },
     { id: "lac", label: L("LaC code", "LaC code") },
     { id: "deploy", label: L("Deploy", "Deploy") },
   ];
@@ -79,6 +81,7 @@ export function ResultView({ result }: { result: GenerateResult }) {
       {tab === "bom" ? <BomTable result={result} /> : null}
       {tab === "diagrams" ? <DiagramsTab diagrams={result.diagrams} baseName={baseName} /> : null}
       {tab === "doc" ? <DesignDocTab result={result} /> : null}
+      {tab === "tor" ? <TorTab result={result} /> : null}
       {tab === "lac" ? <LacTab files={result.lac.files} diagrams={result.diagrams} baseName={baseName} /> : null}
       {tab === "deploy" ? <DeployTab result={result} /> : null}
     </div>

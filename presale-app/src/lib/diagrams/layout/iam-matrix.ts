@@ -17,15 +17,35 @@ const PROJECT_ROW_CAP = 6;
 
 const KNOWN_ENVS: EnvName[] = ["prod", "preprod", "staging", "uat", "dev", "test"];
 
-/** Sensible fallback when the generated IAM JSON exposes no groups. */
+/**
+ * Fallback when the generated IAM JSON exposes no groups. Names follow the
+ * generator's own conventions (gen/naming.libsonnet + gen/builders/iam/
+ * identity_domains.libsonnet): tenancy-scoped groups carry no "lz-" segment,
+ * landing-zone-scoped groups do. These six are always generated.
+ */
 const DEFAULT_GROUPS = [
-  "lz-iam-admin",
+  "auditors-admin",
+  "cost-admin",
+  "iam-admin",
   "lz-network-admin",
   "lz-security-admin",
-  "lz-prod-admin",
-  "lz-auditor",
-  "lz-cost-admin",
+  "security-admin",
 ];
+
+/** Group names present in the generated IAM (lower-case, no "grp-" prefix). */
+function knownGroups(gen: ParsedGenerated): Set<string> {
+  return new Set((gen?.groups ?? []).filter((g) => typeof g === "string"));
+}
+
+/**
+ * Card title for a group. Names are the generator's, so they always match the
+ * left rail; if a generated IAM is present but does not contain the group, the
+ * card is flagged rather than asserting a persona the IaC never creates.
+ */
+function groupTitle(known: Set<string>, name: string, note?: string): string {
+  const base = note ? `grp-${name} ${note}` : `grp-${name}`;
+  return known.size === 0 || known.has(name) ? base : `${base} — illustrative`;
+}
 
 /** routeCard height following the shared idiom: title bar + column header + rows. */
 function cardH(rowCount: number): number {
@@ -56,7 +76,10 @@ function projectAdminGroups(spec: SolutionSpec, gen: ParsedGenerated): { group: 
     const m = /^lz-([a-z0-9]+)-([a-z0-9-]+)-admin$/.exec(g);
     if (!m) continue;
     const [, env, project] = m;
-    if (!(KNOWN_ENVS as string[]).includes(env)) continue; // env-admin groups match a shorter shape
+    if (!(KNOWN_ENVS as string[]).includes(env)) continue; // shared groups (lz-network-admin) never match
+    // OKE platform RBAC groups (grp-lz-<env>-<plat>-rbac-admin) share the shape
+    // but are scoped to the platform compartment, not a project compartment.
+    if (/(^|-)rbac$/.test(project)) continue;
     const cmp = `cmp-lz-${env}-${project}`;
     if (!seen.has(g)) {
       seen.add(g);
@@ -146,9 +169,17 @@ export function layoutIamMatrixView(spec: SolutionSpec, gen: ParsedGenerated): D
   const gap = 14;
 
   // ---- column A: tenancy-wide grants --------------------------------------
+  // Tenancy-scoped groups are named without the "lz-" segment by the generator
+  // (grp-iam-admin, grp-auditors-admin, grp-cost-admin, grp-security-admin) —
+  // the same names the left rail renders from gen.groups.
+  const known = knownGroups(gen);
   const iamRows = [
     { left: "tenancy", right: "manage IAM groups/policies", bold: true },
     { left: "tenancy", right: "no security bypass" },
+  ];
+  const secTenRows = [
+    { left: "tenancy", right: "manage cloud-guard-family", bold: true },
+    { left: "tenancy", right: "manage cloudevents-rules" },
   ];
   const audRows = [
     { left: "tenancy", right: "inspect all-resources", bold: true },
@@ -159,9 +190,10 @@ export function layoutIamMatrixView(spec: SolutionSpec, gen: ParsedGenerated): D
     { left: "tenancy", right: "read usage-reports" },
   ];
   const aCards = [
-    { id: "card-iam", label: "grp-lz-iam-admin", rows: iamRows },
-    { id: "card-aud", label: "grp-lz-auditor (read-only)", rows: audRows },
-    { id: "card-cost", label: "grp-lz-cost-admin", rows: costRows },
+    { id: "card-iam", label: groupTitle(known, "iam-admin"), rows: iamRows },
+    { id: "card-sec-ten", label: groupTitle(known, "security-admin"), rows: secTenRows },
+    { id: "card-aud", label: groupTitle(known, "auditors-admin", "(read-only)"), rows: audRows },
+    { id: "card-cost", label: groupTitle(known, "cost-admin"), rows: costRows },
   ];
   let aY = top + 30;
   const zoneAH =
@@ -192,13 +224,16 @@ export function layoutIamMatrixView(spec: SolutionSpec, gen: ParsedGenerated): D
     { left: "cmp-lz-network", right: "manage vcn/drg/firewall", bold: true },
     { left: "cmp-lz-network", right: "manage lb & dns" },
   ];
+  // Cloud Guard is NOT granted here: 'manage cloud-guard-family in tenancy'
+  // belongs to the tenancy group grp-security-admin (column A). The landing-zone
+  // security group gets manage security-zone / logging-family, tag-scoped.
   const secRows = [
     { left: "cmp-lz-security", right: "manage vaults & keys", bold: true },
-    { left: "cmp-lz-security", right: "manage cloud-guard/zones" },
+    { left: "cmp-lz-security", right: "manage security-zone & logs" },
   ];
   const bCards = [
-    { id: "card-net", label: "grp-lz-network-admin", rows: netRows },
-    { id: "card-sec", label: "grp-lz-security-admin", rows: secRows },
+    { id: "card-net", label: groupTitle(known, "lz-network-admin"), rows: netRows },
+    { id: "card-sec", label: groupTitle(known, "lz-security-admin"), rows: secRows },
   ];
   let bY = top + 30;
   const zoneBH =
@@ -225,16 +260,20 @@ export function layoutIamMatrixView(spec: SolutionSpec, gen: ParsedGenerated): D
   }
 
   // ---- column C: environment + project grants -----------------------------
+  // The generator creates no per-environment admin group: every environment's
+  // network and security compartments are tagged lz-network-admin /
+  // lz-security-admin and administered by the shared landing-zone groups, while
+  // the only env-keyed principals are the per-project admin groups below.
   const envs = envList(spec);
   const envShown = envs.slice(0, ENV_ROW_CAP);
-  const envRows = envShown.map((e, i) => ({
-    left: `cmp-lz-${e}`,
-    right: "manage env resources",
-    bold: i === 0,
-  }));
+  const envRows = envShown.flatMap((e, i) => [
+    { left: `cmp-lz-${e}-network`, right: "grp-lz-network-admin", bold: i === 0 },
+    { left: `cmp-lz-${e}-security`, right: "grp-lz-security-admin", bold: false },
+  ]);
   if (envs.length > ENV_ROW_CAP) {
     envRows.push({ left: `+${envs.length - ENV_ROW_CAP} more envs`, right: "same pattern", bold: false });
   }
+  envRows.push({ left: "no per-env admin group", right: "project scope only", bold: false });
 
   const projects = projectAdminGroups(spec, gen);
   const projShown = projects.slice(0, PROJECT_ROW_CAP);
@@ -263,10 +302,10 @@ export function layoutIamMatrixView(spec: SolutionSpec, gen: ParsedGenerated): D
   d.add({
     id: "card-env",
     kind: "routeCard",
-    label: "grp-lz-<env>-admin (per env)",
+    label: "env compartments — shared LZ admins",
     x: cx + 12, y: cY, w: colW - 24, h: cardH(envRows.length),
     style: "stackCard",
-    colHeaders: ["Scope", "Rights"],
+    colHeaders: ["Scope (tag-scoped)", "Rights held by"],
     rows: envRows,
     parent: "zone-c",
   });

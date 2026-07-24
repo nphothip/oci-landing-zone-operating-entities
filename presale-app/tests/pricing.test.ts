@@ -24,6 +24,30 @@ describe("tiered pricing math", () => {
     const nfw: PriceEntry = { name: "NFW", metric: "Instance Per Hour", tiers: [{ value: 2.75, min: 0, max: null }] };
     expect(tieredCost(nfw, 744)).toBeCloseTo(2046, 2);
   });
+
+  // The AIS feed has shipped SKUs whose free allowance carries a higher `step`
+  // than the paid tier above it, which lands the bands out of order. Totals are
+  // order-independent, but the marginal unit price shown in the BOM must not be.
+  it("reads the right band even when the free tier is listed last", () => {
+    const scrambled: PriceEntry = {
+      name: "Object Storage Standard",
+      metric: "Gigabyte Storage Capacity Per Month",
+      tiers: [
+        { value: 1.2052089225, min: 10, max: null },
+        { value: 0, min: 0, max: 10 },
+      ],
+    };
+    expect(unitPriceAt(scrambled, 5)).toBe(0); // inside the free allowance
+    expect(unitPriceAt(scrambled, 500)).toBeCloseTo(1.2052089225, 6);
+    expect(tieredCost(scrambled, 500)).toBeCloseTo(490 * 1.2052089225, 5);
+  });
+
+  it("ships a price book whose tiers are stored in ascending band order", () => {
+    for (const [sku, entry] of Object.entries(fallback.prices as Record<string, PriceEntry>)) {
+      const mins = entry.tiers.map((t) => t.min);
+      expect(mins, sku).toEqual([...mins].sort((a, b) => a - b));
+    }
+  });
 });
 
 describe("BOM pricing end-to-end (fallback snapshot)", () => {

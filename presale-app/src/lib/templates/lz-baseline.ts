@@ -16,8 +16,10 @@ export function lzBaselineBom(spec: SolutionSpec): BomItem[] {
       {
         catalogKey: "nfw_instance",
         label: {
-          th: `OCI Network Firewall (${spec.hub.kind === "hub_a" ? "HA คู่" : "เดี่ยว"})`,
-          en: `OCI Network Firewall (${spec.hub.kind === "hub_a" ? "HA pair" : "single"})`,
+          // hub_a's two firewalls have different jobs (DMZ ingress vs internal
+          // egress/east-west); neither backs the other up.
+          th: `OCI Network Firewall (${spec.hub.kind === "hub_a" ? "DMZ + internal" : "เดี่ยว"})`,
+          en: `OCI Network Firewall (${spec.hub.kind === "hub_a" ? "DMZ + internal" : "single"})`,
         },
         category: "landing_zone",
         quantity: fwCount,

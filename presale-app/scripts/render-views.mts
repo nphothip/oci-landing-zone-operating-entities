@@ -1,4 +1,4 @@
-// Dev utility: rasterize the 5 DiagramDocs of a saved diagrams.json to PNG
+// Dev utility: rasterize the 13 DiagramDocs of a saved diagrams.json to PNG
 // using the real SVG renderer (DiagramCanvas) — lets humans/agents review the
 // actual visual output. Usage:
 //   npx tsx scripts/render-views.mts <diagrams.json> <outDir>

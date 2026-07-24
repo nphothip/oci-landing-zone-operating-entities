@@ -1,6 +1,11 @@
-// End-to-end API smoke: 4 templates x hub variants against a running server.
+// End-to-end API smoke: 17 cases (14 templates x hub/connectivity variants)
+// against a running server.
 // No LLM key required. Usage:  node scripts/smoke.mjs  (SMOKE_URL to override)
 const BASE = process.env.SMOKE_URL || "http://localhost:3000";
+
+// /api/generate returns every view buildDiagrams() produces — keep in step with
+// src/lib/diagrams/index.ts (each view must also carry nodes, checked below).
+const EXPECTED_VIEWS = 13;
 
 const base = {
   region: { id: "ap-bangkok-1", shortName: "bkk" },
@@ -75,9 +80,19 @@ for (const c of cases) {
     const ms = Date.now() - started;
     const files = data?.lac?.files?.length ?? 0;
     const total = data?.bom?.totals?.monthlyThb ?? -1;
-    const views = data?.diagrams?.length ?? 0;
-    const ok = res.ok && files >= 5 && total >= 0 && views === 5 && (data?.bom?.totals?.unpricedCount ?? 99) === 0;
-    console.log(`${ok ? "PASS" : "FAIL"}  ${c.name.padEnd(28)} ${String(ms).padStart(5)}ms  files=${files} total=$${total} views=${views}${res.ok ? "" : ` err=${data?.error}`}`);
+    const diagrams = Array.isArray(data?.diagrams) ? data.diagrams : [];
+    const views = diagrams.length;
+    // A view that renders no nodes is a silently broken layout, so flag it by name.
+    const emptyViews = diagrams.filter((d) => !Array.isArray(d?.nodes) || d.nodes.length === 0).map((d) => d?.view ?? "?");
+    const ok =
+      res.ok &&
+      files >= 5 &&
+      total >= 0 &&
+      views === EXPECTED_VIEWS &&
+      emptyViews.length === 0 &&
+      (data?.bom?.totals?.unpricedCount ?? 99) === 0;
+    const emptyNote = emptyViews.length ? ` empty=[${emptyViews.join(",")}]` : "";
+    console.log(`${ok ? "PASS" : "FAIL"}  ${c.name.padEnd(28)} ${String(ms).padStart(5)}ms  files=${files} total=฿${total} views=${views}/${EXPECTED_VIEWS}${emptyNote}${res.ok ? "" : ` err=${data?.error}`}`);
     if (!ok) failed += 1;
   } catch (err) {
     console.log(`FAIL  ${c.name.padEnd(28)} ${err instanceof Error ? err.message : err}`);

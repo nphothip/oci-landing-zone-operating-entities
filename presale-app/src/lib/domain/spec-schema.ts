@@ -273,6 +273,16 @@ export const solutionSpecSchema = z.object({
     ecommerceSizing, fileserverSizing, vdiSizing, serverlessSizing, streamingSizing,
     enterpriseLzSizing,
   ]),
+  addOns: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(60),
+        qty: z.number().min(0).max(1_000_000),
+        env: z.enum(["prod", "preprod", "staging", "uat", "dev", "test"]).optional(),
+      }),
+    )
+    .max(20)
+    .optional(),
   assumptionNotes: z.array(z.string().max(500)).max(30),
 }).superRefine((spec, ctx) => {
   if (spec.sizing.kind !== spec.template) {

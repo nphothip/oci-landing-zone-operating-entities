@@ -3,7 +3,7 @@ import type { SolutionSpec } from "@/lib/domain/types";
 // Banking showcase — the maximum-security configuration of the enterprise
 // landing zone, preset for a bank-grade engagement. Everything is dialled to
 // the top of what the generator supports:
-//   hub_a (dual NFW, HA) + TLS inspection · CIS Level 2 (adds Vault/keys)
+//   hub_a (NFW: DMZ + internal) + TLS inspection · CIS Level 2 (adds Vault/keys)
 //   FastConnect 10 Gbps dual (HA) to the data centre
 //   4 environments (zod max) · Security Zone targets on ALL of them
 //   Banking-style project portfolio per env (core banking, payment, mobile,

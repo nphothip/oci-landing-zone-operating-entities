@@ -13,6 +13,16 @@ export interface DesignFactVcn {
   gateways: string[];
 }
 
+/**
+ * How the hub inspects traffic. Every firewall sentence in the design document
+ * keys off this, so no hub kind gets described as "no firewall" by accident:
+ *  - nfw_dual    hub_a — two OCI Network Firewalls (DMZ ingress + internal egress/east-west)
+ *  - nfw_single  hub_b — one OCI Network Firewall on both directions
+ *  - third_party hub_c — customer-licensed third-party firewalls behind trust/untrust NLBs
+ *  - none        hub_e — no inspection layer at all
+ */
+export type HubInspection = "nfw_dual" | "nfw_single" | "third_party" | "none";
+
 export interface DesignFacts {
   region: string;
   regionShort: string;
@@ -22,8 +32,13 @@ export interface DesignFacts {
   hub: {
     kind: string;
     model: string;
+    /** OCI Network Firewall resources exist in the generated LZ (hub_a/hub_b only). */
     firewall: boolean;
+    /** Number of OCI Network Firewall instances (0 for hub_c/hub_e — hub_c uses 3rd-party appliances). */
     firewallCount: number;
+    inspection: HubInspection;
+    /** The hub inspects traffic at all — true for hub_a/hub_b/hub_c, false only for hub_e. */
+    inspects: boolean;
     publicLb: boolean;
     drg: boolean;
   };
@@ -48,10 +63,17 @@ export interface DesignFacts {
 }
 
 const HUB_MODEL: Record<string, string> = {
-  hub_a: "Hub A — two OCI Network Firewalls (active/active, HA)",
+  hub_a: "Hub A — two OCI Network Firewalls (DMZ ingress + internal egress/east-west)",
   hub_b: "Hub B — one OCI Network Firewall",
-  hub_c: "Hub C — two Network Load Balancers fronting third-party firewalls",
-  hub_e: "Hub E — no firewall (cost-free hub, PoC/edge cases)",
+  hub_c: "Hub C — third-party firewalls behind trust/untrust Network Load Balancers",
+  hub_e: "Hub E — no traffic inspection (cost-free hub, PoC/edge cases)",
+};
+
+const HUB_INSPECTION: Record<string, HubInspection> = {
+  hub_a: "nfw_dual",
+  hub_b: "nfw_single",
+  hub_c: "third_party",
+  hub_e: "none",
 };
 
 function vcnRole(v: VcnInfo): "hub" | "spoke" | "platform" {
@@ -96,6 +118,7 @@ export function buildDesignFacts(result: GenerateResult): DesignFacts {
     byEnvMap.set(env, (byEnvMap.get(env) ?? 0) + (i.monthlyThb ?? 0));
   }
   const round2 = (n: number) => Math.round(n * 100) / 100;
+  const inspection: HubInspection = HUB_INSPECTION[spec.hub.kind] ?? "none";
 
   return {
     region: spec.region.id,
@@ -108,6 +131,8 @@ export function buildDesignFacts(result: GenerateResult): DesignFacts {
       model: HUB_MODEL[spec.hub.kind] ?? spec.hub.kind,
       firewall: gen.hasNfw,
       firewallCount: spec.hub.kind === "hub_a" ? 2 : spec.hub.kind === "hub_b" ? 1 : 0,
+      inspection,
+      inspects: inspection !== "none",
       publicLb: gen.hasHubLb,
       drg: gen.drgPresent,
     },

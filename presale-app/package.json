@@ -2,7 +2,7 @@
   "name": "oci-presale-app",
   "version": "0.1.0",
   "private": true,
-  "description": "Self-service OCI presale tool: landing-zone-aligned BOM, monthly pricing (USD), 5-view diagrams, and LaC package generated from the OCI Open LZ Blueprint Factory",
+  "description": "Self-service OCI presale tool: landing-zone-aligned BOM, monthly pricing (THB), 13-view diagrams, a 21-section design document, and a LaC package generated from the OCI Open LZ Blueprint Factory",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -63,7 +63,10 @@ export async function fetchPriceMap(skus: string[], timeoutMs = 20_000): Promise
 
     const map: PriceMap = {};
     for (const [sku, rows] of rowsBySku) {
-      rows.sort((a, b) => (a.step ?? 0) - (b.step ?? 0));
+      // Sort by the band boundary, not by `step`: AIS has shipped feeds where a
+      // free first tier carries a higher `step` than the paid tier above it,
+      // which would leave the bands out of order.
+      rows.sort((a, b) => (a.step_start ?? 0) - (b.step_start ?? 0));
       map[sku] = {
         name: rows[0].service_name,
         metric: rows[0].metric,
@@ -92,12 +95,19 @@ export function tieredCost(entry: PriceEntry, qty: number): number {
   return cost;
 }
 
-/** Marginal unit price shown in the BOM (price of the tier the qty lands in). */
+/**
+ * Marginal unit price shown in the BOM (price of the tier the qty lands in).
+ * Picks the band containing qty rather than trusting tier order, so a feed that
+ * lists a free allowance after the paid tier cannot make the BOM quote the paid
+ * rate for a quantity that is actually free.
+ */
 export function unitPriceAt(entry: PriceEntry, qty: number): number {
   const q = Math.max(qty, 0);
-  for (const t of entry.tiers) {
-    const upper = t.max ?? Infinity;
-    if (q <= upper || t === entry.tiers[entry.tiers.length - 1]) return t.value;
-  }
-  return entry.tiers[entry.tiers.length - 1]?.value ?? 0;
+  if (entry.tiers.length === 0) return 0;
+  const inBand = entry.tiers.find((t) => q > t.min && q <= (t.max ?? Infinity));
+  if (inBand) return inBand.value;
+  // q === 0, or a gap in the bands: fall back to the lowest band that starts at
+  // or above q, else the highest band.
+  const sorted = [...entry.tiers].sort((a, b) => a.min - b.min);
+  return (sorted.find((t) => q <= (t.max ?? Infinity)) ?? sorted[sorted.length - 1]).value;
 }

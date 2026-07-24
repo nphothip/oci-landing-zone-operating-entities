@@ -5,10 +5,12 @@ import { TEMPLATES } from "@/lib/templates";
 // along with the JSON files into customer-facing repos.
 
 const HUB_LABEL: Record<string, string> = {
-  hub_a: "Hub A — two OCI Network Firewalls (HA)",
+  // hub_a's two firewalls are role-separated (DMZ ingress / internal
+  // egress+east-west), not a redundant pair — do not label them "HA".
+  hub_a: "Hub A — two OCI Network Firewalls (DMZ + internal)",
   hub_b: "Hub B — one OCI Network Firewall",
-  hub_c: "Hub C — two Network Load Balancers for third-party firewalls",
-  hub_e: "Hub E — no firewall (cost-free hub)",
+  hub_c: "Hub C — trust/untrust Network Load Balancers for third-party firewalls",
+  hub_e: "Hub E — no traffic inspection (cost-free hub)",
 };
 
 export function buildLacReadme(spec: SolutionSpec, generated: LacFile[], assumptions: LocalizedText[]): string {

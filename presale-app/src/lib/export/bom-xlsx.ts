@@ -20,10 +20,10 @@ const CATEGORY_LABEL: Record<BomCategory, LocalizedText> = {
 };
 
 const HUB_LABEL: Record<string, string> = {
-  hub_a: "HUB A (2× NFW)",
+  hub_a: "HUB A (NFW: DMZ + internal)",
   hub_b: "HUB B (1× NFW)",
-  hub_c: "HUB C (2× NLB)",
-  hub_e: "HUB E (no firewall)",
+  hub_c: "HUB C (trust/untrust NLB + 3rd-party FW)",
+  hub_e: "HUB E (no inspection)",
 };
 
 export function buildBomWorkbook(result: GenerateResult, t: T): XlsxSheet[] {

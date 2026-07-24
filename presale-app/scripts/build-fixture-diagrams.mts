@@ -1,4 +1,4 @@
-// Dev utility: build the 5 DiagramDocs from the test fixtures (no server
+// Dev utility: build the 13 DiagramDocs from the test fixtures (no server
 // needed) and write them to a diagrams.json for render-views.mts.
 // Usage: npx tsx --tsconfig scripts/tsconfig.render.json scripts/build-fixture-diagrams.mts <out.json> [template] [envsCsv]
 import fs from "node:fs";
