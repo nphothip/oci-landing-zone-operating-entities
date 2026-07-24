@@ -14,6 +14,8 @@ interface Ctx {
   /** total quantity of a catalog key across the BOM (per month, human unit) */
   qty: (key: string) => number;
   has: (key: string) => boolean;
+  /** How many VMs the design actually runs, across every environment. */
+  vmCount: () => number;
 }
 
 /** A capability we can honestly claim, with where a reviewer verifies it. */
@@ -26,8 +28,16 @@ interface Capability {
 }
 
 const CAPABILITIES: Capability[] = [
+  // WAF is matched BEFORE the network firewall: "Web Application Firewall"
+  // contains the word "firewall", and answering a WAF clause with the hub's
+  // Network Firewall would put the wrong evidence in front of a committee.
   {
-    keys: /firewall|ไฟร์วอลล์|ป้องกันการบุกรุก|ids|ips|utm|ตรวจจับ.*บุกรุก/i,
+    keys: /waf|web application firewall|ป้องกัน.*เว็บ|owasp/i,
+    offered: (c) => (c.has("waf_instance") || c.has("waf_requests_m") ? "OCI Web Application Firewall (managed OWASP rule set) หน้า public load balancer" : null),
+    evidence: "BOM: WAF · Diagram: Traffic flow (inbound lane)",
+  },
+  {
+    keys: /(?<!web application )firewall|ไฟร์วอลล์|ป้องกันการบุกรุก|\bids\b|\bips\b|\butm\b|ตรวจจับ.*บุกรุก/i,
     offered: (c) => {
       const k = c.result.spec.hub.kind;
       if (k === "hub_a") return "OCI Network Firewall 2 ชุด (DMZ + Internal) ตรวจ north-south และ east-west, stateful L4–L7" + inspectionSuffix(c);
@@ -38,9 +48,15 @@ const CAPABILITIES: Capability[] = [
     evidence: "Design Doc §12 Traffic Flow · Diagram: Traffic flow / Security",
   },
   {
-    keys: /waf|web application firewall|ป้องกัน.*เว็บ|owasp/i,
-    offered: (c) => (c.has("waf_instance") || c.has("waf_requests_m") ? "OCI Web Application Firewall (managed OWASP rule set) หน้า public load balancer" : null),
-    evidence: "BOM: WAF · Diagram: Traffic flow (inbound lane)",
+    // Separate dev/test estates are a compartment + VCN boundary in this design,
+    // not something a human has to answer by hand.
+    keys: /แยก.*(ระบบจริง|production|ใช้งานจริง)|สภาพแวดล้อม.*(พัฒนา|ทดสอบ)|(development|test|staging|uat).*environment|แยกสภาพแวดล้อม/i,
+    offered: (c) => {
+      const envs = c.result.spec.environments;
+      if (envs.length < 2) return null;
+      return `แยก ${envs.length} สภาพแวดล้อม (${envs.join(", ")}) — แต่ละตัวมี spoke VCN, compartment tree และสิทธิ์ของตัวเอง ไม่ใช้ทรัพยากรร่วมกับ production`;
+    },
+    evidence: "Design Doc §4 Security (compartments) / §16 IP Plan · Diagram: Compartments, Network",
   },
   {
     keys: /load balanc|กระจายโหลด|บาลานซ์/i,
@@ -223,12 +239,38 @@ function inspectionSuffix(c: Ctx): string {
   return "";
 }
 
-/** Numeric capability lookup for quantitative clauses. */
-function offeredMetric(name: string, c: Ctx): { value: number; unit: string; text: string; evidence: string } | null {
+/**
+ * Numeric capability lookup for quantitative clauses.
+ *
+ * `value` is expressed in the SAME unit the requirement uses (see `demand`),
+ * because OCI bills OCPUs while Thai TORs are usually written in vCPU — and
+ * 1 OCPU = 2 vCPU. Comparing 20 OCPU against "ไม่น้อยกว่า 32 vCPU" without
+ * converting reports a failure on a requirement we actually exceed.
+ */
+function offeredMetric(
+  name: string,
+  c: Ctx,
+  demand: { name: string; unit: string },
+): { value: number; unit: string; text: string; evidence: string } | null {
   const n = name.toLowerCase();
   if (/vcpu|ocpu|cpu|core|หน่วยประมวลผล/.test(n)) {
-    const v = c.qty("compute_e5_ocpu");
-    return v ? { value: v, unit: "OCPU", text: `รวม ${v} OCPU (VM.Standard.E5.Flex; 1 OCPU = 2 vCPU)`, evidence: "BOM: Compute OCPU" } : null;
+    const ocpu = c.qty("compute_e5_ocpu");
+    if (!ocpu) return null;
+    const wantsVcpu = /vcpu/i.test(demand.unit) || /vcpu/i.test(demand.name);
+    const value = wantsVcpu ? ocpu * 2 : ocpu;
+    return {
+      value,
+      unit: wantsVcpu ? "vCPU" : "OCPU",
+      text: wantsVcpu
+        ? `รวม ${ocpu} OCPU = ${value} vCPU (VM.Standard.E5.Flex; 1 OCPU = 2 vCPU)`
+        : `รวม ${ocpu} OCPU (VM.Standard.E5.Flex; 1 OCPU = 2 vCPU)`,
+      evidence: "BOM: Compute OCPU",
+    };
+  }
+  if (/server|เครื่องแม่ข่าย|\bvm\b|instance|node|เครื่อง/.test(n)) {
+    // Distinct VM lines in the BOM, not summed OCPUs.
+    const v = c.vmCount();
+    return v ? { value: v, unit: "เครื่อง", text: `รวม ${v} เครื่อง (VM.Standard.E5.Flex กระจายข้าม fault domain)`, evidence: "BOM: Compute · Diagram: Resilience" } : null;
   }
   if (/memory|ram|หน่วยความจำ/.test(n)) {
     const v = c.qty("compute_e5_mem");
@@ -275,12 +317,21 @@ export function matchRequirements(requirements: TorRequirement[], result: Genera
     facts,
     qty: (k) => Math.round((totals.get(k) ?? 0) * 100) / 100,
     has: (k) => (totals.get(k) ?? 0) > 0,
+    // Read from the sizing, not the BOM: OCPU lines are already collapsed per
+    // environment, so they cannot tell us how many machines there are.
+    vmCount: () => {
+      const s = result.spec.sizing as unknown as Record<string, unknown>;
+      const perEnv = ["appVmCount", "protectedVmCount", "gatewayVmCount", "consumerVmCount", "windowsVmCount"]
+        .map((k) => (typeof s[k] === "number" ? (s[k] as number) : 0))
+        .reduce((a, b) => a + b, 0);
+      return perEnv > 0 ? perEnv : 0;
+    },
   };
 
   return requirements.map((req) => {
     // 1) quantitative clause -> compare against a real number from the BOM
     if (req.metric) {
-      const off = offeredMetric(req.metric.name, ctx);
+      const off = offeredMetric(req.metric.name, ctx, { name: req.metric.name, unit: req.metric.unit });
       if (off) {
         const status = compare(req.metric.op, off.value, req.metric.value);
         return {

@@ -65,7 +65,7 @@ npm run dev        # http://localhost:3000
 
 ## โหมดการใช้งาน
 
-มี 4 โหมด: **เลือกจาก Template** · **พิมพ์อธิบาย (AI)** · **Advanced (Enterprise)** · **🏦 Banking (จัดเต็ม)**
+มี 5 โหมด: **เลือกจาก Template** · **พิมพ์อธิบาย (AI)** · **📄 อัปโหลด TOR** · **Advanced (Enterprise)** · **🏦 Banking (จัดเต็ม)**
 รวม 15 template — 14 ตัวใน gallery + `enterprise_lz` ที่ใช้ผ่านโหมด Advanced
 
 1. **เลือกจาก Template** (14 แบบใน gallery เรียงตามดีล SME ที่เจอบ่อย) แล้วปรับ knob — ใช้ได้โดยไม่ต้องมี API key ใด ๆ
@@ -92,10 +92,30 @@ npm run dev        # http://localhost:3000
 2. **พิมพ์อธิบาย (AI)** — พิมพ์ requirement ภาษาไทย/อังกฤษ → LLM (Gemini หรือ OpenAI, เลือกผ่าน env)
    แปลงเป็นสเปก → ตรวจ/แก้ในฟอร์มเดียวกันก่อนกด generate; ถ้าข้อมูลไม่พอ AI จะถามกลับ ≤3 ข้อ
 
-3. **Advanced (Enterprise)** — template `enterprise_lz`: กำหนด project หลายตัวต่อ environment,
+3. **📄 อัปโหลด TOR** — อัปโหลด TOR (.docx แม่นยำที่สุด, รองรับ .pdf/.txt) แล้วได้ **แบบ + BOM + ตารางเปรียบเทียบข้อกำหนด** ในขั้นตอนเดียว
+
+   ขอบเขตงานของ AI ถูกจำกัดไว้ชัดเจน: **AI อ่านและแยกข้อกำหนดออกจากเอกสารเท่านั้น** ส่วนการตัดสินใจออกแบบและการตัดสินผ่าน/ไม่ผ่านเป็นกฎ deterministic ทั้งหมด — TOR ฉบับเดิมให้ผลลัพธ์เดิมเสมอ และทุกการตัดสินใจอ้างกลับไปยังข้อของ TOR ได้
+
+   | ขั้นตอน | ทำอะไร | ใครตัดสิน |
+   |---|---|---|
+   | 1. อ่านเอกสาร | แยกเป็นข้อกำหนดย่อย พร้อมเลขข้อ/หน้า/หน่วยวัด | LLM (อ่านอย่างเดียว) |
+   | 2. แปลงเป็นแบบ | เลือก template, hub, CIS level, การเชื่อมต่อ, environment, sizing, บริการเสริม | กฎ deterministic ([`derive-spec.ts`](src/lib/tor/derive-spec.ts)) |
+   | 3. สร้างจริง | รัน Blueprint Factory → LaC + BOM + 13 diagram + เอกสารออกแบบ | generator จริง |
+   | 4. เทียบเกณฑ์ | ผ่าน/ผ่านบางส่วน/ไม่ผ่าน/ต้องตรวจสอบ + หลักฐานอ้างอิง | กฎ deterministic ([`match.ts`](src/lib/tor/match.ts)) |
+
+   หลัก best practice ที่ฝังไว้:
+   - **TOR ดันแบบขึ้นได้อย่างเดียว** — TOR เงียบไม่เคยทำให้แบบแย่ลง เช่นไม่เสนอ Hub E (ไม่ตรวจทราฟฟิก) แม้ TOR ไม่ได้บังคับ firewall, และบังคับ HA ≥ 2 เครื่องข้าม fault domain เสมอ
+   - **ตัวเลขใน TOR เป็นพื้น ไม่ใช่เพดาน** — ไม่ลด default ของ template ลงมาหาเกณฑ์
+   - **แปลงหน่วยให้ถูก** — TOR ไทยเขียน vCPU แต่ OCI คิดเป็น OCPU (1 OCPU = 2 vCPU) ทั้งตอนออกแบบและตอนตัดสิน
+   - **ไม่มีการเดา** — ข้อที่พิสูจน์จาก BOM/แบบไม่ได้ ขึ้นเป็น "ต้องตรวจสอบ" ให้วิศวกรตอบ ไม่ตีเป็นผ่านเอง; ข้อที่ไม่ใช่ infra (หลักประกันซอง, การอบรม) แยกไปชีต Non-Infra
+   - **ข้อที่มีตัวเลขแต่แปลงเป็น sizing ไม่ได้** (response time, RTO) แสดงเป็นรายการแยกให้กรอกเอง ไม่เงียบหาย
+
+   ผลลัพธ์: ตาราง compliance แก้ไขได้ในหน้าจอ + ดาวน์โหลด Excel 3 ชีต (Compliance Matrix สีเขียว/เหลือง/แดง · Summary · Non-Infra)
+
+4. **Advanced (Enterprise)** — template `enterprise_lz`: กำหนด project หลายตัวต่อ environment,
    แผน sizing ราย env (VM/OKE/DB), Security Zone target ราย env — สำหรับดีลองค์กรขนาดใหญ่
 
-4. **🏦 Banking (จัดเต็ม)** — preset showcase ของ `enterprise_lz` ที่ตั้งค่าสูงสุดเท่าที่ generator รองรับ:
+5. **🏦 Banking (จัดเต็ม)** — preset showcase ของ `enterprise_lz` ที่ตั้งค่าสูงสุดเท่าที่ generator รองรับ:
    Hub A + TLS inspection, CIS Level 2, FastConnect 10G คู่ (HA), 4 environment พร้อม Security Zone ครบทุกตัว
    และ project portfolio แบบธนาคาร (corebank/payment/mobile/crm/datalake) + OKE ใน prod/preprod
 

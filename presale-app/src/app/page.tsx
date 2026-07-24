@@ -6,11 +6,12 @@ import { TEMPLATES } from "@/lib/templates";
 import { TemplateGallery } from "@/components/wizard/TemplateGallery";
 import { SizingForm } from "@/components/wizard/SizingForm";
 import { FreeTextPanel } from "@/components/wizard/FreeTextPanel";
+import { TorFirstPanel, type TorIntake } from "@/components/wizard/TorFirstPanel";
 import { ResultView } from "@/components/results/ResultView";
 import { bankingShowcaseSpec, BANKING_HIGHLIGHTS } from "@/lib/templates/banking-preset";
 import { L, LangProvider, useLang } from "@/lib/i18n";
 
-type Mode = "template" | "freetext" | "enterprise" | "banking";
+type Mode = "template" | "freetext" | "tor" | "enterprise" | "banking";
 
 function Studio() {
   const { lang, setLang, t } = useLang();
@@ -20,6 +21,7 @@ function Studio() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GenerateResult | null>(null);
+  const [tor, setTor] = useState<TorIntake | null>(null);
 
   const pickTemplate = (id: TemplateId) => {
     setSpec(TEMPLATES[id].defaults());
@@ -28,8 +30,11 @@ function Studio() {
     setError(null);
   };
 
-  const generate = async () => {
-    if (!spec) return;
+  // `override` lets TOR-first generate straight from the derived spec instead of
+  // waiting a render for the state to settle.
+  const generate = async (override?: SolutionSpec) => {
+    const use = override ?? spec;
+    if (!use) return;
     setBusy(true);
     setError(null);
     setResult(null);
@@ -37,7 +42,7 @@ function Studio() {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(spec),
+        body: JSON.stringify(use),
       });
       const data = (await res.json()) as GenerateResult & { error?: string };
       if (!res.ok) {
@@ -77,6 +82,7 @@ function Studio() {
           [
             { id: "template", label: L("เลือกจาก Template", "Pick a template") },
             { id: "freetext", label: L("พิมพ์อธิบาย (AI)", "Describe it (AI)") },
+            { id: "tor", label: L("📄 อัปโหลด TOR", "📄 Upload a TOR") },
             { id: "enterprise", label: L("Advanced (Enterprise)", "Advanced (Enterprise)") },
             { id: "banking", label: L("🏦 Banking (จัดเต็ม)", "🏦 Banking (showcase)") },
           ] as { id: Mode; label: { th: string; en: string } }[]
@@ -100,6 +106,17 @@ function Studio() {
               setSpec(s);
               setAiNote(note);
               setResult(null);
+            }}
+          />
+        ) : mode === "tor" ? (
+          <TorFirstPanel
+            busy={busy}
+            onIntake={(intake) => {
+              setSpec(intake.spec);
+              setTor(intake);
+              setAiNote(null);
+              setError(null);
+              void generate(intake.spec);
             }}
           />
         ) : mode === "banking" ? (
@@ -186,7 +203,9 @@ function Studio() {
           </div>
         ) : null}
 
-        {result ? <ResultView result={result} /> : null}
+        {result ? (
+          <ResultView result={result} tor={mode === "tor" && tor ? { requirements: tor.requirements, fileName: tor.fileName } : undefined} />
+        ) : null}
       </div>
 
       <footer className="mt-10 border-t border-neutral-200 pt-4 text-xs text-neutral-400">

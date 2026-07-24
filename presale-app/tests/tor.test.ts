@@ -180,6 +180,73 @@ describe("deterministic compliance matching", () => {
     expect(matchRequirements([req("ต้องเชื่อมต่อผ่าน VPN")], noLink)[0].status).toBe("fail");
   });
 
+  // Thai TORs are written in vCPU; OCI bills OCPUs at 1 OCPU = 2 vCPU.
+  // Comparing the raw numbers reports a failure on a requirement we exceed.
+  it("converts vCPU to OCPU before judging a CPU requirement", () => {
+    const ocpu = result.bom.items.filter((i) => i.catalogKey === "compute_e5_ocpu").reduce((a, i) => a + i.quantity, 0);
+    const asVcpu = matchRequirements(
+      [req("หน่วยประมวลผลรวมไม่น้อยกว่า X vCPU", { metric: { name: "vCPU", op: ">=", value: ocpu * 2, unit: "vCPU" } })],
+      result,
+    )[0];
+    expect(asVcpu.status).toBe("pass");
+    expect(asVcpu.offered).toContain(`${ocpu * 2} vCPU`);
+    // just over what we offer, in vCPU -> genuinely short
+    expect(
+      matchRequirements([req("ไม่น้อยกว่า Y vCPU", { metric: { name: "vCPU", op: ">=", value: ocpu * 4, unit: "vCPU" } })], result)[0].status,
+    ).not.toBe("pass");
+    // an OCPU-denominated clause is compared in OCPU, unconverted
+    const asOcpu = matchRequirements([req("ไม่น้อยกว่า Z OCPU", { metric: { name: "OCPU", op: ">=", value: ocpu, unit: "OCPU" } })], result)[0];
+    expect(asOcpu.status).toBe("pass");
+    expect(asOcpu.offered).not.toContain("vCPU (VM");
+  });
+
+  it("answers a server-count clause from the sizing, not from summed OCPUs", () => {
+    const vms = (result.spec.sizing as { appVmCount: number }).appVmCount;
+    expect(vms).toBeGreaterThan(0);
+    const row = matchRequirements(
+      [req("ต้องมีเครื่องแม่ข่ายไม่น้อยกว่า N เครื่อง", { metric: { name: "servers", op: ">=", value: vms, unit: "เครื่อง" } })],
+      result,
+    )[0];
+    expect(row.status).toBe("pass");
+    expect(row.offered).toContain(`${vms} เครื่อง`);
+  });
+
+  // "Web Application Firewall" contains "firewall": answering it with the hub's
+  // Network Firewall would put the wrong evidence in front of a committee.
+  it("answers a WAF clause with the WAF, not the network firewall", () => {
+    const withWaf = fakeResult();
+    withWaf.bom.items.push({
+      catalogKey: "waf_instance",
+      label: { th: "WAF", en: "WAF" },
+      category: "security",
+      env: "prod",
+      quantity: 1,
+      unit: "instance",
+      monthlyMetricQty: 744,
+      deployedByLz: false,
+      sku: "B94579",
+      unitPriceThb: 1,
+      metric: "x",
+      monthlyThb: 1,
+    });
+    const row = matchRequirements([req("ต้องมี Web Application Firewall ป้องกันการโจมตีตาม OWASP Top 10")], withWaf)[0];
+    expect(row.offered).toMatch(/Web Application Firewall/);
+    expect(row.offered).not.toMatch(/Network Firewall/);
+    expect(row.evidence).toMatch(/WAF/);
+  });
+
+  it("answers environment separation from the environments actually built", () => {
+    const clause = "ต้องมีสภาพแวดล้อมสำหรับพัฒนาแยกจากระบบจริง";
+    const two = matchRequirements([req(clause)], result)[0]; // prod + preprod
+    expect(two.status).toBe("pass");
+    expect(two.offered).toContain("prod");
+
+    const single = fakeResult();
+    single.spec.environments = ["prod"];
+    const one = matchRequirements([req(clause)], single)[0];
+    expect(one.status).toBe("fail"); // we genuinely do not offer a second estate
+  });
+
   it("gives every answered row a verifiable evidence pointer", () => {
     const rows = matchRequirements(
       [req("ต้องเข้ารหัสข้อมูล"), req("ต้องมี MFA"), req("ต้องสำรองข้อมูลรายวัน"), req("ต้องรวมศูนย์การจัดเก็บ log")],

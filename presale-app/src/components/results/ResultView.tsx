@@ -9,13 +9,21 @@ import { LacTab } from "./LacTab";
 import { DesignDocTab } from "./DesignDocTab";
 import { DeployTab } from "./DeployTab";
 import { TorTab } from "./TorTab";
+import type { TorRequirement } from "@/lib/tor/types";
 import { L, useLang } from "@/lib/i18n";
 
 type Tab = "summary" | "bom" | "diagrams" | "doc" | "tor" | "lac" | "deploy";
 
-export function ResultView({ result }: { result: GenerateResult }) {
+export function ResultView({
+  result,
+  tor,
+}: {
+  result: GenerateResult;
+  /** Requirements already read in TOR-first mode — pre-fills the compliance tab. */
+  tor?: { requirements: TorRequirement[]; fileName: string };
+}) {
   const { t } = useLang();
-  const [tab, setTab] = useState<Tab>("summary");
+  const [tab, setTab] = useState<Tab>(tor ? "tor" : "summary");
   const template = TEMPLATES[result.spec.template];
   const baseName = `oci-${result.spec.template}-${result.spec.region.shortName}`;
 
@@ -81,7 +89,7 @@ export function ResultView({ result }: { result: GenerateResult }) {
       {tab === "bom" ? <BomTable result={result} /> : null}
       {tab === "diagrams" ? <DiagramsTab diagrams={result.diagrams} baseName={baseName} /> : null}
       {tab === "doc" ? <DesignDocTab result={result} /> : null}
-      {tab === "tor" ? <TorTab result={result} /> : null}
+      {tab === "tor" ? <TorTab result={result} initial={tor} /> : null}
       {tab === "lac" ? <LacTab files={result.lac.files} diagrams={result.diagrams} baseName={baseName} /> : null}
       {tab === "deploy" ? <DeployTab result={result} /> : null}
     </div>

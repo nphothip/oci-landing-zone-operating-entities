@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { GenerateResult } from "@/lib/domain/types";
 import { L, useLang } from "@/lib/i18n";
 import { downloadBlob } from "@/lib/diagrams/export";
@@ -39,7 +39,14 @@ const STATUS_ORDER: Record<ComplianceStatus, number> = { fail: 0, partial: 1, ma
 
 type Phase = "idle" | "reading" | "done" | "error";
 
-export function TorTab({ result }: { result: GenerateResult }) {
+export function TorTab({
+  result,
+  initial,
+}: {
+  result: GenerateResult;
+  /** Requirements already read in TOR-first mode — matched immediately, no re-upload. */
+  initial?: { requirements: TorRequirement[]; fileName: string };
+}) {
   const { t } = useLang();
   const inputRef = useRef<HTMLInputElement>(null);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -51,6 +58,22 @@ export function TorTab({ result }: { result: GenerateResult }) {
   const [totalFound, setTotalFound] = useState(0);
   const [filter, setFilter] = useState<ComplianceStatus | "all">("all");
   const [reviewed, setReviewed] = useState<Set<string>>(new Set());
+
+  // TOR-first mode already read the document. Re-match (not re-upload) whenever
+  // the design changes, so regenerating with different sizing updates the
+  // verdicts. Deps are the stable requirement array and file name rather than
+  // the wrapper object, or a fresh literal from the parent would wipe the
+  // reviewer's edits on every render.
+  const initialReqs = initial?.requirements;
+  const initialName = initial?.fileName;
+  useEffect(() => {
+    if (!initialReqs || !initialName) return;
+    setFileName(initialName);
+    setTotalFound(initialReqs.length);
+    setNonInfra(initialReqs.filter((r) => !r.infraRelevant));
+    setRows(matchRequirements(initialReqs.filter((r) => r.infraRelevant), result));
+    setPhase("done");
+  }, [initialReqs, initialName, result]);
 
   const summary = useMemo(() => {
     const s = { pass: 0, partial: 0, fail: 0, manual: 0 };
