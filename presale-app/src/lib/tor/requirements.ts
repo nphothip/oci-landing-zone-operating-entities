@@ -52,6 +52,10 @@ HARD RULES — a procurement committee will read the result:
 3. Quote the requirement text from the document (translate nothing; keep Thai as Thai).
 4. Keep the clause reference exactly as printed (ข้อ 3.1, 4.2.1, หมวด 5, Annex A…). If the clause has no number, use "".
 5. Split compound clauses: one atomic, independently-verifiable requirement per entry. A table row listing a spec (e.g. "CPU ไม่น้อยกว่า 8 vCPU") is one entry.
+6. Every entry must READ AS A COMPLETE REQUIREMENT ON ITS OWN, out of context. Never emit a dangling fragment.
+   BAD  — "ต้องมีระบบ Firewall ตรวจสอบทราฟฟิกทั้งขาเข้าและขาออก" split into "ต้องมีระบบ Firewall ตรวจสอบทราฟฟิกขาเข้า" + "ขาออก"
+   GOOD — either keep it as ONE entry, or repeat the subject: "ต้องมีระบบ Firewall ตรวจสอบทราฟฟิกขาเข้า" + "ต้องมีระบบ Firewall ตรวจสอบทราฟฟิกขาออก"
+   If splitting would leave any part unable to stand alone, keep the clause whole instead.
 
 Labelling:
 - obligation: "mandatory" for ต้อง/ต้องมี/จะต้อง/shall/must; "quantitative" when it states a measurable bound (ไม่น้อยกว่า/ไม่เกิน/อย่างน้อย/at least/minimum/maximum); "optional" for ควร/หากมี/should/preferred; "informational" for background text that asks nothing.
@@ -110,7 +114,33 @@ export async function extractRequirements(text: string, fileName: string): Promi
     });
     void i;
   }
-  return { status: "ok", requirements };
+  return { status: "ok", requirements: mergeFragments(requirements) };
+}
+
+/** Shortest text we accept as a requirement that stands on its own. */
+const FRAGMENT_CHARS = 20;
+
+/**
+ * Fold dangling fragments back into the clause they were split off.
+ *
+ * The model is told never to produce them, but it still occasionally splits
+ * "…ตรวจสอบทราฟฟิกทั้งขาเข้าและขาออก" into a full sentence plus a bare "ขาออก".
+ * A row like that is unanswerable, so it would land in the matrix as "needs
+ * review" and waste a reviewer's time. A fragment is: same clause as the entry
+ * before it, very short, and carrying no measurable bound of its own.
+ */
+export function mergeFragments(reqs: TorRequirement[]): TorRequirement[] {
+  const out: TorRequirement[] = [];
+  for (const r of reqs) {
+    const prev = out[out.length - 1];
+    if (prev && r.clause && r.clause === prev.clause && r.metric === null && r.text.length < FRAGMENT_CHARS) {
+      prev.text = `${prev.text} / ${r.text}`.slice(0, 400);
+      continue;
+    }
+    out.push(r);
+  }
+  // ids stay sequential and gap-free after merging
+  return out.map((r, i) => ({ ...r, id: `R${String(i + 1).padStart(3, "0")}` }));
 }
 
 function oneOf<T extends string>(v: unknown, allowed: readonly T[], fallback: T): T {

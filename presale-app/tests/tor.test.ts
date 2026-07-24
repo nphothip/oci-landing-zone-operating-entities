@@ -9,6 +9,7 @@ import { priceBom } from "@/lib/pricing/resolve";
 import { buildDiagrams } from "@/lib/diagrams";
 import { extractDocument, extractDocx, extractPdf } from "@/lib/tor/extract-text";
 import { matchRequirements } from "@/lib/tor/match";
+import { mergeFragments } from "@/lib/tor/requirements";
 import type { TorRequirement } from "@/lib/tor/types";
 import { buildComplianceWorkbook } from "@/lib/export/compliance-xlsx";
 import { workbookToXlsx } from "@/lib/export/xlsx";
@@ -91,6 +92,34 @@ describe("TOR text extraction", () => {
   it("turns a corrupt .docx into advice, not a raw zip-library error", async () => {
     const notAZip = new TextEncoder().encode("this is definitely not a docx");
     await expect(extractDocument("tor.docx", notAZip.buffer.slice(0) as ArrayBuffer)).rejects.toThrow(/Save As|เสียหาย/);
+  });
+});
+
+describe("requirement post-processing", () => {
+  // Real over-split observed from production: the model turned
+  // "…ตรวจสอบทราฟฟิกทั้งขาเข้าและขาออก" into a sentence plus a bare "ขาออก".
+  it("folds a dangling fragment back into its clause", () => {
+    const merged = mergeFragments([
+      req("ต้องมีระบบ Firewall ตรวจสอบทราฟฟิกทั้งขาเข้า", { clause: "ข้อ 3.1" }),
+      req("ขาออก", { clause: "ข้อ 3.1" }),
+      req("ต้องมีการยืนยันตัวตนแบบหลายปัจจัยสำหรับผู้ดูแลระบบ", { clause: "ข้อ 3.3" }),
+    ]);
+    expect(merged).toHaveLength(2);
+    expect(merged[0].text).toBe("ต้องมีระบบ Firewall ตรวจสอบทราฟฟิกทั้งขาเข้า / ขาออก");
+    expect(merged.map((r) => r.id)).toEqual(["R001", "R002"]); // ids stay gap-free
+  });
+
+  it("keeps short-but-complete splits, and never merges across clauses", () => {
+    const merged = mergeFragments([
+      req("ต้องมีศูนย์คอมพิวเตอร์สำรอง (DR Site)", { clause: "ข้อ 5.2" }),
+      // short, but carries its own measurable bound -> a real requirement
+      req("มี RTO ไม่เกิน 4 ชั่วโมง", { clause: "ข้อ 5.2", metric: { name: "RTO", op: "<=", value: 4, unit: "hours" } }),
+      // short and unmeasured, but a different clause -> must not be swallowed
+      req("ต้องมี WAF", { clause: "ข้อ 6.1" }),
+      // no clause reference at all -> cannot be attributed, so never merged
+      req("สั้นมาก", { clause: "" }),
+    ]);
+    expect(merged).toHaveLength(4);
   });
 });
 
