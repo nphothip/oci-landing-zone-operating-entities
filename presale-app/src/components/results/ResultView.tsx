@@ -9,10 +9,11 @@ import { LacTab } from "./LacTab";
 import { DesignDocTab } from "./DesignDocTab";
 import { DeployTab } from "./DeployTab";
 import { TorTab } from "./TorTab";
+import { CompareTab } from "./CompareTab";
 import type { TorRequirement } from "@/lib/tor/types";
 import { L, useLang } from "@/lib/i18n";
 
-type Tab = "summary" | "bom" | "diagrams" | "doc" | "tor" | "lac" | "deploy";
+type Tab = "summary" | "bom" | "compare" | "diagrams" | "doc" | "tor" | "lac" | "deploy";
 
 export function ResultView({
   result,
@@ -30,6 +31,7 @@ export function ResultView({
   const tabs: { id: Tab; label: { th: string; en: string } }[] = [
     { id: "summary", label: L("สรุป", "Summary") },
     { id: "bom", label: L("BOM & ราคา", "BOM & Pricing") },
+    { id: "compare", label: L("💰 เปรียบเทียบ 5 ค่าย", "💰 Compare 5 clouds") },
     { id: "diagrams", label: L("Diagram (13 views)", "Diagrams (13 views)") },
     { id: "doc", label: L("เอกสารออกแบบ", "Design Doc") },
     { id: "tor", label: L("TOR / Compliance", "TOR / Compliance") },
@@ -87,6 +89,7 @@ export function ResultView({
         </div>
       ) : null}
       {tab === "bom" ? <BomTable result={result} /> : null}
+      {tab === "compare" ? <CompareTab result={result} /> : null}
       {tab === "diagrams" ? <DiagramsTab diagrams={result.diagrams} baseName={baseName} /> : null}
       {tab === "doc" ? <DesignDocTab result={result} /> : null}
       {tab === "tor" ? <TorTab result={result} initial={tor} /> : null}

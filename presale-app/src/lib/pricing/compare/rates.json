@@ -1,0 +1,1597 @@
+{
+  "aws": {
+    "provider": "aws",
+    "label": "AWS",
+    "region": "ap-southeast-7 (Bangkok)",
+    "inCountry": true,
+    "currency": "USD",
+    "asOf": "2026-07-24",
+    "rates": {
+      "vcpu_hour": {
+        "id": "vcpu_hour",
+        "service": "EC2 m6i/r6i Bangkok (derived per-vCPU)",
+        "unit": "vCPU-hour",
+        "price": 0.0374,
+        "source": "https://aws.amazon.com/ec2/pricing/on-demand/",
+        "confidence": "derived",
+        "notes": "ap-southeast-7 anchors m6i.large 2v/8GB=$0.102, r6i.large 2v/16GB=$0.1292 → g=$0.0034, v=$0.0374 (SG m6a/r6a ให้ v=$0.0396)"
+      },
+      "ram_gb_hour": {
+        "id": "ram_gb_hour",
+        "service": "EC2 m6i/r6i Bangkok (derived per-GB RAM)",
+        "unit": "GB-hour",
+        "price": 0.0034,
+        "source": "https://aws.amazon.com/ec2/pricing/on-demand/",
+        "confidence": "derived",
+        "notes": "จาก anchor เดียวกับ vcpu_hour"
+      },
+      "block_gb_mo": {
+        "id": "block_gb_mo",
+        "service": "Amazon EBS General Purpose SSD (gp3) storage",
+        "unit": "GB-month",
+        "price": 0.0864,
+        "source": "https://aws.amazon.com/ebs/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7. Includes free baseline 3,000 IOPS and 125 MB/s per volume; extra IOPS $0.0054/provisioned IOPS-mo, extra throughput $0.0432/MBps-mo. Verified via AWS Price List API offer file (usagetype APS9-EBS:VolumeUsage.gp3)."
+      },
+      "os_std_gb_mo": {
+        "id": "os_std_gb_mo",
+        "service": "Amazon S3 Standard storage",
+        "unit": "GB-month",
+        "price": 0.0225,
+        "source": "https://aws.amazon.com/s3/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7, first-50TB/month tier ($0.0216 next 450TB, $0.0207 over 500TB). Verified via AWS Price List API."
+      },
+      "os_ia_gb_mo": {
+        "id": "os_ia_gb_mo",
+        "service": "Amazon S3 Standard-Infrequent Access storage",
+        "unit": "GB-month",
+        "price": 0.01242,
+        "source": "https://aws.amazon.com/s3/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7. Min 30-day/128KB charges apply. Verified via AWS Price List API."
+      },
+      "os_arch_gb_mo": {
+        "id": "os_arch_gb_mo",
+        "service": "Amazon S3 Glacier Flexible Retrieval storage",
+        "unit": "GB-month",
+        "price": 0.00405,
+        "source": "https://aws.amazon.com/s3/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7. Min 90-day charge; retrieval fees extra. Verified via AWS Price List API (APS9-TimedStorage-GlacierByteHrs)."
+      },
+      "os_retrieval_gb": {
+        "id": "os_retrieval_gb",
+        "service": "Amazon S3 Standard-IA data retrieval",
+        "unit": "GB retrieved",
+        "price": 0.01,
+        "source": "https://aws.amazon.com/s3/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7, flat fee for all bytes retrieved from Standard-IA (APS9-Retrieval-SIA)."
+      },
+      "os_req_10k": {
+        "id": "os_req_10k",
+        "service": "Amazon S3 GET and all other (Tier 2) requests",
+        "unit": "10,000 requests",
+        "price": 0.0036,
+        "source": "https://aws.amazon.com/s3/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7. GET-based: $0.0036 per 10,000 GET/SELECT and all other requests ($0.00000036/request). PUT/COPY/POST/LIST (Tier 1) cost more. Verified via AWS Price List API."
+      },
+      "fss_gb_mo": {
+        "id": "fss_gb_mo",
+        "service": "Amazon EFS Standard storage",
+        "unit": "GB-month",
+        "price": 0.324,
+        "source": "https://aws.amazon.com/efs/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7 Standard (frequent-access) class; EFS Infrequent Access $0.0245, Archive $0.009 per GB-mo. Verified via AWS Price List API."
+      },
+      "alb_hour": {
+        "id": "alb_hour",
+        "service": "Application Load Balancer",
+        "unit": "ALB-hour",
+        "price": 0.0227,
+        "source": "https://aws.amazon.com/elasticloadbalancing/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7 (APS9-LoadBalancerUsage, Load Balancer-Application). Verified via AWS Price List API."
+      },
+      "lcu_hour": {
+        "id": "lcu_hour",
+        "service": "Application Load Balancer Capacity Unit (LCU)",
+        "unit": "LCU-hour",
+        "price": 0.008,
+        "source": "https://aws.amazon.com/elasticloadbalancing/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7. LCU = max of 25 new conn/s, 3,000 active conn/min, 1 GB/hr processed (EC2 targets), 1,000 rule evaluations/s."
+      },
+      "nlb_hour": {
+        "id": "nlb_hour",
+        "service": "Network Load Balancer",
+        "unit": "NLB-hour",
+        "price": 0.0227,
+        "source": "https://aws.amazon.com/elasticloadbalancing/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7. NLB capacity unit (NLCU) additionally $0.006/NLCU-hr. Verified via AWS Price List API."
+      },
+      "fw_endpoint_hour": {
+        "id": "fw_endpoint_hour",
+        "service": "AWS Network Firewall endpoint",
+        "unit": "firewall-endpoint-hour",
+        "price": 0.66,
+        "source": "https://aws.amazon.com/network-firewall/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7 primary endpoint ($0.264/hr for secondary/HA endpoint). Verified via AWS Price List API."
+      },
+      "fw_gb": {
+        "id": "fw_gb",
+        "service": "AWS Network Firewall traffic processing",
+        "unit": "GB processed",
+        "price": 0.065,
+        "source": "https://aws.amazon.com/network-firewall/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7 (APS9-Traffic-GB-Processed). NAT Gateway processing discount applies when combined."
+      },
+      "waf_acl_mo": {
+        "id": "waf_acl_mo",
+        "service": "AWS WAF (WAFv2) Web ACL",
+        "unit": "web ACL-month",
+        "price": 5,
+        "source": "https://aws.amazon.com/waf/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7, prorated hourly. PLUS $1.00 per rule per month per web ACL (APS9-RuleV2); managed rule groups count. Verified via AWS Price List API price fields."
+      },
+      "waf_1m_req": {
+        "id": "waf_1m_req",
+        "service": "AWS WAF (WAFv2) request processing",
+        "unit": "1M requests",
+        "price": 0.6,
+        "source": "https://aws.amazon.com/waf/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7 base tier (Tier0/up-to-1500-WCU); higher WCU tiers cost $0.80-$2.00 per 1M. Remember the per-rule monthly fee noted in waf_acl_mo."
+      },
+      "dx_1g_hour": {
+        "id": "dx_1g_hour",
+        "service": "AWS Direct Connect 1G dedicated port",
+        "unit": "port-hour",
+        "price": 0.3,
+        "source": "https://aws.amazon.com/directconnect/pricing/",
+        "confidence": "verified",
+        "notes": "Port at Telehouse Bangkok (THRA9) homed to ap-southeast-7 (APS9-THRA9-PortUsage:1G). Hosted-connection 1G is $0.33/hr. Data transfer out over DX billed separately."
+      },
+      "dx_10g_hour": {
+        "id": "dx_10g_hour",
+        "service": "AWS Direct Connect 10G dedicated port",
+        "unit": "port-hour",
+        "price": 2.25,
+        "source": "https://aws.amazon.com/directconnect/pricing/",
+        "confidence": "verified",
+        "notes": "Telehouse Bangkok (THRA9), ap-southeast-7 (APS9-THRA9-PortUsage:10G). Hosted-connection 10G is $2.48/hr."
+      },
+      "vpn_conn_hour": {
+        "id": "vpn_conn_hour",
+        "service": "AWS Site-to-Site VPN connection",
+        "unit": "connection-hour",
+        "price": 0.05,
+        "source": "https://aws.amazon.com/vpn/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7 (APS9-VPN-Usage-Hours:ipsec.1). Transit Gateway VPN attachment adds $0.07/hr + $0.02/GB processed."
+      },
+      "egress_gb": {
+        "id": "egress_gb",
+        "service": "Data Transfer Out to Internet from ap-southeast-7",
+        "unit": "GB",
+        "price": 0.108,
+        "source": "https://aws.amazon.com/ec2/pricing/on-demand/",
+        "confidence": "verified",
+        "notes": "FIRST TIER (0-10TB/month) = $0.108/GB, after 100GB/month global free tier. Next 40TB $0.0765, next 100TB (to 150TB) $0.0738, over 150TB $0.072. Verified via AWS Price List API (AWSDataTransfer, APS9-DataTransfer-Out-Bytes)."
+      },
+      "pg_vcpu_hour": {
+        "id": "pg_vcpu_hour",
+        "service": "Amazon RDS for PostgreSQL Single-AZ (derived from db.m6i.large / db.r6i.large)",
+        "unit": "vCPU-hour",
+        "price": 0.0825,
+        "source": "https://aws.amazon.com/rds/postgresql/pricing/",
+        "confidence": "derived",
+        "notes": "ap-southeast-7. Anchors verified: db.m6i.large 2vCPU/8GB=$0.210/hr, db.r6i.large 2vCPU/16GB=$0.255/hr. Solve 2v+8g=0.210, 2v+16g=0.255 -> g=(0.255-0.210)/8=$0.005625, v=(0.210-8*0.005625)/2=$0.0825/vCPU-hr."
+      },
+      "pg_ram_gb_hour": {
+        "id": "pg_ram_gb_hour",
+        "service": "Amazon RDS for PostgreSQL Single-AZ (derived)",
+        "unit": "GB(RAM)-hour",
+        "price": 0.005625,
+        "source": "https://aws.amazon.com/rds/postgresql/pricing/",
+        "confidence": "derived",
+        "notes": "ap-southeast-7. Same solve as pg_vcpu_hour. Check: 2*0.0825+16*0.005625=$0.255 = db.r6i.large."
+      },
+      "pg_storage_gb_mo": {
+        "id": "pg_storage_gb_mo",
+        "service": "Amazon RDS gp3 storage (Single-AZ)",
+        "unit": "GB-month",
+        "price": 0.124,
+        "source": "https://aws.amazon.com/rds/postgresql/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7, same $0.124 across engines Single-AZ (APS9-RDS:GP3-Storage). Baseline 3,000 IOPS/125MBs included (<400GB volumes)."
+      },
+      "mysql_vcpu_hour": {
+        "id": "mysql_vcpu_hour",
+        "service": "Amazon RDS for MySQL Single-AZ (derived from db.m6i.large / db.r6i.large)",
+        "unit": "vCPU-hour",
+        "price": 0.0825,
+        "source": "https://aws.amazon.com/rds/mysql/pricing/",
+        "confidence": "derived",
+        "notes": "ap-southeast-7. MySQL instance prices identical to PostgreSQL: db.m6i.large $0.210, db.r6i.large $0.255 (verified). Same solve -> v=$0.0825, g=$0.005625."
+      },
+      "mysql_ram_gb_hour": {
+        "id": "mysql_ram_gb_hour",
+        "service": "Amazon RDS for MySQL Single-AZ (derived)",
+        "unit": "GB(RAM)-hour",
+        "price": 0.005625,
+        "source": "https://aws.amazon.com/rds/mysql/pricing/",
+        "confidence": "derived",
+        "notes": "ap-southeast-7. g=(0.255-0.210)/8=$0.005625/GB-hr."
+      },
+      "oracle_se2_li_vcpu_hour": {
+        "id": "oracle_se2_li_vcpu_hour",
+        "service": "Amazon RDS for Oracle SE2 License-Included Single-AZ (derived from db.m7i.large / db.r7i.large)",
+        "unit": "vCPU-hour",
+        "price": 0.208,
+        "source": "https://aws.amazon.com/rds/oracle/pricing/",
+        "confidence": "derived",
+        "notes": "ap-southeast-7. db.m5/db.r5 are NOT offered in Thailand; used current-gen db.m7i.large 2vCPU/8GB=$0.46/hr and db.r7i.large 2vCPU/16GB=$0.504/hr (verified, SE2 LI Single-AZ). Solve: g=(0.504-0.46)/8=$0.0055/GB-hr, v=(0.46-8*0.0055)/2=$0.208/vCPU-hr. Oracle EE …"
+      },
+      "k8s_cluster_hour": {
+        "id": "k8s_cluster_hour",
+        "service": "Amazon EKS cluster (standard Kubernetes support)",
+        "unit": "cluster-hour",
+        "price": 0.1,
+        "source": "https://aws.amazon.com/eks/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7. Extended-support versions bill $0.50/cluster-hr. Worker nodes/Fargate billed separately."
+      },
+      "redis_gb_hour": {
+        "id": "redis_gb_hour",
+        "service": "Amazon ElastiCache Serverless (Redis OSS) data stored",
+        "unit": "GB-hour",
+        "price": 0.127,
+        "source": "https://aws.amazon.com/elasticache/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7. Valkey engine is cheaper: $0.085/GB-hr. Plus compute: $0.0035 per million ECPUs (Redis; Valkey $0.0023/M). Min 100MB (Valkey) / 1GB (Redis) metered."
+      },
+      "lambda_gbs": {
+        "id": "lambda_gbs",
+        "service": "AWS Lambda duration (x86)",
+        "unit": "GB-second",
+        "price": 0.000015,
+        "source": "https://aws.amazon.com/lambda/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7, first 6B GB-s/month tier ($0.0000135 next tier, $0.000012 over 15B). 400,000 GB-s/month free tier. Verified via AWS Price List API."
+      },
+      "lambda_1m_inv": {
+        "id": "lambda_1m_inv",
+        "service": "AWS Lambda requests",
+        "unit": "1M requests",
+        "price": 0.18,
+        "source": "https://aws.amazon.com/lambda/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7: $0.00000018 per request (x86 and ARM same). First 1M requests/month free. Note this is cheaper than the common $0.20/1M in most regions."
+      },
+      "apigw_1m": {
+        "id": "apigw_1m",
+        "service": "Amazon API Gateway REST API calls",
+        "unit": "1M requests",
+        "price": 3.825,
+        "source": "https://aws.amazon.com/api-gateway/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7 REST API, FIRST TIER (0-333M requests/month). Next tiers $3.177, $2.70, $1.719 per 1M. HTTP APIs are cheaper (not quoted here)."
+      },
+      "stream_hour": {
+        "id": "stream_hour",
+        "service": "Amazon Kinesis Data Streams On-Demand stream",
+        "unit": "stream-hour",
+        "price": 0.0441,
+        "source": "https://aws.amazon.com/kinesis/data-streams/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7 (APS9-OnDemand-StreamHour)."
+      },
+      "stream_gb_in": {
+        "id": "stream_gb_in",
+        "service": "Amazon Kinesis Data Streams On-Demand data ingested",
+        "unit": "GB ingested",
+        "price": 0.0882,
+        "source": "https://aws.amazon.com/kinesis/data-streams/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7 (APS9-OnDemand-BilledIncomingBytes). Data out $0.0441/GB standard consumer, EFO $0.0549/GB."
+      },
+      "vdi_desktop_mo": {
+        "id": "vdi_desktop_mo",
+        "service": "Amazon WorkSpaces Personal, Standard bundle (2 vCPU/4GB, 80GB root/50GB user), Windows license included, AlwaysOn",
+        "unit": "WorkSpace-month",
+        "price": 49,
+        "source": "https://aws.amazon.com/workspaces-family/workspaces/pricing/",
+        "confidence": "verified",
+        "notes": "REGION: ap-southeast-1 (Singapore) — WorkSpaces is NOT available in ap-southeast-7. Monthly (AlwaysOn) price; AutoStop alternative $14/mo + $0.42/hr. BYOL Windows variant $45/mo. Verified via AWS Price List API."
+      },
+      "email_1k": {
+        "id": "email_1k",
+        "service": "Amazon SES outbound email",
+        "unit": "1,000 emails",
+        "price": 0.1,
+        "source": "https://aws.amazon.com/ses/pricing/",
+        "confidence": "verified",
+        "notes": "REGION: ap-southeast-1 — SES is NOT available in ap-southeast-7. $0.0001 per recipient/message (APS1-Recipients) x 1,000 = $0.10. Attachments billed $0.12/GB extra."
+      },
+      "log_ingest_gb": {
+        "id": "log_ingest_gb",
+        "service": "Amazon CloudWatch Logs ingestion (Standard log class)",
+        "unit": "GB ingested",
+        "price": 0.5,
+        "source": "https://aws.amazon.com/cloudwatch/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7 (APS9-DataProcessing-Bytes). Storage/archival billed separately (~$0.03/GB-mo class dependent)."
+      },
+      "dns_1m": {
+        "id": "dns_1m",
+        "service": "Amazon Route 53 standard queries",
+        "unit": "1M queries",
+        "price": 0.4,
+        "source": "https://aws.amazon.com/route53/pricing/",
+        "confidence": "verified",
+        "notes": "First 1B queries/month tier; $0.20/1M above 1B. Route 53 authoritative DNS is a global service (queries priced the same regardless of region); hosted zone $0.50/zone-month extra. Verified via AWS Price List API."
+      },
+      "queue_1m": {
+        "id": "queue_1m",
+        "service": "Amazon SQS Standard queue requests",
+        "unit": "1M requests",
+        "price": 0.34,
+        "source": "https://aws.amazon.com/sqs/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7, Tier 1 (first 100B requests/month); first 1M requests/month free. FIFO $0.43/1M. Each 64KB chunk = 1 request."
+      },
+      "opensearch_node_hour": {
+        "id": "opensearch_node_hour",
+        "service": "Amazon OpenSearch Service r7g.large.search On-Demand",
+        "unit": "instance-hour",
+        "price": 0.182,
+        "source": "https://aws.amazon.com/opensearch-service/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7 — requested r6g.large.search is NOT offered in Thailand; r7g.large.search (2vCPU/16GB, newer gen) is the nearest. For reference, r6g.large.search in ap-southeast-1 = $0.202/hr (verified). EBS storage billed separately."
+      },
+      "dms_instance_hour": {
+        "id": "dms_instance_hour",
+        "service": "AWS DMS dms.c6i.large Single-AZ On-Demand",
+        "unit": "instance-hour",
+        "price": 0.18,
+        "source": "https://aws.amazon.com/dms/pricing/",
+        "confidence": "verified",
+        "notes": "ap-southeast-7 — dms.c5.large is NOT offered in Thailand; dms.c6i.large (2vCPU/4GB, direct successor) used. Multi-AZ $0.36/hr. Included storage 50GB gp2; GoldenGate-analogue CDC replication use case."
+      },
+      "redshift_vcpu_hour": {
+        "id": "redshift_vcpu_hour",
+        "service": "Amazon Redshift ra3.xlplus On-Demand (per-vCPU derived)",
+        "unit": "vCPU-hour",
+        "price": 0.293175,
+        "source": "https://aws.amazon.com/redshift/pricing/",
+        "confidence": "derived",
+        "notes": "ap-southeast-7: ra3.xlplus node-hour = $1.1727 (verified, APS9-Node:ra3.xlplus). ra3.xlplus has 4 vCPU / 32GB -> $1.1727 / 4 vCPU = $0.293175 per vCPU-hr. Redshift Managed Storage additionally $0.02349/GB-mo."
+      },
+      "quicksight_user_mo": {
+        "id": "quicksight_user_mo",
+        "service": "Amazon QuickSight Author (Enterprise)",
+        "unit": "user-month",
+        "price": 24,
+        "source": "https://aws.amazon.com/quicksight/pricing/",
+        "confidence": "verified",
+        "notes": "Per-user price is region-independent (verified on official pricing page 2026-07-24). Author Pro (with Amazon Q) $40/user-mo; Reader $3/user-mo. Account capacity/SPICE billed separately ($0.38/GB-mo Enterprise SPICE)."
+      }
+    }
+  },
+  "gcp": {
+    "provider": "gcp",
+    "label": "Google Cloud",
+    "region": "asia-southeast1 (Singapore)",
+    "inCountry": false,
+    "currency": "USD",
+    "asOf": "2026-07-24",
+    "rates": {
+      "vcpu_hour": {
+        "id": "vcpu_hour",
+        "service": "Compute Engine N2D custom vCPU",
+        "unit": "vCPU-hour",
+        "source": "https://cloud.google.com/compute/vm-instance-pricing",
+        "confidence": "estimate",
+        "price": 0.0332
+      },
+      "ram_gb_hour": {
+        "id": "ram_gb_hour",
+        "service": "Compute Engine N2D custom RAM",
+        "unit": "GB-hour",
+        "source": "https://cloud.google.com/compute/vm-instance-pricing",
+        "confidence": "estimate",
+        "price": 0.00445
+      },
+      "block_gb_mo": {
+        "id": "block_gb_mo",
+        "service": "Balanced persistent disk",
+        "unit": "GB-month",
+        "source": "https://cloud.google.com/compute/disks-image-pricing",
+        "confidence": "estimate",
+        "price": 0.12
+      },
+      "os_std_gb_mo": {
+        "id": "os_std_gb_mo",
+        "service": "Cloud Storage Standard",
+        "unit": "GB-month",
+        "source": "https://cloud.google.com/storage/pricing",
+        "confidence": "estimate",
+        "price": 0.02
+      },
+      "os_ia_gb_mo": {
+        "id": "os_ia_gb_mo",
+        "service": "Cloud Storage Nearline",
+        "unit": "GB-month",
+        "source": "https://cloud.google.com/storage/pricing",
+        "confidence": "estimate",
+        "price": 0.01
+      },
+      "os_arch_gb_mo": {
+        "id": "os_arch_gb_mo",
+        "service": "Cloud Storage Archive",
+        "unit": "GB-month",
+        "source": "https://cloud.google.com/storage/pricing",
+        "confidence": "estimate",
+        "price": 0.0025
+      },
+      "os_retrieval_gb": {
+        "id": "os_retrieval_gb",
+        "service": "Nearline retrieval",
+        "unit": "GB",
+        "source": "https://cloud.google.com/storage/pricing",
+        "confidence": "estimate",
+        "price": 0.01
+      },
+      "os_req_10k": {
+        "id": "os_req_10k",
+        "service": "GCS Class B operations",
+        "unit": "10,000 ops",
+        "source": "https://cloud.google.com/storage/pricing",
+        "confidence": "estimate",
+        "price": 0.004
+      },
+      "fss_gb_mo": {
+        "id": "fss_gb_mo",
+        "service": "Filestore Basic HDD",
+        "unit": "GB-month",
+        "source": "https://cloud.google.com/filestore/pricing",
+        "confidence": "estimate",
+        "price": 0.2
+      },
+      "alb_hour": {
+        "id": "alb_hour",
+        "service": "External Application LB forwarding rule",
+        "unit": "hour",
+        "source": "https://cloud.google.com/vpc/network-pricing",
+        "confidence": "estimate",
+        "price": 0.025
+      },
+      "lb_data_gb": {
+        "id": "lb_data_gb",
+        "service": "LB data processed",
+        "unit": "GB",
+        "source": "https://cloud.google.com/vpc/network-pricing",
+        "confidence": "estimate",
+        "price": 0.008
+      },
+      "nlb_hour": {
+        "id": "nlb_hour",
+        "service": "Passthrough NLB forwarding rule",
+        "unit": "hour",
+        "source": "https://cloud.google.com/vpc/network-pricing",
+        "confidence": "estimate",
+        "price": 0.025
+      },
+      "fw_endpoint_hour": {
+        "id": "fw_endpoint_hour",
+        "service": "Cloud NGFW endpoint",
+        "unit": "hour",
+        "source": "https://cloud.google.com/firewall/pricing",
+        "confidence": "estimate",
+        "price": 0.4
+      },
+      "fw_gb": {
+        "id": "fw_gb",
+        "service": "Cloud NGFW traffic inspected",
+        "unit": "GB",
+        "source": "https://cloud.google.com/firewall/pricing",
+        "confidence": "estimate",
+        "price": 0.0075
+      },
+      "waf_policy_mo": {
+        "id": "waf_policy_mo",
+        "service": "Cloud Armor policy",
+        "unit": "month",
+        "source": "https://cloud.google.com/armor/pricing",
+        "confidence": "estimate",
+        "notes": "+$1/rule/month not included",
+        "price": 5
+      },
+      "waf_1m_req": {
+        "id": "waf_1m_req",
+        "service": "Cloud Armor requests",
+        "unit": "1M requests",
+        "source": "https://cloud.google.com/armor/pricing",
+        "confidence": "estimate",
+        "price": 0.75
+      },
+      "ic_1g_hour": {
+        "id": "ic_1g_hour",
+        "service": "Partner Interconnect 1G VLAN attachment",
+        "unit": "hour",
+        "source": "https://cloud.google.com/network-connectivity/docs/interconnect/pricing",
+        "confidence": "estimate",
+        "price": 0.3
+      },
+      "ic_10g_hour": {
+        "id": "ic_10g_hour",
+        "service": "Dedicated Interconnect 10G attachment",
+        "unit": "hour",
+        "source": "https://cloud.google.com/network-connectivity/docs/interconnect/pricing",
+        "confidence": "estimate",
+        "price": 2.36
+      },
+      "vpn_tunnel_hour": {
+        "id": "vpn_tunnel_hour",
+        "service": "Cloud VPN tunnel",
+        "unit": "tunnel-hour",
+        "source": "https://cloud.google.com/network-connectivity/docs/vpn/pricing",
+        "confidence": "estimate",
+        "price": 0.055
+      },
+      "egress_gb": {
+        "id": "egress_gb",
+        "service": "Premium tier internet egress",
+        "unit": "GB",
+        "source": "https://cloud.google.com/vpc/network-pricing",
+        "confidence": "estimate",
+        "price": 0.12
+      },
+      "pg_vcpu_hour": {
+        "id": "pg_vcpu_hour",
+        "service": "Cloud SQL PostgreSQL Enterprise vCPU",
+        "unit": "vCPU-hour",
+        "source": "https://cloud.google.com/sql/pricing",
+        "confidence": "estimate",
+        "price": 0.052
+      },
+      "pg_ram_gb_hour": {
+        "id": "pg_ram_gb_hour",
+        "service": "Cloud SQL PostgreSQL Enterprise RAM",
+        "unit": "GB-hour",
+        "source": "https://cloud.google.com/sql/pricing",
+        "confidence": "estimate",
+        "price": 0.0088
+      },
+      "pg_storage_gb_mo": {
+        "id": "pg_storage_gb_mo",
+        "service": "Cloud SQL SSD storage",
+        "unit": "GB-month",
+        "source": "https://cloud.google.com/sql/pricing",
+        "confidence": "estimate",
+        "price": 0.204
+      },
+      "mysql_vcpu_hour": {
+        "id": "mysql_vcpu_hour",
+        "service": "Cloud SQL MySQL Enterprise vCPU",
+        "unit": "vCPU-hour",
+        "source": "https://cloud.google.com/sql/pricing",
+        "confidence": "estimate",
+        "price": 0.052
+      },
+      "mysql_ram_gb_hour": {
+        "id": "mysql_ram_gb_hour",
+        "service": "Cloud SQL MySQL Enterprise RAM",
+        "unit": "GB-hour",
+        "source": "https://cloud.google.com/sql/pricing",
+        "confidence": "estimate",
+        "price": 0.0088
+      },
+      "k8s_cluster_hour": {
+        "id": "k8s_cluster_hour",
+        "service": "GKE Standard cluster management",
+        "unit": "cluster-hour",
+        "source": "https://cloud.google.com/kubernetes-engine/pricing",
+        "confidence": "estimate",
+        "price": 0.1
+      },
+      "redis_gb_hour": {
+        "id": "redis_gb_hour",
+        "service": "Memorystore for Redis Basic",
+        "unit": "GB-hour",
+        "source": "https://cloud.google.com/memorystore/docs/redis/pricing",
+        "confidence": "estimate",
+        "price": 0.05
+      },
+      "functions_gbs": {
+        "id": "functions_gbs",
+        "service": "Cloud Run functions (CPU+RAM effective)",
+        "unit": "GB-second",
+        "source": "https://cloud.google.com/run/pricing",
+        "confidence": "estimate",
+        "notes": "GiB-s rate + vCPU-s rate folded at 1 vCPU per GB",
+        "price": 0.0000265
+      },
+      "functions_1m_inv": {
+        "id": "functions_1m_inv",
+        "service": "Cloud Run requests",
+        "unit": "1M requests",
+        "source": "https://cloud.google.com/run/pricing",
+        "confidence": "estimate",
+        "price": 0.4
+      },
+      "apigw_1m": {
+        "id": "apigw_1m",
+        "service": "API Gateway",
+        "unit": "1M calls",
+        "source": "https://cloud.google.com/api-gateway/pricing",
+        "confidence": "estimate",
+        "price": 3
+      },
+      "pubsub_tib": {
+        "id": "pubsub_tib",
+        "service": "Pub/Sub throughput",
+        "unit": "TiB",
+        "source": "https://cloud.google.com/pubsub/pricing",
+        "confidence": "estimate",
+        "price": 40
+      },
+      "log_ingest_gb": {
+        "id": "log_ingest_gb",
+        "service": "Cloud Logging ingestion",
+        "unit": "GiB",
+        "source": "https://cloud.google.com/stackdriver/pricing",
+        "confidence": "estimate",
+        "price": 0.5
+      },
+      "dns_1m": {
+        "id": "dns_1m",
+        "service": "Cloud DNS queries",
+        "unit": "1M queries",
+        "source": "https://cloud.google.com/dns/pricing",
+        "confidence": "estimate",
+        "notes": "routing policies included (no per-policy fee)",
+        "price": 0.4
+      },
+      "queue_1m": {
+        "id": "queue_1m",
+        "service": "Cloud Tasks",
+        "unit": "1M operations",
+        "source": "https://cloud.google.com/tasks/pricing",
+        "confidence": "estimate",
+        "price": 0.4
+      },
+      "datastream_gb": {
+        "id": "datastream_gb",
+        "service": "Datastream CDC",
+        "unit": "GB",
+        "source": "https://cloud.google.com/datastream/pricing",
+        "confidence": "estimate",
+        "price": 1
+      },
+      "bq_slot_hour": {
+        "id": "bq_slot_hour",
+        "service": "BigQuery Enterprise slot",
+        "unit": "slot-hour",
+        "source": "https://cloud.google.com/bigquery/pricing",
+        "confidence": "estimate",
+        "price": 0.066
+      },
+      "gcve_node_hour": {
+        "id": "gcve_node_hour",
+        "service": "VMware Engine ve1-standard-72",
+        "unit": "node-hour",
+        "source": "https://cloud.google.com/vmware-engine/pricing",
+        "confidence": "estimate",
+        "price": 9
+      },
+      "looker_user_mo": {
+        "id": "looker_user_mo",
+        "service": "Looker Studio Pro",
+        "unit": "user-month",
+        "source": "https://cloud.google.com/looker-studio",
+        "confidence": "estimate",
+        "price": 9
+      }
+    }
+  },
+  "huawei": {
+    "provider": "huawei",
+    "label": "Huawei Cloud",
+    "region": "AP-Bangkok (ap-southeast-2)",
+    "inCountry": true,
+    "currency": "USD",
+    "asOf": "2026-07-24",
+    "rates": {
+      "vcpu_hour": {
+        "id": "vcpu_hour",
+        "service": "ECS General Computing S7n (s7n.large.2/.4, Linux, pay-per-use)",
+        "unit": "vCPU-hour",
+        "price": 0.0257,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/ecs",
+        "confidence": "derived",
+        "notes": "Anchors read from official Price Calculator backend (region ap-southeast-2): s7n.large.2 (2 vCPU/4GB) = $0.0664/hr, s7n.large.4 (2 vCPU/8GB) = $0.0814/hr. Solve 2v+4r=0.0664, 2v+8r=0.0814 -> r=0.00375, v=(0.0664-0.015)/2=0.0257/vCPU-hr. s7n family IS sold in …"
+      },
+      "ram_gb_hour": {
+        "id": "ram_gb_hour",
+        "service": "ECS General Computing S7n (s7n.large.2/.4, Linux, pay-per-use)",
+        "unit": "GB-RAM-hour",
+        "price": 0.00375,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/ecs",
+        "confidence": "derived",
+        "notes": "r=(0.0814-0.0664)/4=0.00375/GB-hr from the two s7n anchor instances above."
+      },
+      "block_gb_mo": {
+        "id": "block_gb_mo",
+        "service": "EVS General Purpose SSD (GPSSD)",
+        "unit": "GB-month",
+        "price": 0.108,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/evs",
+        "confidence": "derived",
+        "notes": "Native pay-per-use rate verified: $0.00015/GB-hour (Bangkok). Month=720h -> 0.00015*720=$0.108/GB-month. (High I/O $0.0000660/GB-hr, Ultra-high I/O $0.00027/GB-hr.)"
+      },
+      "os_std_gb_mo": {
+        "id": "os_std_gb_mo",
+        "service": "OBS Standard storage (single-AZ)",
+        "unit": "GB-month",
+        "price": 0.022,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/obs",
+        "confidence": "derived",
+        "notes": "Hourly rate verified $0.0000305556/GB-hr = exactly $0.022/GB-mo at 720h. Multi-AZ (3AZ) = $0.025/GB-mo ($0.0000347222/GB-hr)."
+      },
+      "os_ia_gb_mo": {
+        "id": "os_ia_gb_mo",
+        "service": "OBS Infrequent Access storage (single-AZ)",
+        "unit": "GB-month",
+        "price": 0.014,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/obs",
+        "confidence": "derived",
+        "notes": "Verified $0.0000194440/GB-hr = $0.014/GB-mo (720h). IA 3AZ = $0.019/GB-mo."
+      },
+      "os_arch_gb_mo": {
+        "id": "os_arch_gb_mo",
+        "service": "OBS Archive storage",
+        "unit": "GB-month",
+        "price": 0.0045,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/obs",
+        "confidence": "derived",
+        "notes": "Verified $0.00000625/GB-hr = $0.0045/GB-mo (720h). Deep Archive also exists (cheaper, higher retrieval cost)."
+      },
+      "os_retrieval_gb": {
+        "id": "os_retrieval_gb",
+        "service": "OBS Infrequent Access data retrieval",
+        "unit": "GB",
+        "price": 0.01,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/obs",
+        "confidence": "verified",
+        "notes": "IA retrieval $0.01/GB. Archive restore: $0.01/GB (standard) / $0.03/GB (expedited)."
+      },
+      "os_req_10k": {
+        "id": "os_req_10k",
+        "service": "OBS requests (write/PUT class)",
+        "unit": "10,000 requests",
+        "price": 0.004,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/obs",
+        "confidence": "verified",
+        "notes": "GET/read $0.004 ต่อ 10k (PUT/write $0.01) — เทียบฝั่ง read เหมือนค่ายอื่น"
+      },
+      "fss_gb_mo": {
+        "id": "fss_gb_mo",
+        "service": "SFS Turbo Standard",
+        "unit": "GB-month",
+        "price": 0.0922,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/sfsturbo",
+        "confidence": "derived",
+        "notes": "SFS Turbo Standard verified $0.000128/GB-hr -> *720 = $0.0922/GB-mo. Classic SFS capacity-oriented (SATA) = $0.000125/GB-hr = $0.09/GB-mo."
+      },
+      "elb_hour": {
+        "id": "elb_hour",
+        "service": "Dedicated ELB (elbv3) - instance fee",
+        "unit": "instance-hour",
+        "price": 0.025,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/elb",
+        "confidence": "verified",
+        "notes": "Dedicated (v3) load balancer in Bangkok: $0.025/hr instance + LCU fee. Bangkok does NOT use shared-ELB-only pricing; legacy shared ELB (elbv2 s2.small) $0.053/hr also listed."
+      },
+      "elb_lcu_hour": {
+        "id": "elb_lcu_hour",
+        "service": "Dedicated ELB (elbv3) - LCU fee",
+        "unit": "LCU-hour",
+        "price": 0.00833,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/elb",
+        "confidence": "verified",
+        "notes": "$0.00833 per L4 or L7 LCU-hour (professional model). A basic per-AZ variant exists at $0/instance + $0.00695/LCU-hr/AZ."
+      },
+      "fw_mo": {
+        "id": "fw_mo",
+        "service": "Cloud Firewall (CFW) Standard edition",
+        "unit": "month",
+        "price": 420,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/cfw",
+        "confidence": "verified",
+        "notes": "Standard is yearly/monthly only: $420/month. Professional: $1,450/month or pay-per-use $0.36/hour; EIP expansion $7/mo per extra EIP; VPC expansion (Pro) $300/mo."
+      },
+      "waf_mo": {
+        "id": "waf_mo",
+        "service": "WAF Cloud - Standard edition",
+        "unit": "month",
+        "price": 615,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/waf",
+        "confidence": "verified",
+        "notes": "Cloud mode Standard edition (10 domains, ~2,000 QPS) $615/mo in Bangkok. Professional $1,560/mo, Platinum $4,730/mo. Pay-per-use cloud WAF also exists: $0.60 per million requests + $0.0014/rule-hour."
+      },
+      "waf_extra": {
+        "id": "waf_extra",
+        "service": "WAF domain expansion package (Standard edition)",
+        "unit": "package-month",
+        "price": 100,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/waf",
+        "confidence": "verified",
+        "notes": "Extra domain package $100/mo (Standard; $160 Professional, $320 Platinum). Rule expansion package $11/mo (all editions). Bandwidth expansion $160/mo (Standard)."
+      },
+      "dc_1g_mo": {
+        "id": "dc_1g_mo",
+        "service": "Direct Connect (DCAAS) 1GE port",
+        "unit": "port-month",
+        "price": 116,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/dline",
+        "confidence": "verified",
+        "notes": "AP-Bangkok port fee, monthly billing: 1GE $116/mo (Singapore is $138/mo). Carrier line + backhaul charged separately by the carrier."
+      },
+      "dc_10g_mo": {
+        "id": "dc_10g_mo",
+        "service": "Direct Connect (DCAAS) 10GE port",
+        "unit": "port-month",
+        "price": 985,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/dline",
+        "confidence": "verified",
+        "notes": "AP-Bangkok 10GE port $985/mo (Singapore $1,035/mo). 40GE $5,500/mo, 100GE $11,700/mo also available."
+      },
+      "vpn_gw_hour": {
+        "id": "vpn_gw_hour",
+        "service": "VPN Gateway Professional1 (Enterprise S2S, 300 Mbps)",
+        "unit": "gateway-hour",
+        "price": 0.33,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/vpn",
+        "confidence": "verified",
+        "notes": "Pay-per-use: $0.33/hr for the gateway (first unit), + $0.035/hr per additional VPN connection beyond included quota. Professional2 (1 Gbps) $0.63/hr. Monthly option $209/mo (Prof.1)."
+      },
+      "egress_gb": {
+        "id": "egress_gb",
+        "service": "EIP Dynamic BGP pay-per-traffic (internet egress)",
+        "unit": "GB",
+        "price": 0.108,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/eip",
+        "confidence": "verified",
+        "notes": "Bangkok tiered: $0.108/GB (0-10TB/mo), $0.077 (10-50TB), $0.074 (50-150TB), $0.072 (>150TB). EIP retention fee $0.005/hr applies while held."
+      },
+      "pg_vcpu_hour": {
+        "id": "pg_vcpu_hour",
+        "service": "RDS for PostgreSQL n1 (general-enhanced), single node",
+        "unit": "vCPU-hour",
+        "price": 0.035,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/rds",
+        "confidence": "derived",
+        "notes": "Anchors verified (Bangkok, single, pay-per-use): rds.pg.n1.large.2 (2v/4GB)=$0.08/hr, rds.pg.n1.large.4 (2v/8GB)=$0.09/hr. r=(0.09-0.08)/4=0.0025; v=(0.08-0.01)/2=0.035. Primary/standby (HA) = 2x."
+      },
+      "pg_ram_gb_hour": {
+        "id": "pg_ram_gb_hour",
+        "service": "RDS for PostgreSQL n1, single node",
+        "unit": "GB-RAM-hour",
+        "price": 0.0025,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/rds",
+        "confidence": "derived",
+        "notes": "From same two anchors: (0.09-0.08)/4GB = $0.0025/GB-hr."
+      },
+      "pg_storage_gb_mo": {
+        "id": "pg_storage_gb_mo",
+        "service": "RDS storage - Cloud SSD",
+        "unit": "GB-month",
+        "price": 0.1944,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/rds",
+        "confidence": "derived",
+        "notes": "Verified $0.00027/GB-hr (single instance; doubled for HA) -> *720 = $0.1944/GB-mo. Ultra-high I/O legacy $0.0004/GB-hr; backup space beyond free quota $0.0002/GB-hr."
+      },
+      "mysql_vcpu_hour": {
+        "id": "mysql_vcpu_hour",
+        "service": "RDS for MySQL n1 (general-enhanced), single node",
+        "unit": "vCPU-hour",
+        "price": 0.035,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/rds",
+        "confidence": "derived",
+        "notes": "rds.mysql.n1.large.2 (2v/4GB)=$0.08/hr and rds.mysql.n1.large.4 (2v/8GB)=$0.09/hr (identical to PG in Bangkok) -> v=$0.035/vCPU-hr, r=$0.0025/GB-hr."
+      },
+      "mysql_ram_gb_hour": {
+        "id": "mysql_ram_gb_hour",
+        "service": "RDS for MySQL n1, single node",
+        "unit": "GB-RAM-hour",
+        "price": 0.0025,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/rds",
+        "confidence": "derived",
+        "notes": "(0.09-0.08)/4 = $0.0025/GB-hr; see mysql_vcpu_hour anchors."
+      },
+      "k8s_cluster_hour": {
+        "id": "k8s_cluster_hour",
+        "service": "CCE cluster management - cce.s1.small (non-HA, up to 50 nodes)",
+        "unit": "cluster-hour",
+        "price": 0.13,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/cce",
+        "confidence": "verified",
+        "notes": "Bangkok: s1.small (single master, <=50 nodes) $0.13/hr; s1.medium (200) $0.26; HA s2.small $0.39, s2.medium $0.78, s2.large (1000) $1.50. Worker nodes billed as ECS."
+      },
+      "redis_gb_hour": {
+        "id": "redis_gb_hour",
+        "service": "DCS for Redis, master/standby, x86 (redis.ha.xu1.large.r2)",
+        "unit": "GB-hour",
+        "price": 0.032,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/redis",
+        "confidence": "derived",
+        "notes": "Verified anchors: 1GB master/standby = $0.032/hr, 8GB = $0.256/hr -> 0.256/8 = $0.032/GB-hr (perfectly linear). Single-node = $0.016/GB-hr."
+      },
+      "functions_gbs": {
+        "id": "functions_gbs",
+        "service": "FunctionGraph execution duration",
+        "unit": "GB-second",
+        "price": 0.00001667,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/function",
+        "confidence": "verified",
+        "notes": "AP-Singapore price used - Bangkok has no published FunctionGraph rate in the official calculator (nearest-region fallback). $0.00001667/GB-s after 400,000 free GB-s/month."
+      },
+      "functions_1m_inv": {
+        "id": "functions_1m_inv",
+        "service": "FunctionGraph requests",
+        "unit": "1M invocations",
+        "price": 0.2,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/function",
+        "confidence": "verified",
+        "notes": "AP-Singapore fallback (Bangkok not published): $0.20 per million requests after first 1M free/month."
+      },
+      "apig_hour": {
+        "id": "apig_hour",
+        "service": "API Gateway - dedicated gateway, Basic edition",
+        "unit": "instance-hour (no per-call SKU)",
+        "price": 0.76,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/apig",
+        "confidence": "verified",
+        "notes": "Intl/Bangkok sells only DEDICATED gateways - no per-1M-call pricing exists. Basic (2,000 TPS) $0.76/hr; Professional (4,000) $3.46/hr; Platinum (10,000) $8.65/hr. Egress bandwidth extra."
+      },
+      "kafka_hour": {
+        "id": "kafka_hour",
+        "service": "DMS for Kafka - smallest cluster (kafka cluster c3.mini, 100 MB/s)",
+        "unit": "instance-hour",
+        "price": 0.47,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/kafka",
+        "confidence": "verified",
+        "notes": "Bangkok pay-per-use: c3.mini cluster $0.47/hr (small $0.84, middle $1.57, high $3.19). Disk storage billed separately (e.g. high-I/O for Kafka ~$0.01/hr per 100GB step)."
+      },
+      "vdi_desktop_mo": {
+        "id": "vdi_desktop_mo",
+        "service": "Workspace cloud desktop x86 Ultimate 2 vCPU/4GB (workspace.x86.ultimate.large2)",
+        "unit": "desktop-month",
+        "price": 36,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/workspace",
+        "confidence": "verified",
+        "notes": "Ultimate series is the desktop family sold in AP-Bangkok; 2vCPU/4GB = $36/mo (or $0.089/hr pay-per-use). 2vCPU/8GB $57.2/mo. System/user disks billed separately ($0.092-$0.214/GB-mo)."
+      },
+      "log_ingest_gb": {
+        "id": "log_ingest_gb",
+        "service": "LTS (Log Tank Service) log read/write traffic",
+        "unit": "GB (ingested, compressed)",
+        "price": 0.05,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/lts",
+        "confidence": "verified",
+        "notes": "Bangkok: read/write (ingestion) $0.05/GB + index traffic $0.08/GB + storage $0.000125/GB-hr (~$0.09/GB-mo; cold storage ~$0.029/GB-mo). Budget ingestion+index = $0.13/GB for searchable logs."
+      },
+      "dns_1m": {
+        "id": "dns_1m",
+        "service": "DNS public zone queries",
+        "unit": "1M queries",
+        "price": 0,
+        "source": "https://www.huaweicloud.com/intl/en-us/special/dns-free-pro.html",
+        "confidence": "estimate",
+        "notes": "Free: DNS is not in the intl price calculator and Huawei promotes 'Free DNS' - public zone hosting and queries are currently not billed on the international site."
+      },
+      "queue_1m": {
+        "id": "queue_1m",
+        "service": "SMN HTTP/HTTPS notifications (closest simple-queue analogue)",
+        "unit": "1M messages",
+        "price": 0.6,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/smn",
+        "confidence": "verified",
+        "notes": "AP-Singapore price (Bangkok publishes no request rate in calculator - nearest-region fallback): HTTP(S) $0.60/1M after 100k free/mo; API requests $0.50/1M after 1M free. Legacy DMS queue service is not sold intl; DMS RabbitMQ/Kafka are instance-based."
+      },
+      "css_node_hour": {
+        "id": "css_node_hour",
+        "service": "CSS (Cloud Search, OpenSearch/Elasticsearch-compatible) ess.spec-4u8g.v2 node",
+        "unit": "node-hour",
+        "price": 0.25,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/search",
+        "confidence": "verified",
+        "notes": "Bangkok: 4 vCPU/8GB computing-plus node $0.25/hr (4u16g $0.31, 8u32g $0.60). Node storage extra: ultra-high I/O $0.00027/GB-hr (~$0.19/GB-mo). No 2u8g flavor listed; 4u8g is the requested spec."
+      },
+      "drs_hour": {
+        "id": "drs_hour",
+        "service": "DRS real-time synchronization - Medium task",
+        "unit": "task-hour",
+        "price": 0.36,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/drs",
+        "confidence": "verified",
+        "notes": "Bangkok sync-task flavors: Micro $0.13/hr, Small $0.26, Medium $0.36 (typical default), Large $0.53, XLarge $0.84. First-time config period can be free (Charging Type: Config SKUs at $0)."
+      },
+      "dws_vcpu_hour": {
+        "id": "dws_vcpu_hour",
+        "service": "GaussDB(DWS) dwsx2 (storage-compute coupled)",
+        "unit": "vCPU-hour",
+        "price": 0.0633,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/dws",
+        "confidence": "derived",
+        "notes": "Verified anchors (Bangkok, on-demand): dwsx2.2xlarge 8 vCPU/64GB = $0.5064/hr and dwsx2.4xlarge 16 vCPU = $1.0127/hr -> $0.0633/vCPU-hr (linear). Smallest node dwsx2.xlarge = $0.2532/hr. Node price includes bundled local storage."
+      },
+      "waf_1m_req": {
+        "id": "waf_1m_req",
+        "service": "WAF pay-per-use requests",
+        "unit": "1M requests",
+        "price": 0.6,
+        "source": "https://www.huaweicloud.com/intl/en-us/pricing/index.html#/waf",
+        "confidence": "verified",
+        "notes": "โหมด pay-per-use: $0.60/ล้าน request + $0.0014/rule-ชม. (edition รายเดือน Standard $615/เดือน 10 โดเมน)"
+      }
+    }
+  },
+  "azure": {
+    "provider": "azure",
+    "label": "Microsoft Azure",
+    "region": "Southeast Asia (Singapore)",
+    "inCountry": false,
+    "currency": "USD",
+    "asOf": "2026-07-24",
+    "summary": "All rates read from Microsoft's official Azure Retail Prices API (prices.azure.com, the data source behind the Azure Pricing Calculator) on 2026-07-24, region southeastasia, pay-as-you-go USD, plus official microsoft.com pages for Windows 365 and Power BI Pro. The announced Thailand region (Thailand Central) returns zero priced SKUs in the API, i.e. not GA with published prices, so Southeast Asia (Singapore) is used throughout. vCPU/RAM splits are derived by 2-equation solve from D2s_v5/E2s_v5 (VMs), Dadsv5/Eadsv5 2-vCore (PostgreSQL), and Ddsv5/Edsv5 per-vCore (MySQL). Application Gateway WA…",
+    "quirks": {
+      "l7IncludesWaf": true
+    },
+    "rates": {
+      "vcpu_hour": {
+        "id": "vcpu_hour",
+        "service": "Virtual Machines (Linux pay-as-you-go, Dsv5/Esv5)",
+        "unit": "vCPU-hour",
+        "price": 0.044,
+        "source": "https://prices.azure.com/api/retail/prices (armRegionName=southeastasia, Standard_D2s_v5 / Standard_E2s_v5); https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/",
+        "confidence": "derived",
+        "notes": "Anchors: D2s_v5 (2 vCPU/8GB, 1:4) $0.12/hr; E2s_v5 (2 vCPU/16GB, 1:8) $0.152/hr. Solve 2c+8r=0.12, 2c+16r=0.152 -> 8r=0.032, r=$0.004/GB-hr; c=(0.12-0.032)/2=$0.044/vCPU-hr."
+      },
+      "ram_gb_hour": {
+        "id": "ram_gb_hour",
+        "service": "Virtual Machines (Linux pay-as-you-go, Dsv5/Esv5)",
+        "unit": "GB-hour",
+        "price": 0.004,
+        "source": "https://prices.azure.com/api/retail/prices (Standard_D2s_v5 / Standard_E2s_v5, southeastasia)",
+        "confidence": "derived",
+        "notes": "Same 2-equation solve as vcpu_hour: r=(0.152-0.12)/8=$0.004/GB-hr."
+      },
+      "block_gb_mo": {
+        "id": "block_gb_mo",
+        "service": "Azure Premium SSD v2 (managed disk)",
+        "unit": "GB-month",
+        "price": 0.09636,
+        "source": "https://prices.azure.com/api/retail/prices (Azure Premium SSD v2, Premium LRS Provisioned Capacity, southeastasia); https://azure.microsoft.com/en-us/pricing/details/managed-disks/",
+        "confidence": "derived",
+        "notes": "API price $0.000132/GiB-hour x 730 h = $0.09636/GiB-mo. Includes 3,000 IOPS + 125 MB/s free baseline; extra IOPS/throughput billed separately."
+      },
+      "os_std_gb_mo": {
+        "id": "os_std_gb_mo",
+        "service": "Blob Storage - General Block Blob v2, Hot LRS",
+        "unit": "GB-month",
+        "price": 0.02,
+        "source": "https://prices.azure.com/api/retail/prices (General Block Blob v2, Hot LRS Data Stored, southeastasia); https://azure.microsoft.com/en-us/pricing/details/storage/blobs/",
+        "confidence": "verified",
+        "notes": "First 50 TB tier; drops to $0.0192 (50-500TB) and $0.0184 (>500TB)."
+      },
+      "os_ia_gb_mo": {
+        "id": "os_ia_gb_mo",
+        "service": "Blob Storage - General Block Blob v2, Cool LRS",
+        "unit": "GB-month",
+        "price": 0.011,
+        "source": "https://prices.azure.com/api/retail/prices (Cool LRS Data Stored, southeastasia)",
+        "confidence": "verified",
+        "notes": "Cool tier; 30-day early-delete $0.016/GB."
+      },
+      "os_arch_gb_mo": {
+        "id": "os_arch_gb_mo",
+        "service": "Blob Storage - General Block Blob v2, Archive LRS",
+        "unit": "GB-month",
+        "price": 0.002,
+        "source": "https://prices.azure.com/api/retail/prices (Archive LRS Data Stored, southeastasia)",
+        "confidence": "verified",
+        "notes": "180-day early-delete applies; rehydration required before read."
+      },
+      "os_retrieval_gb": {
+        "id": "os_retrieval_gb",
+        "service": "Blob Storage Cool data retrieval",
+        "unit": "GB",
+        "price": 0.01,
+        "source": "https://prices.azure.com/api/retail/prices (Cool Data Retrieval, southeastasia)",
+        "confidence": "verified",
+        "notes": "Cool tier retrieval. Archive standard retrieval $0.024/GB (priority $0.13/GB)."
+      },
+      "os_req_10k": {
+        "id": "os_req_10k",
+        "service": "Blob Storage Hot read operations",
+        "unit": "10,000 operations",
+        "price": 0.004,
+        "source": "https://prices.azure.com/api/retail/prices (Hot Read Operations, southeastasia)",
+        "confidence": "verified",
+        "notes": "Hot tier reads; writes $0.05/10K; cool reads $0.01/10K."
+      },
+      "fss_gb_mo": {
+        "id": "fss_gb_mo",
+        "service": "Azure Files (Files v2, Hot LRS, pay-as-you-go)",
+        "unit": "GB-month",
+        "price": 0.0276,
+        "source": "https://prices.azure.com/api/retail/prices (Files v2 Hot LRS Data Stored, southeastasia); https://azure.microsoft.com/en-us/pricing/details/storage/files/",
+        "confidence": "verified",
+        "notes": "At-rest data only; transactions billed separately. Legacy Standard transaction-optimized tier is $0.06/GB-mo with cheaper transactions."
+      },
+      "alb_hour": {
+        "id": "alb_hour",
+        "service": "Application Gateway WAF_v2 - fixed cost",
+        "unit": "gateway-hour",
+        "price": 0.468,
+        "source": "https://prices.azure.com/api/retail/prices (Application Gateway WAF v2, Standard Fixed Cost, southeastasia); https://azure.microsoft.com/en-us/pricing/details/application-gateway/",
+        "confidence": "verified",
+        "notes": "L7 LB with WAF built in - this same SKU is the WAF answer below. Standard_v2 without WAF is $0.26/hr."
+      },
+      "lcu_hour": {
+        "id": "lcu_hour",
+        "service": "Application Gateway WAF_v2 - capacity unit",
+        "unit": "capacity unit-hour",
+        "price": 0.0144,
+        "source": "https://prices.azure.com/api/retail/prices (Application Gateway WAF v2, Standard Capacity Units, southeastasia)",
+        "confidence": "verified",
+        "notes": "1 CU = 1 compute unit / 2,500 persistent connections / 2.22 Mbps. Standard_v2 CU is $0.008/hr."
+      },
+      "nlb_hour": {
+        "id": "nlb_hour",
+        "service": "Standard Load Balancer (first 5 rules)",
+        "unit": "hour",
+        "price": 0.025,
+        "source": "https://prices.azure.com/api/retail/prices (Load Balancer, Standard Included LB Rules and Outbound Rules); https://azure.microsoft.com/en-us/pricing/details/load-balancer/",
+        "confidence": "verified",
+        "notes": "Globally uniform meter (armRegion 'Global', applies to Southeast Asia). Plus $0.005/GB data processed and $0.01/rule-hr beyond 5 rules."
+      },
+      "fw_endpoint_hour": {
+        "id": "fw_endpoint_hour",
+        "service": "Azure Firewall Standard - deployment",
+        "unit": "deployment-hour",
+        "price": 1.25,
+        "source": "https://prices.azure.com/api/retail/prices (Azure Firewall, Standard Deployment, southeastasia); https://azure.microsoft.com/en-us/pricing/details/azure-firewall/",
+        "confidence": "verified"
+      },
+      "fw_gb": {
+        "id": "fw_gb",
+        "service": "Azure Firewall Standard - data processed",
+        "unit": "GB",
+        "price": 0.016,
+        "source": "https://prices.azure.com/api/retail/prices (Azure Firewall, Standard Data Processed, southeastasia)",
+        "confidence": "verified"
+      },
+      "waf_base_mo": {
+        "id": "waf_base_mo",
+        "service": "Application Gateway WAF_v2 fixed cost (monthly equivalent)",
+        "unit": "month (730 h)",
+        "price": 341.64,
+        "source": "https://prices.azure.com/api/retail/prices (Application Gateway WAF v2 Standard Fixed Cost, southeastasia)",
+        "confidence": "derived",
+        "notes": "$0.468/hr x 730 h = $341.64/mo. Same SKU as alb_hour - Azure's L7 LB and WAF are one product; do not double-count when comparing."
+      },
+      "dc_1g": {
+        "id": "dc_1g",
+        "service": "ExpressRoute Standard Metered 1 Gbps circuit",
+        "unit": "month",
+        "price": 436,
+        "source": "https://prices.azure.com/api/retail/prices (ExpressRoute, Standard Metered Data 1 Gbps Circuit, Zone 2); https://azure.microsoft.com/en-us/pricing/details/expressroute/",
+        "confidence": "verified",
+        "notes": "Monthly circuit fee (native unit is monthly, not hourly). Singapore peering location = Zone 2; same $436 in Zones 1-4. Metered plan adds ~$0.05/GB egress; Unlimited-data 1G is $8,700/mo Zone 2."
+      },
+      "dc_10g": {
+        "id": "dc_10g",
+        "service": "ExpressRoute Standard Metered 10 Gbps circuit",
+        "unit": "month",
+        "price": 3400,
+        "source": "https://prices.azure.com/api/retail/prices (ExpressRoute, Standard Metered Data 10 Gbps Circuit, Zone 2)",
+        "confidence": "verified",
+        "notes": "Monthly circuit fee, Zone 2 (Singapore). Egress billed separately on metered plan."
+      },
+      "vpn_gw_hour": {
+        "id": "vpn_gw_hour",
+        "service": "VPN Gateway VpnGw1 (site-to-site)",
+        "unit": "gateway-hour",
+        "price": 0.19,
+        "source": "https://prices.azure.com/api/retail/prices (VPN Gateway, VpnGw1, southeastasia); https://azure.microsoft.com/en-us/pricing/details/vpn-gateway/",
+        "confidence": "verified",
+        "notes": "650 Mbps, up to 30 S2S tunnels; first 10 tunnels free then $0.015/tunnel-hr. Basic gateway is $0.036/hr (dev/test)."
+      },
+      "egress_gb": {
+        "id": "egress_gb",
+        "service": "Bandwidth - internet data transfer out (Routing Preference: Internet)",
+        "unit": "GB",
+        "price": 0.11,
+        "source": "https://prices.azure.com/api/retail/prices (Bandwidth - Routing Preference: Internet, Standard Data Transfer Out, southeastasia); https://azure.microsoft.com/en-us/pricing/details/bandwidth/",
+        "confidence": "verified",
+        "notes": "First paid tier 100 GB-10 TB/mo (first 100 GB/mo free). Falls to $0.075 then $0.07/$0.06 at higher tiers. Premium (Microsoft global network) routing is $0.12/GB first tier."
+      },
+      "pg_vcpu_hour": {
+        "id": "pg_vcpu_hour",
+        "service": "Azure Database for PostgreSQL Flexible Server (Dadsv5/Eadsv5)",
+        "unit": "vCPU-hour",
+        "price": 0.094,
+        "source": "https://prices.azure.com/api/retail/prices (PostgreSQL Flexible Server GP Dadsv5 and MO Eadsv5 2 vCore, southeastasia); https://azure.microsoft.com/en-us/pricing/details/postgresql/flexible-server/",
+        "confidence": "derived",
+        "notes": "Anchors: GP D2ads_v5 (2 vCPU/8GB) $0.244/hr; MO E2ads_v5 (2 vCPU/16GB) $0.30/hr. 8r=0.056 -> r=$0.007; c=(0.244-0.056)/2=$0.094. Azure lists a bundled per-vCore price; this split is synthetic for comparison."
+      },
+      "pg_ram_gb_hour": {
+        "id": "pg_ram_gb_hour",
+        "service": "Azure Database for PostgreSQL Flexible Server",
+        "unit": "GB-hour",
+        "price": 0.007,
+        "source": "https://prices.azure.com/api/retail/prices (same anchors as pg_vcpu_hour)",
+        "confidence": "derived",
+        "notes": "r=(0.30-0.244)/8=$0.007/GB-hr."
+      },
+      "pg_storage_gb_mo": {
+        "id": "pg_storage_gb_mo",
+        "service": "PostgreSQL Flexible Server storage",
+        "unit": "GB-month",
+        "price": 0.138,
+        "source": "https://prices.azure.com/api/retail/prices (Az DB for PostgreSQL Flexible Server Storage, Storage Data Stored, southeastasia)",
+        "confidence": "verified",
+        "notes": "General-purpose storage; backup storage $0.095/GB-mo beyond free allotment."
+      },
+      "mysql_vcpu_hour": {
+        "id": "mysql_vcpu_hour",
+        "service": "Azure Database for MySQL Flexible Server (Ddsv5/Edsv5)",
+        "unit": "vCPU-hour",
+        "price": 0.0932,
+        "source": "https://prices.azure.com/api/retail/prices (MySQL Flexible Server GP Ddsv5 vCore $0.1175/hr, MO Edsv5 vCore $0.1418/hr, southeastasia); https://azure.microsoft.com/en-us/pricing/details/mysql/flexible-server/",
+        "confidence": "derived",
+        "notes": "MySQL bills per vCore: GP (1:4) c+4r=0.1175; MO (1:8) c+8r=0.1418 -> 4r=0.0243, r=$0.006075; c=$0.0932. MO anchor cross-checked: E16d_v5 $2.269/16 = $0.1418/vCore."
+      },
+      "mysql_ram_gb_hour": {
+        "id": "mysql_ram_gb_hour",
+        "service": "Azure Database for MySQL Flexible Server",
+        "unit": "GB-hour",
+        "price": 0.006075,
+        "source": "https://prices.azure.com/api/retail/prices (same anchors as mysql_vcpu_hour)",
+        "confidence": "derived",
+        "notes": "r=(0.1418-0.1175)/4=$0.006075/GB-hr. MySQL Flexible storage is also $0.138/GB-mo."
+      },
+      "k8s_cluster_hour": {
+        "id": "k8s_cluster_hour",
+        "service": "Azure Kubernetes Service - Free tier control plane",
+        "unit": "cluster-hour",
+        "price": 0,
+        "source": "https://prices.azure.com/api/retail/prices (Azure Kubernetes Service, southeastasia); https://azure.microsoft.com/en-us/pricing/details/kubernetes-service/",
+        "confidence": "verified",
+        "notes": "Free tier control plane costs $0 (no SLA, <=1,000 nodes). Standard tier (Uptime SLA) is $0.10/cluster-hr; Long Term Support $0.60/hr - both verified in API."
+      },
+      "redis_gb_hour": {
+        "id": "redis_gb_hour",
+        "service": "Azure Cache for Redis Standard C1 (1 GB)",
+        "unit": "GB-hour",
+        "price": 0.138,
+        "source": "https://prices.azure.com/api/retail/prices (Azure Redis Cache Standard C1 Cache $0.138/hr, southeastasia); https://azure.microsoft.com/en-us/pricing/details/cache/",
+        "confidence": "derived",
+        "notes": "C1 Standard (replicated 2-node, 1 GB) $0.138/hr -> $0.138/GB-hr. Per-GB falls with size: C2 (2.5GB) $0.225/hr=$0.09/GB-hr; C3 (6GB) $0.45/hr=$0.075/GB-hr. Basic (non-replicated) C1 is $0.055/hr."
+      },
+      "functions_gbs": {
+        "id": "functions_gbs",
+        "service": "Azure Functions Consumption - execution time",
+        "unit": "GB-second",
+        "price": 0.000016,
+        "source": "https://prices.azure.com/api/retail/prices (Functions, Standard Execution Time, southeastasia); https://azure.microsoft.com/en-us/pricing/details/functions/",
+        "confidence": "verified",
+        "notes": "First 400,000 GB-s/mo free (API tier min=400000). Newer Flex Consumption on-demand rate is $0.000037/GB-s with 100k GB-s free."
+      },
+      "functions_1m_inv": {
+        "id": "functions_1m_inv",
+        "service": "Azure Functions Consumption - executions",
+        "unit": "1M executions",
+        "price": 0.2,
+        "source": "https://prices.azure.com/api/retail/prices (Functions, Standard Total Executions $0.000002 per 10, southeastasia)",
+        "confidence": "derived",
+        "notes": "$0.000002 per 10 executions x 100,000 = $0.20/1M. First 1M executions/mo free."
+      },
+      "apigw_1m": {
+        "id": "apigw_1m",
+        "service": "API Management Consumption tier",
+        "unit": "1M calls",
+        "price": 4.25,
+        "source": "https://prices.azure.com/api/retail/prices (API Management, Consumption Calls $0.0425/10K, southeastasia); https://azure.microsoft.com/en-us/pricing/details/api-management/",
+        "confidence": "derived",
+        "notes": "$0.0425 per 10K x 100 = $4.25/1M. First 1M calls/subscription/mo free (API tier min=100 units of 10K)."
+      },
+      "tu_hour": {
+        "id": "tu_hour",
+        "service": "Event Hubs Standard - Throughput Unit",
+        "unit": "TU-hour",
+        "price": 0.03,
+        "source": "https://prices.azure.com/api/retail/prices (Event Hubs, Standard Throughput Unit, southeastasia); https://azure.microsoft.com/en-us/pricing/details/event-hubs/",
+        "confidence": "verified",
+        "notes": "1 TU = 1 MB/s or 1,000 events/s ingress, 2 MB/s egress. Plus ingress events $0.028/1M. Kafka endpoint included in Standard; Capture add-on $0.10/hr."
+      },
+      "vdi_desktop_mo": {
+        "id": "vdi_desktop_mo",
+        "service": "Windows 365 Enterprise Cloud PC 2 vCPU/8GB/128GB",
+        "unit": "user-month",
+        "price": 41,
+        "source": "https://www.microsoft.com/en-us/windows-365/enterprise/compare-plans-pricing",
+        "confidence": "verified",
+        "notes": "Flat per-user license, region-independent. Azure Virtual Desktop has no simple per-desktop list price (pay for underlying VMs/storage + M365 licensing), so Windows 365 is used as the comparable."
+      },
+      "email_1k": {
+        "id": "email_1k",
+        "service": "Azure Communication Services - Email (Basic Sent Email)",
+        "unit": "1,000 emails",
+        "price": 0.25,
+        "source": "https://prices.azure.com/api/retail/prices (Email, Basic Sent Email $0.00025/email); https://azure.microsoft.com/en-us/pricing/details/communication-services/",
+        "confidence": "derived",
+        "notes": "$0.00025/email x 1000 = $0.25. Plus data transfer $0.00012/MB. Globally uniform meter."
+      },
+      "log_ingest_gb": {
+        "id": "log_ingest_gb",
+        "service": "Azure Monitor Log Analytics - Analytics Logs ingestion (pay-as-you-go)",
+        "unit": "GB",
+        "price": 2.99,
+        "source": "https://prices.azure.com/api/retail/prices (Log Analytics, Analytics Logs Data Ingestion, southeastasia); https://azure.microsoft.com/en-us/pricing/details/monitor/",
+        "confidence": "verified",
+        "notes": "First 5 GB/billing-month free (API tier min=5). Commitment tiers reduce effective rate; Basic Logs plan is cheaper per GB."
+      },
+      "dns_1m": {
+        "id": "dns_1m",
+        "service": "Azure DNS - public queries",
+        "unit": "1M queries",
+        "price": 0.4,
+        "source": "https://prices.azure.com/api/retail/prices (Azure DNS, Public Queries); https://azure.microsoft.com/en-us/pricing/details/dns/",
+        "confidence": "verified",
+        "notes": "First 1 billion queries/mo; $0.20/1M beyond. Plus $0.50/zone/mo (first 25 zones). Not free, unlike some providers."
+      },
+      "queue_1m": {
+        "id": "queue_1m",
+        "service": "Queue Storage (Queues v2 LRS) operations",
+        "unit": "1M operations",
+        "price": 0.4,
+        "source": "https://prices.azure.com/api/retail/prices (Queues v2, LRS Class 1/Class 2 Operations $0.004/10K, southeastasia)",
+        "confidence": "derived",
+        "notes": "$0.004 per 10K x 100 = $0.40/1M (Class 1 and Class 2 same rate). Storage $0.045/GB-mo extra. Service Bus Standard alternative: $0.0135/hr base + $0.80/1M ops beyond 13M."
+      },
+      "opensearch_node_hour": {
+        "id": "opensearch_node_hour",
+        "service": "Azure AI Search - Standard S1 unit",
+        "unit": "unit-hour",
+        "price": 0.336,
+        "source": "https://prices.azure.com/api/retail/prices (Azure AI Search, Standard S1 Unit, southeastasia); https://azure.microsoft.com/en-us/pricing/details/search/",
+        "confidence": "verified",
+        "notes": "Azure has no first-party managed Elasticsearch/OpenSearch (Elastic Cloud on Azure is Elastic-priced marketplace). Azure AI Search S1 (25 GB/partition) used as nearest first-party equivalent."
+      },
+      "bi_user_mo": {
+        "id": "bi_user_mo",
+        "service": "Power BI Pro",
+        "unit": "user-month",
+        "price": 14,
+        "source": "https://www.microsoft.com/en-us/power-platform/products/power-bi/pricing",
+        "confidence": "verified",
+        "notes": "Paid yearly; Premium Per User is $24/user/mo. Region-independent license."
+      },
+      "vmware_node_hour": {
+        "id": "vmware_node_hour",
+        "service": "Azure VMware Solution AV36P (VCF BYOL)",
+        "unit": "node-hour",
+        "price": 10.02291,
+        "source": "https://prices.azure.com/api/retail/prices (Specialized Compute Azure VMware Solution, AV36P VCF BYOL Node, southeastasia); https://azure.microsoft.com/en-us/pricing/details/azure-vmware/",
+        "confidence": "verified",
+        "notes": "Post-Broadcom model: Southeast Asia lists only the VCF BYOL shape (bring your own Broadcom VCF license, license cost not included). No bundled-license AV36P SKU published for this region."
+      },
+      "dw_vcpu_hour": {
+        "id": "dw_vcpu_hour",
+        "service": "Microsoft Fabric capacity (CU)",
+        "unit": "CU-hour",
+        "price": 0.22,
+        "source": "https://prices.azure.com/api/retail/prices (Fabric Capacity, Capacity Usage CU $0.22/CU-hr, southeastasia); https://azure.microsoft.com/en-us/pricing/details/microsoft-fabric/",
+        "confidence": "derived",
+        "notes": "F2 = 2 CU = $0.44/ชม. → $0.22/CU-ชม.; เทียบ 1 CU ≈ 1 vCPU (โมเดล capacity ต่างจาก ECPU)"
+      }
+    }
+  },
+  "nt": {
+    "provider": "nt",
+    "label": "NT Cloud (National Telecom)",
+    "region": "Thailand (primary site Nonthaburi, backup site Bangrak/Bangkok)",
+    "inCountry": true,
+    "currency": "THB",
+    "asOf": "2026-07-24",
+    "summary": "NT's marketing site (ntcloudsolutions.ntplc.co.th) publishes VM package specs (XS-XL) but no prices; the actual rate card is published in NT's official \"NT Cloud Service (Prepaid)\" user manual PDF (March 2024) via portal screenshots: VM sizes 1.60-22.10 THB/hour, SSD 0.006 THB/GB/hr, volume backup 0.003 THB/GB/hr, Public IP 0.15 THB/hr. Prices are pay-per-hour prepaid (top-up, min 500 THB); VAT treatment is not stated on the price screens (e-Tax invoice issued on top-up, so listed rates likely exclude 7% VAT). No public prices exist for object storage, load balancer, VPN, Kubernetes, managed …",
+    "rates": {
+      "vcpu_hour": {
+        "id": "vcpu_hour",
+        "service": "NT Cloud Service (Prepaid) — vCPU component",
+        "unit": "vCPU-hour",
+        "price": 0.2,
+        "source": "https://ntcloudsolutions.ntplc.co.th/wp-content/uploads/2024/03/%E0%B8%84%E0%B8%B9%E0%B9%88%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%83%E0%B8%8A%E0%B9%89%E0%B8%87%E0%B8%B2%E0%B8%99-Cloud-ServicePrepaid.pdf",
+        "confidence": "derived",
+        "notes": "2-anchor solve from official manual rate card: 2vCPU/4GB=1.60 and 2vCPU/8GB=2.80 THB/hr -> 2v+4r=1.60, 2v+8r=2.80 -> 4r=1.20 -> r=0.30, v=(1.60-1.20)/2=0.20. Cross-check exact: 4vCPU/8GB=4(0.20)+8(0.30)=3.20 (listed 3.20), 4vCPU/16GB=5.60 (listed 5.60). Large…"
+      },
+      "ram_gb_hour": {
+        "id": "ram_gb_hour",
+        "service": "NT Cloud Service (Prepaid) — RAM component",
+        "unit": "GB-hour",
+        "price": 0.3,
+        "source": "https://ntcloudsolutions.ntplc.co.th/wp-content/uploads/2024/03/%E0%B8%84%E0%B8%B9%E0%B9%88%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%83%E0%B8%8A%E0%B9%89%E0%B8%87%E0%B8%B2%E0%B8%99-Cloud-ServicePrepaid.pdf",
+        "confidence": "derived",
+        "notes": "Same 2-equation solve as vcpu_hour (anchors 2vCPU/4GB=1.60, 2vCPU/8GB=2.80 THB/hr); r=0.30 THB per GB-RAM-hour. Verified against 4vCPU/8GB=3.20 and 4vCPU/16GB=5.60 exactly."
+      },
+      "bundle_a": {
+        "id": "bundle_a",
+        "service": "NT Cloud Service (Prepaid) — Cloud Server 2 vCPU / 4 GB RAM",
+        "unit": "instance-hour",
+        "price": 1.6,
+        "source": "https://ntcloudsolutions.ntplc.co.th/wp-content/uploads/2024/03/%E0%B8%84%E0%B8%B9%E0%B9%88%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%83%E0%B8%8A%E0%B9%89%E0%B8%87%E0%B8%B2%E0%B8%99-Cloud-ServicePrepaid.pdf",
+        "confidence": "verified",
+        "notes": "2 vCPU, 4 GB RAM, Ubuntu/Linux; disk NOT included (SSD 0.006 THB/GB/hr extra, OS needs min 10 GB), Public IP 0.15 THB/hr extra. Read from 'Choose Size' rate-card screenshot in NT's official prepaid manual (Mar 2024); live rates behind login at csp.ntplc.cloud…"
+      },
+      "bundle_b": {
+        "id": "bundle_b",
+        "service": "NT Cloud Service (Prepaid) — Cloud Server 2 vCPU / 8 GB RAM",
+        "unit": "instance-hour",
+        "price": 2.8,
+        "source": "https://ntcloudsolutions.ntplc.co.th/wp-content/uploads/2024/03/%E0%B8%84%E0%B8%B9%E0%B9%88%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%83%E0%B8%8A%E0%B9%89%E0%B8%87%E0%B8%B2%E0%B8%99-Cloud-ServicePrepaid.pdf",
+        "confidence": "verified",
+        "notes": "2 vCPU, 8 GB RAM (1:4 anchor). Full published ladder (THB/hr): 2c/4G=1.60, 4c/8G=3.20, 8c/16G=6.30, 16c/32G=12.50; 2c/8G=2.80, 4c/16G=5.60, 8c/32G=11.10, 16c/64G=22.10. Disk and Public IP billed separately. Approx 2,044 THB/mo at 730 h."
+      },
+      "block_gb_mo": {
+        "id": "block_gb_mo",
+        "service": "NT Cloud Service (Prepaid) — SSD Disk (block volume)",
+        "unit": "GB-month",
+        "price": 4.38,
+        "source": "https://ntcloudsolutions.ntplc.co.th/wp-content/uploads/2024/03/%E0%B8%84%E0%B8%B9%E0%B9%88%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%83%E0%B8%8A%E0%B9%89%E0%B8%87%E0%B8%B2%E0%B8%99-Cloud-ServicePrepaid.pdf",
+        "confidence": "derived",
+        "notes": "Portal publishes 'SSD Disk Price: 1 GB = 0.006 THB/Hour' (verified in official manual screenshot). Monthly: 0.006 x 730 h = 4.38 THB/GB-month. Min 10 GB for OS disk."
+      },
+      "backup_gb_mo": {
+        "id": "backup_gb_mo",
+        "service": "NT Cloud Service (Prepaid) — automatic volume backup",
+        "unit": "GB-month",
+        "price": 2.19,
+        "source": "https://ntcloudsolutions.ntplc.co.th/wp-content/uploads/2024/03/%E0%B8%84%E0%B8%B9%E0%B9%88%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%83%E0%B8%8A%E0%B9%89%E0%B8%87%E0%B8%B2%E0%B8%99-Cloud-ServicePrepaid.pdf",
+        "confidence": "derived",
+        "notes": "Portal publishes 'Volume backup will be charged at 1 GB 0.003 THB/Hour' (verified in manual screenshot). Monthly: 0.003 x 730 = 2.19 THB/GB-month. Note: postpaid Cloud Service includes free daily backup."
+      },
+      "fw_mo": {
+        "id": "fw_mo",
+        "service": "Firewall (included with Cloud Service)",
+        "unit": "month",
+        "price": 0,
+        "source": "https://ntcloudsolutions.ntplc.co.th/product/nt-cloud/",
+        "confidence": "verified",
+        "notes": "Official NT Cloud page states 'ฟรี Firewall' — firewall is included free with every VM (postpaid), and security groups/firewall management are included in the prepaid self-service portal. Price 0 = genuinely free, not NO_EQUIVALENT."
+      },
+      "egress_gb": {
+        "id": "egress_gb",
+        "service": "Data Transfer Out (internet egress)",
+        "unit": "GB",
+        "price": 0,
+        "source": "https://ntcloudsolutions.ntplc.co.th/product/nt-cloud/",
+        "confidence": "verified",
+        "notes": "Official page states 'Data Transfer In-Out ฟรี!' and 'Data Transfer Unlimited' — egress is free; bandwidth is shared (20 Gbps domestic, 400 Mbps international)."
+      }
+    }
+  },
+  "nipa": {
+    "provider": "nipa",
+    "label": "Nipa.Cloud",
+    "region": "NCP-BKK (Bangkok, Thailand; identical prices published for NCP-BKK2 Rama 9 and NCP-NON Nonthaburi)",
+    "inCountry": true,
+    "currency": "THB",
+    "asOf": "2026-07-24",
+    "summary": "Prices read from the official nipa.cloud/pricing/nipa-space/* pages (JS-rendered Next.js pages; values confirmed from both the rendered tables and the pages' embedded pricing data). Compute, compute image, block storage, snapshots, external IP, load balancer, MySQL database instance, object storage, and internet egress are all published in THB for Thai AZs; Kubernetes, VPN, firewall appliance, and VDI have no published prices. Caveats: listed prices are stated as \"based on an annual subscription for our self-service plan\" (other terms are quote-only), monthly = hourly x 730, and NO VAT statem…",
+    "rates": {
+      "vcpu_hour": {
+        "id": "vcpu_hour",
+        "service": "NCS Compute Instance — dedicated vCPU (All Purpose/Compute Intensive classes)",
+        "unit": "vCPU-hour",
+        "price": 0.92,
+        "source": "https://nipa.cloud/pricing/nipa-space/compute-instance",
+        "confidence": "derived",
+        "notes": "2-anchor solve from verified hourly flavors: apa.large.v2 (2 vCPU, 8 GB, 1:4) = 2.82 THB/hr and coa.large.v2 (2 vCPU, 4 GB, 1:2) = 2.33 THB/hr. 2v+8r=2.82; 2v+4r=2.33 -> 4r=0.49 -> r=0.1225; 2v=2.33-0.49=1.84 -> v=0.92. Model reproduces the whole dedicated li…"
+      },
+      "ram_gb_hour": {
+        "id": "ram_gb_hour",
+        "service": "NCS Compute Instance — RAM",
+        "unit": "GB-hour",
+        "price": 0.1225,
+        "source": "https://nipa.cloud/pricing/nipa-space/compute-instance",
+        "confidence": "derived",
+        "notes": "Same 2-equation solve as vcpu_hour (apa.large.v2 vs coa.large.v2): r=(2.82-2.33)/4=0.1225 THB/GB-hr (~89.4 THB/GB-mo at 730 h). Identical RAM rate falls out of the MySQL DB flavor solve, confirming linearity."
+      },
+      "bundle_a": {
+        "id": "bundle_a",
+        "service": "NCS Compute Instance csa.large.v2 (Shared-Core)",
+        "unit": "instance/month",
+        "price": 1030,
+        "source": "https://nipa.cloud/pricing/nipa-space/compute-instance",
+        "confidence": "verified",
+        "notes": "2 vCPU (shared), 4 GB RAM, 1/1 Gbps VPC bandwidth, SLA 99.0%. 1,030 THB/mo (1.41 THB/hr) at NCP-BKK. No disk included — add block storage. Monthly = hourly x 730; annual self-service package pricing."
+      },
+      "bundle_b": {
+        "id": "bundle_b",
+        "service": "NCS Compute Instance apa.large.v2 (All Purpose, dedicated)",
+        "unit": "instance/month",
+        "price": 2060,
+        "source": "https://nipa.cloud/pricing/nipa-space/compute-instance",
+        "confidence": "verified",
+        "notes": "2 vCPU (dedicated, AMD EPYC), 8 GB RAM. 2,060 THB/mo (2.82 THB/hr) at NCP-BKK. Lineup scales linearly up to apa.24xlarge.v2 (96 vCPU/384 GB, 98,880 THB/mo). No disk included. Same price in all three AZs."
+      },
+      "block_gb_mo": {
+        "id": "block_gb_mo",
+        "service": "NCS Block Storage — Standard-SSD",
+        "unit": "GiB-month",
+        "price": 3,
+        "source": "https://nipa.cloud/pricing/nipa-space/block-storage",
+        "confidence": "verified",
+        "notes": "Standard-SSD 3 THB/GiB/mo (12 IOPS/GiB). Also published: Standard-HDD 1 THB/GiB/mo (2 IOPS/GiB), Premium-SSD 5 THB/GiB/mo (60 IOPS/GiB). Same in all AZs."
+      },
+      "os_std_gb_mo": {
+        "id": "os_std_gb_mo",
+        "service": "NCS Object Storage — storage size",
+        "unit": "GB-month",
+        "price": 0.77,
+        "source": "https://nipa.cloud/pricing/nipa-space/object-storage",
+        "confidence": "verified",
+        "notes": "Tiered: first 10 TB 0.77, next 90 TB 0.74, over 100 TB 0.70 THB/GB/mo. Requests extra: PUT/COPY/POST/LIST 0.15 THB per 1,000; GET/SELECT 0.013 THB per 1,000. Download (IIG) egress billed per bandwidth tiers; upload free."
+      },
+      "backup_gb_mo": {
+        "id": "backup_gb_mo",
+        "service": "NCS Volume Snapshot — Standard-SSD (closest to backup)",
+        "unit": "GiB-month",
+        "price": 1.5,
+        "source": "https://nipa.cloud/pricing/nipa-space/block-storage",
+        "confidence": "verified",
+        "notes": "No managed backup service is published; volume snapshot pricing used as proxy: Standard-HDD 0.5, Standard-SSD 1.5, Premium-SSD 2.5 THB/GiB/mo."
+      },
+      "lb_mo": {
+        "id": "lb_mo",
+        "service": "NCS Load Balancer lsd.large.v2 (Production, Standalone)",
+        "unit": "LB/month",
+        "price": 1700,
+        "source": "https://nipa.cloud/pricing/nipa-space/load-balancer",
+        "confidence": "verified",
+        "notes": "1,700 THB/mo (2.33 THB/hr), 49k network TPS / 18k HTTPS TPS. Cheaper Development tier lss.large.v2 = 1,030 THB/mo; HA topology lhd.large.v2 = 3,400 THB/mo (4.66 THB/hr). No per-connection or per-GB-processed charge published (new-connection fee listed as 0)."
+      },
+      "mysql_vcpu_hour": {
+        "id": "mysql_vcpu_hour",
+        "service": "NCS Database Instance (MySQL) — dedicated vCPU",
+        "unit": "vCPU-hour",
+        "price": 0.92,
+        "source": "https://nipa.cloud/pricing/nipa-space/database-instance",
+        "confidence": "derived",
+        "notes": "2-anchor solve from verified DB flavors: dpa.large.v1 (2 vCPU/8 GB, 1:4) = 2.82 THB/hr and dma.large.v1 (2 vCPU/16 GB, 1:8) = 3.80 THB/hr. 2v+8r=2.82; 2v+16r=3.80 -> 8r=0.98 -> r=0.1225; v=0.92. Reproduces dma.2xlarge.v1 (8/64): 8*0.92+64*0.1225=15.20~15.23 p…"
+      },
+      "egress_gb": {
+        "id": "egress_gb",
+        "service": "International Internet Gateway (IIG) bandwidth — download",
+        "unit": "GiB (first 1 TiB tier)",
+        "price": 2.31,
+        "source": "https://nipa.cloud/pricing/nipa-space/external-ip",
+        "confidence": "verified",
+        "notes": "Domestic (in-Thailand) bandwidth is FREE. International egress tiers, recalculated monthly: first 1 TiB 2.31; next 49 TiB 2.18; next 100 TiB 1.77; next 350 TiB 1.63; over 500 TiB 1.09 THB/GiB. Upload free. Related: external IP 170 THB/mo (0.24 THB/hr); unused…"
+      }
+    }
+  }
+}
